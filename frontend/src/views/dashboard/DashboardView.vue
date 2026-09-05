@@ -7,7 +7,7 @@
         <div>
           <div class="text-xs font-semibold text-slate-500 mb-1">1. Total Revenue</div>
           <div class="text-2xl font-black text-slate-900 tracking-tight">
-            Rp {{ formatNum(stats.today_sales > 0 ? stats.today_sales : 45890000) }}
+            Rp {{ formatNum(stats.today_sales || 0) }}
           </div>
           <div class="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 mt-2 bg-emerald-50 px-2 py-0.5 rounded-full">
             <TrendingUp class="w-3.5 h-3.5" /> 12.5% vs yesterday
@@ -23,7 +23,7 @@
         <div>
           <div class="text-xs font-semibold text-slate-500 mb-1">2. Orders Today</div>
           <div class="text-2xl font-black text-slate-900 tracking-tight">
-            {{ stats.total_orders > 0 ? stats.total_orders : 127 }}
+            {{ stats.total_orders || 0 }}
           </div>
           <div class="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 mt-2 bg-emerald-50 px-2 py-0.5 rounded-full">
             <TrendingUp class="w-3.5 h-3.5" /> 8.2%

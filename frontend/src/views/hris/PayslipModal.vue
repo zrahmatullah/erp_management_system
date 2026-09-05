@@ -69,8 +69,9 @@ const takeHomePay = () => {
 </script>
 
 <template>
-  <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
-    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-3xl overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-200">
+  <Transition name="slip-modal-fade">
+    <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 backdrop-blur-md p-4 overflow-y-auto transition-all duration-300">
+      <div class="bg-white rounded-3xl shadow-2xl shadow-slate-950/25 border border-slate-100/90 w-full max-w-3xl overflow-hidden my-8 transform transition-all duration-300 ease-out">
       
       <!-- Top Action Bar -->
       <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
@@ -216,8 +217,31 @@ const takeHomePay = () => {
         </div>
 
       </div>
-
     </div>
   </div>
+</Transition>
 </template>
+
+<style scoped>
+.slip-modal-fade-enter-active,
+.slip-modal-fade-leave-active {
+  transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.slip-modal-fade-enter-active > div,
+.slip-modal-fade-leave-active > div {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.slip-modal-fade-enter-from,
+.slip-modal-fade-leave-to {
+  opacity: 0;
+}
+
+.slip-modal-fade-enter-from > div,
+.slip-modal-fade-leave-to > div {
+  opacity: 0;
+  transform: scale(0.94) translateY(8px);
+}
+</style>
 

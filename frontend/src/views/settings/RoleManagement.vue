@@ -115,8 +115,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
-
+import { ref, reactive, onMounted } from 'vue'
+import axios from 'axios'
 import {
   Shield,
   UserCheck,
@@ -139,6 +139,18 @@ interface RoleItem {
   desc: string
 }
 
+const getRoleIcon = (name: string) => {
+  if (name.includes('Admin')) return Shield
+  if (name.includes('Owner')) return UserCheck
+  if (name.includes('Manager')) return Briefcase
+  if (name.includes('Kasir')) return ShoppingCart
+  if (name.includes('Kitchen')) return ChefHat
+  if (name.includes('HR')) return Users
+  if (name.includes('Warehouse')) return Package
+  if (name.includes('Akuntan')) return FileSpreadsheet
+  return UtensilsCrossed
+}
+
 const roles = ref<RoleItem[]>([
   { id: '1', name: 'Super Admin', icon: Shield, desc: 'Full Access' },
   { id: '2', name: 'Owner', icon: UserCheck, desc: 'Read Only Analytics' },
@@ -151,9 +163,31 @@ const roles = ref<RoleItem[]>([
   { id: '9', name: 'Pelayan', icon: UtensilsCrossed, desc: 'Table Service' }
 ])
 
-const selectedRole = ref<RoleItem>(roles.value[2]) // Default Manager like mockup
+const selectedRole = ref<RoleItem>(roles.value[2])
 const saving = ref(false)
 const showAddRoleModal = ref(false)
+
+const fetchRoles = async () => {
+  try {
+    const res = await axios.get('/api/v1/master/roles')
+    const list = Array.isArray(res.data) ? res.data : (res.data?.data || [])
+    if (list.length > 0) {
+      roles.value = list.map((r: any) => ({
+        id: r.id,
+        name: r.name,
+        desc: r.description,
+        icon: getRoleIcon(r.name)
+      }))
+      selectedRole.value = roles.value.find((r: any) => r.name.toLowerCase().includes('manager')) || roles.value[0]
+    }
+  } catch (err) {
+    console.error('Failed to load master roles:', err)
+  }
+}
+
+onMounted(() => {
+  fetchRoles()
+})
 const permissions = ref<any[]>([])
 
 const permissionModules = [

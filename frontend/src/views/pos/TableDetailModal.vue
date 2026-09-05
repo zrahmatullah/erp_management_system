@@ -1,6 +1,7 @@
 <template>
-  <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
-    <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100">
+  <Transition name="table-modal-fade">
+    <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 backdrop-blur-md p-4 transition-all duration-300">
+      <div class="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl shadow-slate-950/25 border border-slate-100/90 transform transition-all duration-300 ease-out">
       <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-4">
         <div>
           <h3 class="text-lg font-black text-slate-900">Meja {{ table?.code }}</h3>
@@ -120,8 +121,9 @@
         @close="showPayment = false"
         @success="handleSuccess"
       />
+      </div>
     </div>
-  </div>
+  </Transition>
 </template>
 
 <script setup lang="ts">
@@ -215,4 +217,27 @@ const handleSuccess = () => {
   emit('close')
 }
 </script>
+
+<style scoped>
+.table-modal-fade-enter-active,
+.table-modal-fade-leave-active {
+  transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.table-modal-fade-enter-active > div,
+.table-modal-fade-leave-active > div {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.table-modal-fade-enter-from,
+.table-modal-fade-leave-to {
+  opacity: 0;
+}
+
+.table-modal-fade-enter-from > div,
+.table-modal-fade-leave-to > div {
+  opacity: 0;
+  transform: scale(0.94) translateY(8px);
+}
+</style>
 

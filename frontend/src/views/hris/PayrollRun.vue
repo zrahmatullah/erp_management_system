@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import axios from 'axios'
 import { Check, ChevronLeft, ChevronRight, FileText, CheckCircle2 } from 'lucide-vue-next'
 import PayslipModal from './PayslipModal.vue'
+import { useNotificationStore } from '@/stores/notification.store'
 
 interface EmployeePayroll {
   id: string
@@ -20,7 +22,9 @@ interface EmployeePayroll {
   net: number
 }
 
+const notifyStore = useNotificationStore()
 const currentStep = ref(4)
+const loading = ref(false)
 
 const steps = [
   { step: 1, label: 'Pilih Periode' },
@@ -30,22 +34,52 @@ const steps = [
   { step: 5, label: 'Persetujuan' }
 ]
 
-const summary = {
-  gross: 186400000,
-  deduction: 32150000,
-  net: 154250000
+const employees = ref<EmployeePayroll[]>([])
+
+const fetchPayrolls = async () => {
+  loading.value = true
+  try {
+    const res = await axios.get('/api/v1/hris/payrolls')
+    if (res.data?.data) {
+      employees.value = res.data.data.map((e: any, idx: number) => {
+        const banks = ['BCA', 'Mandiri', 'BNI', 'BRI']
+        const bankName = banks[idx % banks.length]
+        return {
+          id: e.id,
+          name: e.name,
+          nik: e.nik,
+          position: e.position,
+          department: e.department,
+          bank: `${bankName} - 88123${idx + 100}`,
+          basicSalary: Number(e.basicSalary || 0),
+          allowance: Number(e.allowance || 0),
+          overtime: Number(e.overtime || 0),
+          gross: Number(e.gross || 0),
+          bpjs: Number(e.bpjs || 0),
+          pph21: Number(e.pph21 || 0),
+          deduction: Number(e.deduction || 0),
+          net: Number(e.net || 0)
+        }
+      })
+    }
+  } catch (err: any) {
+    console.error('Failed to load payroll data:', err)
+    notifyStore.error('Gagal memuat data penggajian dari server', 'Koneksi Gagal')
+  } finally {
+    loading.value = false
+  }
 }
 
-const employees = ref<EmployeePayroll[]>([
-  { id: '1', name: 'Adi Saputra', nik: 'EMP-001', position: 'Store Manager', department: 'Operations', bank: 'BCA - 881239102', basicSalary: 7500000, allowance: 1200000, overtime: 800000, gross: 9500000, bpjs: 380000, pph21: 250000, deduction: 630000, net: 8870000 },
-  { id: '2', name: 'Budi Santoso', nik: 'EMP-002', position: 'Head Barista', department: 'Front of House', bank: 'Mandiri - 1320019283', basicSalary: 6800000, allowance: 1000000, overtime: 1200000, gross: 9000000, bpjs: 360000, pph21: 220000, deduction: 580000, net: 8420000 },
-  { id: '3', name: 'Citra Dewi', nik: 'EMP-003', position: 'Pastry Chef', department: 'Kitchen', bank: 'BNI - 043928102', basicSalary: 8200000, allowance: 1500000, overtime: 0, gross: 9700000, bpjs: 388000, pph21: 270000, deduction: 658000, net: 9042000 },
-  { id: '4', name: 'Dedi Prasetyo', nik: 'EMP-004', position: 'Barista', department: 'Front of House', bank: 'BCA - 738192019', basicSalary: 5500000, allowance: 800000, overtime: 1500000, gross: 7800000, bpjs: 312000, pph21: 180000, deduction: 492000, net: 7308000 },
-  { id: '5', name: 'Eka Putri', nik: 'EMP-005', position: 'Finance Officer', department: 'Finance', bank: 'BCA - 528192001', basicSalary: 9000000, allowance: 2000000, overtime: 200000, gross: 11200000, bpjs: 448000, pph21: 350000, deduction: 798000, net: 10402000 },
-  { id: '6', name: 'Fahmi Idris', nik: 'EMP-006', position: 'Line Cook', department: 'Kitchen', bank: 'BRI - 002918239', basicSalary: 6200000, allowance: 900000, overtime: 600000, gross: 7700000, bpjs: 308000, pph21: 190000, deduction: 498000, net: 7202000 },
-  { id: '7', name: 'Gita Amalia', nik: 'EMP-007', position: 'Cashier Lead', department: 'Front of House', bank: 'Mandiri - 1300091823', basicSalary: 7000000, allowance: 1100000, overtime: 400000, gross: 8500000, bpjs: 340000, pph21: 210000, deduction: 550000, net: 7950000 },
-  { id: '8', name: 'Hadi Kusuma', nik: 'EMP-008', position: 'Inventory Clerk', department: 'Inventory', bank: 'BCA - 612839102', basicSalary: 5800000, allowance: 850000, overtime: 900000, gross: 7550000, bpjs: 302000, pph21: 185000, deduction: 487000, net: 7063000 }
-])
+onMounted(() => {
+  fetchPayrolls()
+})
+
+const summary = computed(() => {
+  const gross = employees.value.reduce((acc, e) => acc + e.gross, 0)
+  const deduction = employees.value.reduce((acc, e) => acc + e.deduction, 0)
+  const net = employees.value.reduce((acc, e) => acc + e.net, 0)
+  return { gross, deduction, net }
+})
 
 const formatNum = (val: number) => {
   return Number(val || 0).toLocaleString('id-ID')
@@ -78,7 +112,7 @@ const openPayslip = (emp: EmployeePayroll) => {
 
 const handleApprove = () => {
   currentStep.value = 5
-  alert('Payroll Batch September 2026 telah berhasil disetujui dan dijadwalkan untuk transfer!')
+  notifyStore.success('Payroll Batch September 2026 telah berhasil disetujui dan dijadwalkan untuk transfer bank!', 'Persetujuan Selesai')
 }
 </script>
 
@@ -177,7 +211,18 @@ const handleApprove = () => {
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 text-sm">
+            <tr v-if="loading">
+              <td colspan="10" class="py-12 text-center text-slate-400 text-xs">
+                Memuat data penggajian karyawan dari database...
+              </td>
+            </tr>
+            <tr v-else-if="employees.length === 0">
+              <td colspan="10" class="py-12 text-center text-slate-400 text-xs">
+                Belum ada data payroll yang tercatat untuk periode ini.
+              </td>
+            </tr>
             <tr 
+              v-else
               v-for="emp in employees" 
               :key="emp.id"
               class="hover:bg-slate-50/80 transition-colors cursor-pointer"

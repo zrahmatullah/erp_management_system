@@ -2,8 +2,10 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { Plus, Trash2, Calendar, CheckCircle2, ArrowLeft } from 'lucide-vue-next'
+import { useNotificationStore } from '@/stores/notification.store'
 
 const router = useRouter()
+const notifyStore = useNotificationStore()
 
 const entryDate = ref('2026-09-04')
 const referenceNo = ref('JV-2026-0234')
@@ -94,10 +96,10 @@ const formatNum = (val: number) => {
 
 const handlePosting = () => {
   if (!isBalanced.value) {
-    alert('Jurnal belum seimbang! Total Debit harus sama dengan Total Kredit.')
+    notifyStore.warning('Jurnal belum seimbang! Total Debit harus sama dengan Total Kredit.', 'Validasi Keseimbangan')
     return
   }
-  alert('Jurnal ' + referenceNo.value + ' berhasil di-posting ke Buku Besar!')
+  notifyStore.success(`Jurnal ${referenceNo.value} berhasil di-posting ke Buku Besar!`, 'Jurnal Diposting')
   router.push('/finance')
 }
 </script>

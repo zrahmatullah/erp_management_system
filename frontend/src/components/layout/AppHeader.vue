@@ -50,14 +50,33 @@
         </div>
       </n-dropdown>
     </div>
+
+    <!-- Logout Loading Overlay -->
+    <Teleport to="body">
+      <transition name="fade">
+        <div v-if="isLoggingOut" class="fixed inset-0 z-99999 flex flex-col items-center justify-center bg-slate-950/40 backdrop-blur-md">
+          <div class="bg-white rounded-3xl p-8 max-w-xs w-full shadow-2xl shadow-slate-950/30 flex flex-col items-center text-center animate-in zoom-in-95 duration-200">
+            <div class="relative w-16 h-16 mb-4 flex items-center justify-center">
+              <div class="absolute inset-0 rounded-full border-3 border-rose-100 border-t-rose-600 animate-spin"></div>
+              <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
+                <LogOut class="w-5 h-5" />
+              </div>
+            </div>
+            <h3 class="text-base font-bold text-slate-900 tracking-tight">Mengakhiri Sesi...</h3>
+            <p class="text-xs text-slate-500 mt-1">Menutup akses aman dan mengalihkan ke halaman login</p>
+          </div>
+        </div>
+      </transition>
+    </Teleport>
   </header>
 </template>
 
 <script setup lang="ts">
-import { h } from 'vue'
+import { h, ref } from 'vue'
 import { NDropdown } from 'naive-ui'
 import Breadcrumb from './Breadcrumb.vue'
 import { useAuthStore } from '@/stores/auth.store'
+import { useNotificationStore } from '@/stores/notification.store'
 import { useRouter } from 'vue-router'
 import {
   Search,
@@ -71,7 +90,9 @@ import {
 } from 'lucide-vue-next'
 
 const authStore = useAuthStore()
+const notifyStore = useNotificationStore()
 const router = useRouter()
+const isLoggingOut = ref(false)
 
 const renderIcon = (icon: any) => {
   return () => h(icon, { class: 'w-4 h-4' })
@@ -87,8 +108,15 @@ const userOptions = [
 
 const handleUserMenu = (key: string) => {
   if (key === 'logout') {
-    authStore.logout()
-    router.push('/login')
+    isLoggingOut.value = true
+    setTimeout(() => {
+      authStore.logout()
+      notifyStore.info('Anda telah berhasil keluar dari sistem.', 'Sesi Berakhir')
+      router.push('/login')
+      setTimeout(() => {
+        isLoggingOut.value = false
+      }, 300)
+    }, 500)
   } else if (key === 'master') {
     router.push('/settings/master')
   } else if (key === 'settings') {

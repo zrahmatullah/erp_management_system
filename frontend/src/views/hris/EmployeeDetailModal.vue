@@ -1,6 +1,7 @@
 <template>
-  <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
-    <div class="bg-white rounded-2xl max-w-4xl w-full p-6 shadow-2xl border border-slate-100 my-8 animate-in fade-in zoom-in-95 duration-150">
+  <Transition name="emp-modal-fade">
+    <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 backdrop-blur-md p-4 overflow-y-auto transition-all duration-300">
+      <div class="bg-white rounded-3xl max-w-4xl w-full p-6 shadow-2xl shadow-slate-950/25 border border-slate-100/90 my-8 transform transition-all duration-300 ease-out">
       <!-- Header -->
       <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-6">
         <div class="flex items-center gap-3">
@@ -117,6 +118,7 @@
       </div>
     </div>
   </div>
+</Transition>
 </template>
 
 <script setup lang="ts">
@@ -148,4 +150,27 @@ const employeeData = computed(() => {
   }
 })
 </script>
+
+<style scoped>
+.emp-modal-fade-enter-active,
+.emp-modal-fade-leave-active {
+  transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.emp-modal-fade-enter-active > div,
+.emp-modal-fade-leave-active > div {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.emp-modal-fade-enter-from,
+.emp-modal-fade-leave-to {
+  opacity: 0;
+}
+
+.emp-modal-fade-enter-from > div,
+.emp-modal-fade-leave-to > div {
+  opacity: 0;
+  transform: scale(0.94) translateY(8px);
+}
+</style>
 

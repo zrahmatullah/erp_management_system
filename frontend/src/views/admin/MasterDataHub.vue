@@ -131,8 +131,9 @@
     </div>
 
     <!-- Modal Form Tambah / Edit -->
-    <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
-      <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
+    <Transition name="master-modal-fade">
+      <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 backdrop-blur-md p-4 transition-all duration-300">
+        <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl shadow-slate-950/25 border border-slate-100/90 transform transition-all duration-300 ease-out">
         <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-5">
           <h3 class="text-base font-bold text-slate-900">
             {{ isEditing ? 'Edit' : 'Tambah' }} {{ activeTabLabel }}
@@ -201,7 +202,8 @@
           </div>
         </form>
       </div>
-    </div>
+      </div>
+    </Transition>
   </div>
 </template>
 
@@ -230,8 +232,10 @@ import {
   Clock
 } from 'lucide-vue-next'
 import { useNotificationStore } from '@/stores/notification.store'
+import { useDialogStore } from '@/stores/dialog.store'
 
 const notifyStore = useNotificationStore()
+const dialogStore = useDialogStore()
 
 const formatNum = (v: any) => Number(v || 0).toLocaleString('id-ID')
 
@@ -530,7 +534,15 @@ const saveForm = async () => {
 
 // Delete item
 const deleteItem = async (id: string) => {
-  if (!confirm('Apakah Anda yakin ingin menghapus data master ini?')) return
+  const confirmed = await dialogStore.confirm({
+    title: `Hapus Data ${activeTabLabel.value}`,
+    message: 'Apakah Anda yakin ingin menghapus data master ini?',
+    confirmText: 'Ya, Hapus Data',
+    cancelText: 'Batal',
+    type: 'danger'
+  })
+  if (!confirmed) return
+
   try {
     await axios.delete(`/api/v1/master/${activeTab.value}/${id}`)
     notifyStore.success(`Data ${activeTabLabel.value} berhasil dihapus!`, 'Master Data Dihapus')
@@ -540,4 +552,27 @@ const deleteItem = async (id: string) => {
   }
 }
 </script>
+
+<style scoped>
+.master-modal-fade-enter-active,
+.master-modal-fade-leave-active {
+  transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.master-modal-fade-enter-active > div,
+.master-modal-fade-leave-active > div {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.master-modal-fade-enter-from,
+.master-modal-fade-leave-to {
+  opacity: 0;
+}
+
+.master-modal-fade-enter-from > div,
+.master-modal-fade-leave-to > div {
+  opacity: 0;
+  transform: scale(0.94) translateY(8px);
+}
+</style>
 

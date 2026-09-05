@@ -62,46 +62,33 @@
         </div>
 
         <div class="space-y-3">
-          <!-- Pagi -->
-          <div class="p-3.5 rounded-xl border border-slate-200 flex items-center justify-between hover:border-blue-300 transition-colors">
+          <div 
+            v-for="shift in shiftDefinitions" 
+            :key="shift.id"
+            class="p-3.5 rounded-xl border border-slate-200 flex items-center justify-between hover:border-blue-300 transition-colors"
+          >
             <div>
               <div class="font-bold text-slate-900 text-xs flex items-center gap-1.5">
-                <span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
-                Pagi
+                <span 
+                  class="w-2.5 h-2.5 rounded-full" 
+                  :style="{ backgroundColor: shift.color || '#2563eb' }"
+                ></span>
+                {{ shift.name }}
               </div>
-              <div class="text-[11px] text-slate-500 mt-0.5 font-mono">07:00 - 15:00</div>
+              <div class="text-[11px] text-slate-500 mt-0.5 font-mono">
+                {{ (shift.start_time || '07:00').substring(0, 5) }} - {{ (shift.end_time || '15:00').substring(0, 5) }}
+              </div>
             </div>
-            <button class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer" title="Edit Shift">
+            <button 
+              @click="manageShifts"
+              class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer" 
+              title="Edit Shift"
+            >
               <Edit class="w-3.5 h-3.5" />
             </button>
           </div>
-
-          <!-- Siang -->
-          <div class="p-3.5 rounded-xl border border-slate-200 flex items-center justify-between hover:border-emerald-300 transition-colors">
-            <div>
-              <div class="font-bold text-slate-900 text-xs flex items-center gap-1.5">
-                <span class="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
-                Siang
-              </div>
-              <div class="text-[11px] text-slate-500 mt-0.5 font-mono">15:00 - 23:00</div>
-            </div>
-            <button class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer" title="Edit Shift">
-              <Edit class="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          <!-- Malam -->
-          <div class="p-3.5 rounded-xl border border-slate-200 flex items-center justify-between hover:border-purple-300 transition-colors">
-            <div>
-              <div class="font-bold text-slate-900 text-xs flex items-center gap-1.5">
-                <span class="w-2.5 h-2.5 rounded-full bg-purple-600"></span>
-                Malam
-              </div>
-              <div class="text-[11px] text-slate-500 mt-0.5 font-mono">23:00 - 07:00</div>
-            </div>
-            <button class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer" title="Edit Shift">
-              <Edit class="w-3.5 h-3.5" />
-            </button>
+          <div v-if="shiftDefinitions.length === 0" class="py-4 text-center text-slate-400 text-xs">
+            Memuat data master shift...
           </div>
         </div>
       </div>
@@ -118,6 +105,16 @@ import { useNotificationStore } from '@/stores/notification.store'
 const notifyStore = useNotificationStore()
 const loading = ref(false)
 const staffRoster = ref<any[]>([])
+const shiftDefinitions = ref<any[]>([])
+
+const fetchShifts = async () => {
+  try {
+    const res = await axios.get('/api/v1/master/shifts')
+    shiftDefinitions.value = Array.isArray(res.data) ? res.data : (res.data?.data || [])
+  } catch (err) {
+    console.error('Failed to load master shifts:', err)
+  }
+}
 
 const fetchRoster = async () => {
   loading.value = true
@@ -136,6 +133,7 @@ const fetchRoster = async () => {
 
 onMounted(() => {
   fetchRoster()
+  fetchShifts()
 })
 
 const getShiftStyle = (shift: string) => {

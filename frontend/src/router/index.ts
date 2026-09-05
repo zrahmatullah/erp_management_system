@@ -122,8 +122,13 @@ const router = createRouter({
   routes
 })
 
+import { useLoadingStore } from '@/stores/loading.store'
+
 // Navigation Guard
-router.beforeEach((to, from, next) => {
+router.beforeEach((to, _from, next) => {
+  const loadingStore = useLoadingStore()
+  loadingStore.start()
+
   const token = localStorage.getItem('token')
   if (to.meta.requiresAuth && !token) {
     next('/login')
@@ -132,6 +137,11 @@ router.beforeEach((to, from, next) => {
   } else {
     next()
   }
+})
+
+router.afterEach(() => {
+  const loadingStore = useLoadingStore()
+  loadingStore.finish()
 })
 
 export default router

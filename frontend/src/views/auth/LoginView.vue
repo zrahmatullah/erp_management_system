@@ -23,8 +23,25 @@
     </div>
 
     <!-- Centered Login Card -->
-    <div class="w-full max-w-[440px] bg-white rounded-3xl shadow-2xl p-8 sm:p-10 border border-slate-100 relative z-10 animate-in fade-in zoom-in-95 duration-200">
+    <div class="w-full max-w-[440px] bg-white rounded-3xl shadow-2xl p-8 sm:p-10 border border-slate-100 relative z-10 animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
       
+      <!-- Loading Overlay -->
+      <transition name="fade">
+        <div 
+          v-if="loading" 
+          class="absolute inset-0 bg-white/92 backdrop-blur-xs rounded-3xl z-20 flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-200"
+        >
+          <div class="relative w-16 h-16 mb-4 flex items-center justify-center">
+            <div class="absolute inset-0 rounded-full border-3 border-blue-100 border-t-blue-600 animate-spin"></div>
+            <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center animate-pulse">
+              <Coffee class="w-5 h-5" />
+            </div>
+          </div>
+          <h3 class="text-base font-bold text-slate-900 tracking-tight">Memproses Masuk...</h3>
+          <p class="text-xs text-slate-500 mt-1 max-w-[220px]">Memverifikasi kredensial dan menyiapkan sesi dashboard</p>
+        </div>
+      </transition>
+
       <!-- Brand & Header -->
       <div class="flex items-center justify-center gap-3 mb-6">
         <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20">
@@ -209,7 +226,9 @@ const handleLogin = async () => {
         []
       )
       notifyStore.success(`Selamat datang kembali, ${data.user.full_name || 'Pengguna'}!`, 'Login Berhasil')
-      router.push('/dashboard')
+      setTimeout(() => {
+        router.push('/dashboard')
+      }, 350)
     } else {
       throw new Error('Respons otentikasi tidak valid dari server')
     }
@@ -217,7 +236,6 @@ const handleLogin = async () => {
     const msg = err.response?.data?.message || err.message || 'Email atau kata sandi tidak valid.'
     errorMessage.value = msg
     notifyStore.error(msg, 'Gagal Masuk')
-  } finally {
     loading.value = false
   }
 }

@@ -1,6 +1,7 @@
 <template>
-  <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
-    <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
+  <Transition name="payment-fade">
+    <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 backdrop-blur-md p-4 transition-all duration-300">
+      <div class="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl shadow-slate-950/25 border border-slate-100/90 transform transition-all duration-300 ease-out">
       <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-5">
         <div class="flex items-center gap-3">
           <h3 class="text-lg font-black text-slate-900 tracking-tight">{{ orderNumber }}</h3>
@@ -125,6 +126,7 @@
       </div>
     </div>
   </div>
+</Transition>
 </template>
 
 <script setup lang="ts">
@@ -182,3 +184,26 @@ const processPayment = async () => {
   }
 }
 </script>
+
+<style scoped>
+.payment-fade-enter-active,
+.payment-fade-leave-active {
+  transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.payment-fade-enter-active > div,
+.payment-fade-leave-active > div {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.payment-fade-enter-from,
+.payment-fade-leave-to {
+  opacity: 0;
+}
+
+.payment-fade-enter-from > div,
+.payment-fade-leave-to > div {
+  opacity: 0;
+  transform: scale(0.94) translateY(8px);
+}
+</style>
