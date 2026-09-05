@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -16,6 +17,8 @@ type OperationalHandler struct {
 }
 
 func NewOperationalHandler(db *pgxpool.Pool) *OperationalHandler {
+	// Auto ensure queue_number column exists in orders
+	_, _ = db.Exec(context.Background(), "ALTER TABLE orders ADD COLUMN IF NOT EXISTS queue_number VARCHAR(20)")
 	return &OperationalHandler{db: db}
 }
 
@@ -66,14 +69,26 @@ func (h *OperationalHandler) GetPOSProducts(w http.ResponseWriter, r *http.Reque
 	writeJSON(w, http.StatusOK, map[string]interface{}{"data": products})
 }
 
-// GetPOSTables returns tables with their current zone and status
+// GetPOSTables returns tables with their current zone and status (and active order if occupied)
 func (h *OperationalHandler) GetPOSTables(w http.ResponseWriter, r *http.Request) {
 	query := `
 		SELECT 
 			t.id, t.table_number, t.capacity, t.status, t.pos_x, t.pos_y,
-			COALESCE(z.id::text, '') as zone_id, COALESCE(z.name, 'Main Floor') as zone_name
+			COALESCE(z.id::text, '') as zone_id, COALESCE(z.name, 'Main Floor') as zone_name,
+			COALESCE(o.order_number, '') as active_order_num,
+			COALESCE(o.queue_number, '') as active_queue_num,
+			COALESCE(o.customer_name, '') as active_customer,
+			COALESCE(o.total_amount, 0) as active_total,
+			COALESCE(to_char(o.created_at, 'HH24:MI'), '') as active_time
 		FROM cafe_tables t
 		LEFT JOIN table_zones z ON t.zone_id = z.id
+		LEFT JOIN LATERAL (
+			SELECT order_number, queue_number, customer_name, total_amount, created_at
+			FROM orders
+			WHERE table_id = t.id AND status IN ('pending', 'processing') AND deleted_at IS NULL
+			ORDER BY created_at DESC
+			LIMIT 1
+		) o ON true
 		WHERE t.deleted_at IS NULL
 		ORDER BY t.table_number ASC`
 
@@ -86,10 +101,13 @@ func (h *OperationalHandler) GetPOSTables(w http.ResponseWriter, r *http.Request
 
 	var tables []map[string]interface{}
 	for rows.Next() {
-		var id, tableNumber, status, zoneID, zoneName string
+		var id, tableNumber, status, zoneID, zoneName, activeOrderNum, activeQueueNum, activeCustomer, activeTime string
 		var capacity, posX, posY int
-		if err := rows.Scan(&id, &tableNumber, &capacity, &status, &posX, &posY, &zoneID, &zoneName); err == nil {
-			tables = append(tables, map[string]interface{}{
+		var activeTotal float64
+		if err := rows.Scan(&id, &tableNumber, &capacity, &status, &posX, &posY, &zoneID, &zoneName,
+			&activeOrderNum, &activeQueueNum, &activeCustomer, &activeTotal, &activeTime); err == nil {
+			
+			tableMap := map[string]interface{}{
 				"id":           id,
 				"table_number": tableNumber,
 				"capacity":     capacity,
@@ -98,7 +116,17 @@ func (h *OperationalHandler) GetPOSTables(w http.ResponseWriter, r *http.Request
 				"pos_y":        posY,
 				"zone_id":      zoneID,
 				"zone_name":    zoneName,
-			})
+			}
+			if activeOrderNum != "" {
+				tableMap["active_order"] = map[string]interface{}{
+					"order_number": activeOrderNum,
+					"queue_number": activeQueueNum,
+					"customer":     activeCustomer,
+					"total":        activeTotal,
+					"time":         activeTime,
+				}
+			}
+			tables = append(tables, tableMap)
 		}
 	}
 	if tables == nil {
@@ -152,6 +180,233 @@ func (h *OperationalHandler) GetPOSOrders(w http.ResponseWriter, r *http.Request
 	writeJSON(w, http.StatusOK, map[string]interface{}{"data": orders})
 }
 
+// GetPOSOrdersActive returns active orders with items for cashier billing
+func (h *OperationalHandler) GetPOSOrdersActive(w http.ResponseWriter, r *http.Request) {
+	query := `
+		SELECT 
+			o.id, o.order_number, COALESCE(o.queue_number, '-') as queue_number,
+			COALESCE(o.customer_name, 'Guest') as customer_name,
+			o.order_type, o.status, o.subtotal, o.tax_amount, o.total_amount,
+			COALESCE(t.table_number, 'Takeaway') as table_number,
+			COALESCE(z.name, 'Lantai 1') as zone_name,
+			o.created_at,
+			COALESCE(
+				json_agg(
+					json_build_object(
+						'id', oi.id,
+						'name', p.name,
+						'quantity', oi.quantity,
+						'unit_price', oi.unit_price,
+						'total_price', oi.total_price,
+						'kitchen_status', oi.kitchen_status
+					)
+				) FILTER (WHERE oi.id IS NOT NULL), '[]'
+			) as items
+		FROM orders o
+		LEFT JOIN cafe_tables t ON o.table_id = t.id
+		LEFT JOIN table_zones z ON t.zone_id = z.id
+		LEFT JOIN order_items oi ON o.id = oi.order_id
+		LEFT JOIN products p ON oi.product_id = p.id
+		WHERE o.deleted_at IS NULL AND o.status IN ('pending', 'processing')
+		GROUP BY o.id, t.table_number, z.name
+		ORDER BY o.created_at DESC`
+
+	rows, err := h.db.Query(r.Context(), query)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	defer rows.Close()
+
+	var orders []map[string]interface{}
+	for rows.Next() {
+		var id, orderNum, queueNum, customer, orderType, status, tableNum, zoneName, itemsJSON string
+		var subtotal, tax, total float64
+		var createdAt time.Time
+		if err := rows.Scan(&id, &orderNum, &queueNum, &customer, &orderType, &status, &subtotal, &tax, &total, &tableNum, &zoneName, &createdAt, &itemsJSON); err == nil {
+			var items []map[string]interface{}
+			_ = json.Unmarshal([]byte(itemsJSON), &items)
+			if items == nil {
+				items = []map[string]interface{}{}
+			}
+
+			orders = append(orders, map[string]interface{}{
+				"id":               id,
+				"order_number":     orderNum,
+				"queue_number":     queueNum,
+				"customer":         customer,
+				"order_type":       orderType,
+				"status":           status,
+				"subtotal":         subtotal,
+				"tax":              tax,
+				"total":            total,
+				"table_number":     tableNum,
+				"zone_name":        zoneName,
+				"created_at":       createdAt.Format("15:04:05"),
+				"duration_minutes": int(time.Since(createdAt).Minutes()),
+				"items":            items,
+			})
+		}
+	}
+	if orders == nil {
+		orders = []map[string]interface{}{}
+	}
+	writeJSON(w, http.StatusOK, map[string]interface{}{"data": orders})
+}
+
+// GetTableOrderDetail returns active order and items for a specific table
+func (h *OperationalHandler) GetTableOrderDetail(w http.ResponseWriter, r *http.Request) {
+	tableParam := chi.URLParam(r, "id")
+	query := `
+		SELECT 
+			o.id, o.order_number, COALESCE(o.queue_number, '-') as queue_number,
+			COALESCE(o.customer_name, 'Guest') as customer_name,
+			o.order_type, o.status, o.subtotal, o.tax_amount, o.total_amount,
+			t.table_number, COALESCE(z.name, 'Lantai 1') as zone_name,
+			COALESCE(
+				json_agg(
+					json_build_object(
+						'id', oi.id,
+						'name', p.name,
+						'quantity', oi.quantity,
+						'unit_price', oi.unit_price,
+						'total_price', oi.total_price,
+						'kitchen_status', oi.kitchen_status
+					)
+				) FILTER (WHERE oi.id IS NOT NULL), '[]'
+			) as items
+		FROM orders o
+		JOIN cafe_tables t ON o.table_id = t.id
+		LEFT JOIN table_zones z ON t.zone_id = z.id
+		LEFT JOIN order_items oi ON o.id = oi.order_id
+		LEFT JOIN products p ON oi.product_id = p.id
+		WHERE (t.id::text = $1 OR t.table_number = $1)
+		  AND o.deleted_at IS NULL AND o.status IN ('pending', 'processing')
+		GROUP BY o.id, t.table_number, z.name
+		ORDER BY o.created_at DESC
+		LIMIT 1`
+
+	var id, orderNum, queueNum, customer, orderType, status, tableNum, zoneName, itemsJSON string
+	var subtotal, tax, total float64
+	err := h.db.QueryRow(r.Context(), query, tableParam).Scan(
+		&id, &orderNum, &queueNum, &customer, &orderType, &status, &subtotal, &tax, &total, &tableNum, &zoneName, &itemsJSON,
+	)
+	if err != nil {
+		writeJSON(w, http.StatusOK, map[string]interface{}{"data": nil})
+		return
+	}
+
+	var items []map[string]interface{}
+	_ = json.Unmarshal([]byte(itemsJSON), &items)
+	if items == nil {
+		items = []map[string]interface{}{}
+	}
+
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"data": map[string]interface{}{
+			"id":           id,
+			"order_number": orderNum,
+			"queue_number": queueNum,
+			"customer":     customer,
+			"order_type":   orderType,
+			"status":       status,
+			"subtotal":     subtotal,
+			"tax":          tax,
+			"total":        total,
+			"table_number": tableNum,
+			"zone_name":    zoneName,
+			"items":        items,
+		},
+	})
+}
+
+// UpdateTableStatus updates table status manually
+func (h *OperationalHandler) UpdateTableStatus(w http.ResponseWriter, r *http.Request) {
+	tableParam := chi.URLParam(r, "id")
+	var body struct {
+		Status string `json:"status"` // 'available', 'occupied', 'reserved', 'billing'
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, "Invalid payload")
+		return
+	}
+	_, err := h.db.Exec(r.Context(), "UPDATE cafe_tables SET status = $1, updated_at = NOW() WHERE id::text = $2 OR table_number = $2", body.Status, tableParam)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]interface{}{"success": true})
+}
+
+// GetTakeawayOrders returns active takeaway & delivery orders
+func (h *OperationalHandler) GetTakeawayOrders(w http.ResponseWriter, r *http.Request) {
+	query := `
+		SELECT 
+			o.id, o.order_number, COALESCE(o.queue_number, 'TA-01') as queue_number,
+			COALESCE(o.customer_name, 'Pelanggan Takeaway') as customer_name,
+			o.order_type, o.status, o.subtotal, o.tax_amount, o.total_amount,
+			COALESCE(o.notes, '') as notes, o.created_at,
+			COALESCE(
+				json_agg(
+					json_build_object(
+						'id', oi.id,
+						'name', p.name,
+						'quantity', oi.quantity,
+						'kitchen_status', oi.kitchen_status
+					)
+				) FILTER (WHERE oi.id IS NOT NULL), '[]'
+			) as items
+		FROM orders o
+		LEFT JOIN order_items oi ON o.id = oi.order_id
+		LEFT JOIN products p ON oi.product_id = p.id
+		WHERE o.deleted_at IS NULL 
+		  AND o.order_type IN ('takeaway', 'delivery')
+		  AND o.status IN ('pending', 'processing')
+		GROUP BY o.id
+		ORDER BY o.created_at ASC`
+
+	rows, err := h.db.Query(r.Context(), query)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	defer rows.Close()
+
+	var list []map[string]interface{}
+	for rows.Next() {
+		var id, orderNum, queueNum, customer, orderType, status, notes, itemsJSON string
+		var subtotal, tax, total float64
+		var createdAt time.Time
+		if err := rows.Scan(&id, &orderNum, &queueNum, &customer, &orderType, &status, &subtotal, &tax, &total, &notes, &createdAt, &itemsJSON); err == nil {
+			var items []map[string]interface{}
+			_ = json.Unmarshal([]byte(itemsJSON), &items)
+			if items == nil {
+				items = []map[string]interface{}{}
+			}
+
+			list = append(list, map[string]interface{}{
+				"id":              id,
+				"order_number":    orderNum,
+				"queue_number":    queueNum,
+				"customer_name":   customer,
+				"order_type":      orderType,
+				"status":          status,
+				"subtotal":        subtotal,
+				"tax":             tax,
+				"total":           total,
+				"notes":           notes,
+				"time":            createdAt.Format("15:04"),
+				"elapsed_minutes": int(time.Since(createdAt).Minutes()),
+				"items":           items,
+			})
+		}
+	}
+	if list == nil {
+		list = []map[string]interface{}{}
+	}
+	writeJSON(w, http.StatusOK, map[string]interface{}{"data": list})
+}
+
 // CreatePOSOrder creates a new order and items in database
 func (h *OperationalHandler) CreatePOSOrder(w http.ResponseWriter, r *http.Request) {
 	var body struct {
@@ -174,9 +429,27 @@ func (h *OperationalHandler) CreatePOSOrder(w http.ResponseWriter, r *http.Reque
 
 	orderID := uuid.New().String()
 	orderNum := fmt.Sprintf("ORD-%s", time.Now().Format("20060102-150405"))
-	if body.OrderType == "" {
-		body.OrderType = "dine_in"
+	orderType := body.OrderType
+	if orderType == "" {
+		orderType = "dine_in"
 	}
+
+	// Generate Queue Number by Order Type
+	var prefix string
+	switch orderType {
+	case "takeaway":
+		prefix = "TA"
+	case "delivery":
+		prefix = "DL"
+	default:
+		prefix = "D"
+	}
+
+	var dailyCount int
+	_ = h.db.QueryRow(r.Context(), `
+		SELECT COUNT(*) FROM orders 
+		WHERE order_type = $1 AND created_at >= CURRENT_DATE`, orderType).Scan(&dailyCount)
+	queueNumber := fmt.Sprintf("%s-%02d", prefix, dailyCount+1)
 
 	var subtotal float64
 	for _, it := range body.Items {
@@ -192,22 +465,31 @@ func (h *OperationalHandler) CreatePOSOrder(w http.ResponseWriter, r *http.Reque
 	}
 	defer tx.Rollback(r.Context())
 
-	// Lookup table_id if provided
+	// Lookup table_id if provided & dine-in
 	var tableID *string
-	if body.TableNumber != "" {
+	if body.TableNumber != "" && orderType == "dine_in" {
 		var tid string
 		if err := tx.QueryRow(r.Context(), "SELECT id FROM cafe_tables WHERE table_number = $1 LIMIT 1", body.TableNumber).Scan(&tid); err == nil {
 			tableID = &tid
-			_, _ = tx.Exec(r.Context(), "UPDATE cafe_tables SET status = 'occupied' WHERE id = $1", tid)
+			_, _ = tx.Exec(r.Context(), "UPDATE cafe_tables SET status = 'occupied', updated_at = NOW() WHERE id = $1", tid)
 		}
 	}
 
-	// Insert order
+	customer := body.CustomerName
+	if customer == "" {
+		if orderType == "dine_in" && body.TableNumber != "" {
+			customer = fmt.Sprintf("Tamu %s", body.TableNumber)
+		} else {
+			customer = fmt.Sprintf("Pelanggan %s", prefix)
+		}
+	}
+
+	// Insert order with queue_number
 	branchID := "b1111111-0000-0000-0000-000000000001"
 	_, err = tx.Exec(r.Context(), `
-		INSERT INTO orders (id, branch_id, order_number, table_id, customer_name, order_type, status, subtotal, tax_amount, total_amount, notes)
-		VALUES ($1, $2, $3, $4, $5, $6, 'processing', $7, $8, $9, $10)`,
-		orderID, branchID, orderNum, tableID, body.CustomerName, body.OrderType, subtotal, tax, total, body.Notes)
+		INSERT INTO orders (id, branch_id, order_number, queue_number, table_id, customer_name, order_type, status, subtotal, tax_amount, total_amount, notes)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, 'processing', $8, $9, $10, $11)`,
+		orderID, branchID, orderNum, queueNumber, tableID, customer, orderType, subtotal, tax, total, body.Notes)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -235,7 +517,83 @@ func (h *OperationalHandler) CreatePOSOrder(w http.ResponseWriter, r *http.Reque
 		"success":      true,
 		"order_id":     orderID,
 		"order_number": orderNum,
+		"queue_number": queueNumber,
+		"order_type":   orderType,
 		"total":        total,
+	})
+}
+
+// PayOrder records payment and releases table back to available
+func (h *OperationalHandler) PayOrder(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	var body struct {
+		PaymentMethod string  `json:"payment_method"`
+		AmountPaid    float64 `json:"amount_paid"`
+		TotalAmount   float64 `json:"total_amount"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, "Invalid payload")
+		return
+	}
+	if body.PaymentMethod == "" {
+		body.PaymentMethod = "cash"
+	}
+
+	tx, err := h.db.Begin(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	defer tx.Rollback(r.Context())
+
+	var tableID *string
+	var totalAmount float64
+	err = tx.QueryRow(r.Context(), "SELECT table_id, total_amount FROM orders WHERE id = $1", id).Scan(&tableID, &totalAmount)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "Order not found")
+		return
+	}
+
+	changeDue := body.AmountPaid - totalAmount
+	if changeDue < 0 {
+		changeDue = 0
+	}
+
+	// Insert payment
+	payID := uuid.New().String()
+	_, err = tx.Exec(r.Context(), `
+		INSERT INTO payments (id, order_id, payment_method, amount_paid, change_due, status)
+		VALUES ($1, $2, $3, $4, $5, 'completed')`,
+		payID, id, body.PaymentMethod, body.AmountPaid, changeDue)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// Update order status to completed
+	_, err = tx.Exec(r.Context(), "UPDATE orders SET status = 'completed', updated_at = NOW() WHERE id = $1", id)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// Release table back to available
+	if tableID != nil {
+		_, err = tx.Exec(r.Context(), "UPDATE cafe_tables SET status = 'available', updated_at = NOW() WHERE id = $1", *tableID)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+	}
+
+	// Mark order items kitchen_status as served if they are ready or cooking
+	_, _ = tx.Exec(r.Context(), "UPDATE order_items SET kitchen_status = 'served' WHERE order_id = $1 AND kitchen_status IN ('ready', 'cooking')", id)
+
+	_ = tx.Commit(r.Context())
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"success":    true,
+		"message":    "Pembayaran berhasil diproses dan meja telah tersedia kembali",
+		"change_due": changeDue,
 	})
 }
 
@@ -246,7 +604,9 @@ func (h *OperationalHandler) CreatePOSOrder(w http.ResponseWriter, r *http.Reque
 func (h *OperationalHandler) GetKDSTickets(w http.ResponseWriter, r *http.Request) {
 	query := `
 		SELECT 
-			oi.id, oi.order_id, o.order_number, COALESCE(t.table_number, 'Takeaway') as table_number,
+			oi.id, oi.order_id, o.order_number, COALESCE(o.queue_number, '-') as queue_number,
+			o.order_type, COALESCE(o.customer_name, 'Guest') as customer_name,
+			COALESCE(t.table_number, '-') as table_number,
 			p.name as product_name, oi.quantity, oi.kitchen_status, oi.station,
 			COALESCE(oi.notes, '') as notes, o.created_at
 		FROM order_items oi
@@ -265,22 +625,25 @@ func (h *OperationalHandler) GetKDSTickets(w http.ResponseWriter, r *http.Reques
 
 	var tickets []map[string]interface{}
 	for rows.Next() {
-		var id, orderID, orderNum, tableNum, prodName, status, station, notes string
+		var id, orderID, orderNum, queueNum, orderType, customerName, tableNum, prodName, status, station, notes string
 		var qty int
 		var createdAt time.Time
-		if err := rows.Scan(&id, &orderID, &orderNum, &tableNum, &prodName, &qty, &status, &station, &notes, &createdAt); err == nil {
+		if err := rows.Scan(&id, &orderID, &orderNum, &queueNum, &orderType, &customerName, &tableNum, &prodName, &qty, &status, &station, &notes, &createdAt); err == nil {
 			tickets = append(tickets, map[string]interface{}{
-				"id":           id,
-				"order_id":     orderID,
-				"order_number": orderNum,
-				"table_number": tableNum,
-				"product_name": prodName,
-				"quantity":     qty,
-				"status":       status,
-				"station":      station,
-				"notes":        notes,
-				"time":         createdAt.Format("15:04"),
-				"elapsed_min":  int(time.Since(createdAt).Minutes()),
+				"id":            id,
+				"order_id":      orderID,
+				"order_number":  orderNum,
+				"queue_number":  queueNum,
+				"order_type":    orderType,
+				"customer_name": customerName,
+				"table_number":  tableNum,
+				"product_name":  prodName,
+				"quantity":      qty,
+				"status":        status,
+				"station":       station,
+				"notes":         notes,
+				"time":          createdAt.Format("15:04"),
+				"elapsed_min":   int(time.Since(createdAt).Minutes()),
 			})
 		}
 	}

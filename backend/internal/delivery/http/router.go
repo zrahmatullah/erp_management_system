@@ -47,8 +47,13 @@ func SetupRouter(
 		r.Route("/pos", func(r chi.Router) {
 			r.Get("/products", opHandler.GetPOSProducts)
 			r.Get("/tables", opHandler.GetPOSTables)
+			r.Get("/tables/{id}/order", opHandler.GetTableOrderDetail)
+			r.Put("/tables/{id}/status", opHandler.UpdateTableStatus)
 			r.Get("/orders", opHandler.GetPOSOrders)
+			r.Get("/orders/active", opHandler.GetPOSOrdersActive)
 			r.Post("/orders", opHandler.CreatePOSOrder)
+			r.Post("/orders/{id}/pay", opHandler.PayOrder)
+			r.Get("/takeaways", opHandler.GetTakeawayOrders)
 		})
 
 		// Kitchen Display System

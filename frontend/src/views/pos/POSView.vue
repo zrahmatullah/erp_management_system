@@ -222,18 +222,22 @@
             <button
               @click="saveOrderToTable"
               :disabled="cart.length === 0 || savingOrder"
-              class="py-2 px-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold transition-colors disabled:opacity-50 cursor-pointer"
+              class="py-2 px-3 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white rounded-xl text-xs font-bold transition-all disabled:opacity-50 cursor-pointer flex items-center justify-center gap-1.5 shadow-sm shadow-amber-500/20"
             >
-              {{ savingOrder ? 'Menyimpan...' : 'Kirim ke Meja' }}
+              <Send class="w-3.5 h-3.5" />
+              <span>
+                {{ savingOrder ? 'Mengirim...' : (orderType === 'Dine-in' ? 'Kirim ke Meja' : (orderType === 'Takeaway' ? 'Pesan Takeaway' : 'Pesan Delivery')) }}
+              </span>
             </button>
           </div>
 
           <button
             @click="openPayment"
             :disabled="cart.length === 0"
-            class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs shadow-lg shadow-blue-600/30 transition-all disabled:opacity-50 cursor-pointer"
+            class="w-full py-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-xl font-bold text-xs shadow-lg shadow-blue-600/30 transition-all disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
           >
-            Bayar Sekarang (Rp {{ grandTotal.toLocaleString('id-ID') }})
+            <CreditCard class="w-4 h-4" />
+            <span>Bayar Sekarang (Rp {{ grandTotal.toLocaleString('id-ID') }})</span>
           </button>
         </div>
       </div>
@@ -299,10 +303,15 @@
               <div class="flex items-start justify-between">
                 <div class="flex items-center gap-2.5">
                   <div class="px-3 py-1.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-700 font-black text-sm">
-                    {{ order.table_number }}
+                    {{ order.table_number && order.table_number !== '-' ? `Meja ${order.table_number}` : (order.order_type === 'takeaway' ? 'Takeaway' : 'Delivery') }}
                   </div>
                   <div>
-                    <h4 class="font-bold text-slate-900 text-xs">{{ order.customer }}</h4>
+                    <div class="flex items-center gap-1.5">
+                      <h4 class="font-bold text-slate-900 text-xs">{{ order.customer }}</h4>
+                      <span v-if="order.queue_number && order.queue_number !== '-'" class="px-2 py-0.5 rounded-md bg-indigo-600 text-white font-black text-[10px] shadow-xs">
+                        #{{ order.queue_number }}
+                      </span>
+                    </div>
                     <p class="text-[10px] text-slate-400 font-mono">{{ order.order_number }} • {{ order.zone_name }}</p>
                   </div>
                 </div>
@@ -375,7 +384,11 @@
       :show="showPaymentModal"
       :total="grandTotal"
       :order-type="orderType"
-      :table="selectedTable"
+      :table="orderType === 'Dine-in' ? selectedTable : '-'"
+      :raw-items="cart"
+      :items="cart.map(i => ({ name: i.name, qty: i.qty, price: i.price }))"
+      :subtotal="subtotal"
+      :tax="taxAmount"
       @close="showPaymentModal = false"
       @success="handlePaymentSuccess"
     />
@@ -386,8 +399,9 @@
       :show="showBillingPaymentModal"
       :order-id="selectedOrderForPayment.id"
       :order-number="selectedOrderForPayment.order_number"
+      :queue-number="selectedOrderForPayment.queue_number"
       :table="selectedOrderForPayment.table_number"
-      :order-type="selectedOrderForPayment.order_type || 'Dine-in'"
+      :order-type="selectedOrderForPayment.order_type === 'dine_in' ? 'Dine-in' : (selectedOrderForPayment.order_type === 'takeaway' ? 'Takeaway' : 'Delivery')"
       :items="selectedOrderForPayment.items?.map((i: any) => ({ name: i.name, qty: i.quantity, price: i.unit_price }))"
       :subtotal="selectedOrderForPayment.subtotal"
       :tax="selectedOrderForPayment.tax"
@@ -414,7 +428,8 @@ import {
   CreditCard,
   Receipt,
   RotateCw,
-  CheckCircle2
+  CheckCircle2,
+  Send
 } from 'lucide-vue-next'
 import { useNotificationStore } from '@/stores/notification.store'
 
@@ -566,9 +581,10 @@ const saveOrderToTable = async () => {
   if (cart.value.length === 0) return
   savingOrder.value = true
   try {
-    await axios.post('/api/v1/pos/orders', {
-      customer_name: `Tamu Meja ${selectedTable.value}`,
-      table_number: selectedTable.value,
+    const isDineIn = orderType.value === 'Dine-in'
+    const res = await axios.post('/api/v1/pos/orders', {
+      customer_name: isDineIn ? `Tamu Meja ${selectedTable.value}` : `Pelanggan ${orderType.value}`,
+      table_number: isDineIn ? selectedTable.value : '',
       order_type: orderType.value.toLowerCase().replace('-', '_'),
       items: cart.value.map(i => ({
         product_id: i.id,
@@ -576,7 +592,13 @@ const saveOrderToTable = async () => {
         unit_price: i.price
       }))
     })
-    notifyStore.success(`Pesanan Meja ${selectedTable.value} berhasil disimpan dan dikirim ke dapur!`, 'Pesanan Berhasil')
+
+    const queueNum = res.data?.queue_number || '-'
+    if (isDineIn) {
+      notifyStore.success(`Pesanan Meja ${selectedTable.value} berhasil disimpan! No. Antrian: #${queueNum}`, 'Meja Occupied & Pesanan Terkirim')
+    } else {
+      notifyStore.success(`Pesanan ${orderType.value} berhasil diproses! No. Antrian: #${queueNum}`, 'Antrian Dapur Dibuat')
+    }
     cart.value = []
     await fetchActiveOrders()
     await fetchPOSData()
@@ -592,9 +614,11 @@ const openPayment = () => {
   showPaymentModal.value = true
 }
 
-const handlePaymentSuccess = () => {
+const handlePaymentSuccess = async () => {
   cart.value = []
   showPaymentModal.value = false
+  await fetchActiveOrders()
+  await fetchPOSData()
 }
 
 // Tab 2 Billing Computed & Handlers

@@ -3,9 +3,12 @@
     <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 backdrop-blur-md p-4 transition-all duration-300">
       <div class="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl shadow-slate-950/25 border border-slate-100/90 transform transition-all duration-300 ease-out">
       <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-5">
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2.5 flex-wrap">
           <h3 class="text-lg font-black text-slate-900 tracking-tight">{{ orderNumber }}</h3>
-          <span class="px-2.5 py-0.5 rounded-lg text-xs font-bold bg-blue-50 text-blue-600 border border-blue-100 flex items-center gap-1.5">
+          <span v-if="queueNumber && queueNumber !== '-'" class="px-2.5 py-0.5 rounded-lg text-xs font-black bg-indigo-600 text-white shadow-xs">
+            Antrian #{{ queueNumber }}
+          </span>
+          <span v-if="table && table !== '-'" class="px-2.5 py-0.5 rounded-lg text-xs font-bold bg-blue-50 text-blue-600 border border-blue-100 flex items-center gap-1.5">
             <Armchair class="w-3.5 h-3.5" /> Meja {{ table }}
           </span>
           <span class="px-2.5 py-0.5 rounded-lg text-xs font-bold bg-amber-50 text-amber-600 border border-amber-100 flex items-center gap-1.5">
@@ -139,9 +142,11 @@ const props = defineProps({
   show: Boolean,
   orderId: { type: String, default: '' },
   orderNumber: { type: String, default: '#ORD-1209' },
+  queueNumber: { type: String, default: '' },
   table: { type: String, default: 'T-05' },
   orderType: { type: String, default: 'Dine-in' },
   items: { type: Array as () => Array<{ name: string, qty: number, price: number }>, default: () => [] },
+  rawItems: { type: Array as () => Array<{ id: string, name: string, price: number, qty: number }>, default: () => [] },
   subtotal: { type: Number, default: 0 },
   tax: { type: Number, default: 0 },
   total: { type: Number, default: 0 }
@@ -166,14 +171,30 @@ const processPayment = async () => {
 
   processing.value = true
   try {
-    if (props.orderId) {
-      await axios.post(`/api/v1/pos/orders/${props.orderId}/pay`, {
+    let activeId = props.orderId
+    // If order has not been created yet (direct payment from cart)
+    if (!activeId && props.rawItems && props.rawItems.length > 0) {
+      const orderRes = await axios.post('/api/v1/pos/orders', {
+        customer_name: props.orderType === 'Dine-in' ? `Tamu ${props.table}` : 'Pelanggan Kasir',
+        table_number: props.orderType === 'Dine-in' ? props.table : '',
+        order_type: props.orderType.toLowerCase().replace('-', '_'),
+        items: props.rawItems.map(i => ({
+          product_id: i.id,
+          quantity: i.qty,
+          unit_price: i.price
+        }))
+      })
+      activeId = orderRes.data?.order_id
+    }
+
+    if (activeId) {
+      await axios.post(`/api/v1/pos/orders/${activeId}/pay`, {
         payment_method: method.value,
         amount_paid: paidAmount.value,
         total_amount: props.total
       })
     }
-    notifyStore.success('Pembayaran berhasil diproses!')
+    notifyStore.success('Pembayaran berhasil diproses dan status meja telah tersedia kembali!')
     emit('success')
     emit('close')
   } catch (err: any) {

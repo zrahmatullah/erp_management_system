@@ -16,7 +16,12 @@
       <div v-if="table?.status === 'occupied' || table?.status === 'billing'" class="space-y-4">
         <div class="p-4 bg-slate-50 rounded-xl border border-slate-200/80 flex items-center justify-between">
           <div>
-            <div class="text-xs font-bold text-slate-500 uppercase">Pesanan Aktif</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-bold text-slate-500 uppercase">Pesanan Aktif</span>
+              <span v-if="(orderDetail?.queue_number && orderDetail.queue_number !== '-') || (table?.queueNumber && table.queueNumber !== '-')" class="px-2 py-0.5 rounded-md bg-indigo-600 text-white font-black text-[10px] shadow-xs">
+                Antrian #{{ orderDetail?.queue_number || table?.queueNumber }}
+              </span>
+            </div>
             <div class="text-base font-black text-slate-900 font-mono">{{ orderDetail?.order_number || table?.orderNumber || 'ORD-ACTIVE' }}</div>
             <div class="text-xs text-slate-600 font-medium mt-0.5">Tamu: <strong>{{ orderDetail?.customer || table?.customer || 'Pelanggan' }}</strong></div>
           </div>
@@ -112,6 +117,7 @@
         :show="showPayment"
         :order-id="orderDetail.id"
         :order-number="orderDetail.order_number"
+        :queue-number="orderDetail.queue_number || table?.queueNumber"
         :table="table?.code"
         :order-type="'Dine-in'"
         :items="orderDetail.items?.map((i: any) => ({ name: i.name, qty: i.quantity, price: i.unit_price }))"
