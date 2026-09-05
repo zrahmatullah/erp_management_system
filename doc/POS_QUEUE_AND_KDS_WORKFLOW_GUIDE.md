@@ -135,5 +135,33 @@ Halaman `/pos/kds` dilengkapi dengan antarmuka real-time dark mode:
 | `POST` | `/api/v1/pos/orders` | Membuat pesanan baru, generate `queue_number`, dan update meja `occupied` |
 | `POST` | `/api/v1/pos/orders/{id}/pay` | Memproses pembayaran, set order `completed`, dan kembalikan meja ke `available` |
 | `GET` | `/api/v1/pos/takeaways` | Mengambil daftar antrian aktif Takeaway & Delivery untuk Tab 5 |
+| `GET` | `/api/v1/pos/transactions` | Mengambil daftar transaksi selesai (`completed`) beserta payments dan items |
 | `GET` | `/api/v1/kds/tickets` | Mengambil tiket KDS dapur dengan nomor antrian dan tipe pesanan |
 | `PUT` | `/api/v1/kds/items/{id}/status` | Mengupdate progres masak item dapur (`cooking`, `ready`, `served`) |
+
+---
+
+## 7. Riwayat Transaksi & Cetak Struk Otomatis (Blob Thermal Printing)
+
+### Alur Pembayaran Selesai & Cetak Otomatis
+1. **Animasi Pemrosesan (Loading)**:
+   - Saat kasir menekan tombol *"Bayar Sekarang"*, modal beralih ke state pemrosesan pembayaran dengan animasi indikator modern.
+2. **Animasi Pembayaran Sukses (Payment Done)**:
+   - Setelah API backend berhasil merespons, modal menampilkan badge **LUNAS**, checkmark animasi, dan ringkasan transaksi (Nomor Order, Nomor Antrian, Meja/Takeaway, Nominal Bayar, dan Kembalian).
+3. **Pencetakan Struk Otomatis (Blob Receipt Printing)**:
+   - Sistem secara otomatis men-generate template struk thermal standar 80mm menggunakan HTML Blob (`new Blob([html], { type: 'text/html' })`).
+   - Melalui hidden iframe yang terisolasi, struk langsung dikirim ke dialog printer kasir tanpa memblokir tab browser (`iframe.contentWindow.print()`).
+   - Tersedia juga tombol *"Cetak Ulang Struk"* untuk mencetak ulang struk kapan saja.
+
+### Sub-menu Riwayat Transaksi (`/pos/transactions`)
+1. **Akses Menu**:
+   - Sidebar navigasi: `POS & Pesanan` $\rightarrow$ `Riwayat Transaksi`.
+   - Di kasir POS: Tersedia sebagai Tab ke-3 *"Riwayat Transaksi & Struk"*.
+2. **Fitur & Kemampuan**:
+   - Ringkasan Omzet: Total Omzet Lunas, Rata-rata Nilai Struk, Omzet Tunai, dan Omzet Non-Tunai (QRIS/Transfer/E-Wallet).
+   - Filter & Pencarian Cepat: Berdasarkan Nomor Order, Nomor Antrian (#001), Nama Pelanggan, atau Nomor Meja.
+   - Filter Metode Pembayaran & Tipe Pesanan (Dine-in, Takeaway, Delivery).
+   - Tombol **"Cetak Struk"** per transaksi untuk mencetak ulang struk pembayaran dengan format thermal 80mm.
+   - Tombol **"Lihat Detail Struk"** untuk simulasi preview struk kertas thermal kasir.
+
+

@@ -139,6 +139,8 @@ const menuItems = [
       { label: 'Kasir POS', path: '/pos' },
       { label: 'Denah Meja', path: '/pos/tables' },
       { label: 'Kitchen KDS', path: '/pos/kds' }
+      { label: 'Kitchen KDS', path: '/pos/kds' },
+      { label: 'Riwayat Transaksi', path: '/pos/transactions' }
     ]
   },
   {

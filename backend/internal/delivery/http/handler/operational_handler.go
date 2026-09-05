@@ -106,7 +106,7 @@ func (h *OperationalHandler) GetPOSTables(w http.ResponseWriter, r *http.Request
 		var activeTotal float64
 		if err := rows.Scan(&id, &tableNumber, &capacity, &status, &posX, &posY, &zoneID, &zoneName,
 			&activeOrderNum, &activeQueueNum, &activeCustomer, &activeTotal, &activeTime); err == nil {
-			
+
 			tableMap := map[string]interface{}{
 				"id":           id,
 				"table_number": tableNumber,
@@ -589,12 +589,114 @@ func (h *OperationalHandler) PayOrder(w http.ResponseWriter, r *http.Request) {
 	// Mark order items kitchen_status as served if they are ready or cooking
 	_, _ = tx.Exec(r.Context(), "UPDATE order_items SET kitchen_status = 'served' WHERE order_id = $1 AND kitchen_status IN ('ready', 'cooking')", id)
 
+	var orderNum, queueNum, customerName, orderType string
+	_ = tx.QueryRow(r.Context(), "SELECT order_number, COALESCE(queue_number, '-'), COALESCE(customer_name, 'Guest'), order_type FROM orders WHERE id = $1", id).Scan(&orderNum, &queueNum, &customerName, &orderType)
+
 	_ = tx.Commit(r.Context())
 	writeJSON(w, http.StatusOK, map[string]interface{}{
-		"success":    true,
-		"message":    "Pembayaran berhasil diproses dan meja telah tersedia kembali",
-		"change_due": changeDue,
+		"success":        true,
+		"message":        "Pembayaran berhasil diproses dan meja telah tersedia kembali",
+		"order_id":       id,
+		"order_number":   orderNum,
+		"queue_number":   queueNum,
+		"customer_name":  customerName,
+		"order_type":     orderType,
+		"payment_method": body.PaymentMethod,
+		"amount_paid":    body.AmountPaid,
+		"total_amount":   totalAmount,
+		"change_due":     changeDue,
+		"paid_at":        time.Now().Format("2006-01-02 15:04:05"),
 	})
+}
+
+// GetPOSTransactions returns completed transactions with payments and items
+func (h *OperationalHandler) GetPOSTransactions(w http.ResponseWriter, r *http.Request) {
+	query := `
+		SELECT 
+			o.id, o.order_number, COALESCE(o.queue_number, '-') as queue_number,
+			COALESCE(o.customer_name, 'Guest') as customer_name,
+			o.order_type, o.status, o.subtotal, o.tax_amount, o.total_amount,
+			COALESCE(t.table_number, '-') as table_number,
+			COALESCE(z.name, '-') as zone_name,
+			o.created_at,
+			COALESCE(p.payment_method, 'Tunai') as payment_method,
+			COALESCE(p.amount_paid, o.total_amount) as amount_paid,
+			COALESCE(p.change_due, 0) as change_due,
+			COALESCE(to_char(p.paid_at, 'YYYY-MM-DD HH24:MI:SS'), to_char(o.updated_at, 'YYYY-MM-DD HH24:MI:SS')) as paid_at,
+			COALESCE(
+				json_agg(
+					json_build_object(
+						'id', oi.id,
+						'name', pr.name,
+						'quantity', oi.quantity,
+						'unit_price', oi.unit_price,
+						'total_price', oi.total_price
+					)
+				) FILTER (WHERE oi.id IS NOT NULL), '[]'
+			) as items
+		FROM orders o
+		LEFT JOIN cafe_tables t ON o.table_id = t.id
+		LEFT JOIN table_zones z ON t.zone_id = z.id
+		LEFT JOIN LATERAL (
+			SELECT payment_method, amount_paid, change_due, paid_at
+			FROM payments
+			WHERE order_id = o.id
+			ORDER BY paid_at DESC
+			LIMIT 1
+		) p ON true
+		LEFT JOIN order_items oi ON o.id = oi.order_id
+		LEFT JOIN products pr ON oi.product_id = pr.id
+		WHERE o.deleted_at IS NULL AND o.status = 'completed'
+		GROUP BY o.id, t.table_number, z.name, p.payment_method, p.amount_paid, p.change_due, p.paid_at
+		ORDER BY o.updated_at DESC
+		LIMIT 100`
+
+	rows, err := h.db.Query(r.Context(), query)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	defer rows.Close()
+
+	var transactions []map[string]interface{}
+	for rows.Next() {
+		var id, orderNum, queueNum, customer, orderType, status, tableNum, zoneName, payMethod, paidAt, itemsJSON string
+		var subtotal, tax, total, amountPaid, changeDue float64
+		var createdAt time.Time
+		if err := rows.Scan(&id, &orderNum, &queueNum, &customer, &orderType, &status, &subtotal, &tax, &total,
+			&tableNum, &zoneName, &createdAt, &payMethod, &amountPaid, &changeDue, &paidAt, &itemsJSON); err == nil {
+
+			var items []map[string]interface{}
+			_ = json.Unmarshal([]byte(itemsJSON), &items)
+			if items == nil {
+				items = []map[string]interface{}{}
+			}
+
+			transactions = append(transactions, map[string]interface{}{
+				"id":             id,
+				"order_number":   orderNum,
+				"queue_number":   queueNum,
+				"customer_name":  customer,
+				"order_type":     orderType,
+				"status":         status,
+				"subtotal":       subtotal,
+				"tax_amount":     tax,
+				"total_amount":   total,
+				"table_number":   tableNum,
+				"zone_name":      zoneName,
+				"payment_method": payMethod,
+				"amount_paid":    amountPaid,
+				"change_due":     changeDue,
+				"paid_at":        paidAt,
+				"created_at":     createdAt.Format("2006-01-02 15:04:05"),
+				"items":          items,
+			})
+		}
+	}
+	if transactions == nil {
+		transactions = []map[string]interface{}{}
+	}
+	writeJSON(w, http.StatusOK, map[string]interface{}{"data": transactions})
 }
 
 // -----------------------------------------------------------------------------

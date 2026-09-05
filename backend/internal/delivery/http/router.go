@@ -54,6 +54,7 @@ func SetupRouter(
 			r.Post("/orders", opHandler.CreatePOSOrder)
 			r.Post("/orders/{id}/pay", opHandler.PayOrder)
 			r.Get("/takeaways", opHandler.GetTakeawayOrders)
+			r.Get("/transactions", opHandler.GetPOSTransactions)
 		})
 
 		// Kitchen Display System

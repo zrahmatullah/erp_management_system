@@ -31,6 +31,17 @@
             {{ activeOrders.length }} Tagihan
           </span>
         </button>
+
+        <button
+          @click="activePosTab = 'history'"
+          class="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer"
+          :class="activePosTab === 'history' 
+            ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' 
+            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'"
+        >
+          <ReceiptText class="w-4 h-4" />
+          <span>Riwayat Transaksi & Struk</span>
+        </button>
       </div>
 
       <!-- Active Cashier Bar -->
@@ -245,6 +256,7 @@
 
     <!-- TAB 2: KASIR PEMBAYARAN MEJA (MENUNGGU PEMBAYARAN / BILLING) -->
     <div v-else class="space-y-4">
+    <div v-else-if="activePosTab === 'billing'" class="space-y-4">
       <!-- Filter and Metrics Bar -->
       <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <!-- Zone Filter Pills -->
@@ -378,6 +390,11 @@
       </div>
     </div>
 
+    <!-- TAB 3: RIWAYAT TRANSAKSI & STRUK -->
+    <div v-else-if="activePosTab === 'history'">
+      <TransactionHistoryView />
+    </div>
+
     <!-- Direct Cart Payment Modal -->
     <PaymentModal
       v-if="showPaymentModal"
@@ -417,6 +434,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import axios from 'axios'
 import PaymentModal from './PaymentModal.vue'
+import TransactionHistoryView from './TransactionHistoryView.vue'
 import {
   User,
   Clock,
@@ -427,6 +445,7 @@ import {
   Utensils,
   CreditCard,
   Receipt,
+  ReceiptText,
   RotateCw,
   CheckCircle2,
   Send
@@ -437,6 +456,7 @@ const route = useRoute()
 const notifyStore = useNotificationStore()
 
 const activePosTab = ref('order') // 'order' or 'billing'
+const activePosTab = ref('order') // 'order', 'billing', or 'history'
 const selectedCategory = ref('All')
 const searchQuery = ref('')
 const orderType = ref('Dine-in')
@@ -513,6 +533,8 @@ onMounted(() => {
 
   if (route.query.tab === 'billing') {
     activePosTab.value = 'billing'
+  } else if (route.query.tab === 'history') {
+    activePosTab.value = 'history'
   }
   if (route.query.table) {
     selectedTable.value = String(route.query.table)
