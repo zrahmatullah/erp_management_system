@@ -51,6 +51,11 @@ const routes: Array<RouteRecordRaw> = [
         component: () => import('@/views/inventory/StockList.vue')
       },
       {
+        path: 'inventory/stock-card',
+        name: 'StockCard',
+        component: () => import('@/views/inventory/StockCardView.vue')
+      },
+      {
         path: 'inventory/opname',
         name: 'StockOpname',
         component: () => import('@/views/inventory/StockOpnameView.vue')

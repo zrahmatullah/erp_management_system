@@ -66,6 +66,7 @@ func SetupRouter(
 		// Inventory Operations
 		r.Route("/inventory", func(r chi.Router) {
 			r.Get("/stocks", opHandler.GetInventoryStocks)
+			r.Get("/stock-movements", opHandler.GetStockMovements)
 			r.Get("/purchase-orders", opHandler.GetPurchaseOrders)
 			r.Get("/opnames", opHandler.GetStockOpnames)
 		})

@@ -17,8 +17,55 @@ type OperationalHandler struct {
 }
 
 func NewOperationalHandler(db *pgxpool.Pool) *OperationalHandler {
+	ctx := context.Background()
 	// Auto ensure queue_number column exists in orders
-	_, _ = db.Exec(context.Background(), "ALTER TABLE orders ADD COLUMN IF NOT EXISTS queue_number VARCHAR(20)")
+	_, _ = db.Exec(ctx, "ALTER TABLE orders ADD COLUMN IF NOT EXISTS queue_number VARCHAR(20)")
+
+	// Auto ensure stock columns exist in products
+	_, _ = db.Exec(ctx, "ALTER TABLE products ADD COLUMN IF NOT EXISTS stock NUMERIC(12, 2) NOT NULL DEFAULT 50")
+	_, _ = db.Exec(ctx, "ALTER TABLE products ADD COLUMN IF NOT EXISTS min_stock NUMERIC(12, 2) NOT NULL DEFAULT 5")
+
+	// Auto ensure product_id and balance_after exist in stock_movements
+	_, _ = db.Exec(ctx, "ALTER TABLE stock_movements ADD COLUMN IF NOT EXISTS product_id UUID REFERENCES products(id) ON DELETE SET NULL")
+	_, _ = db.Exec(ctx, "ALTER TABLE stock_movements ADD COLUMN IF NOT EXISTS balance_after NUMERIC(12, 4) DEFAULT 0")
+	_, _ = db.Exec(ctx, "ALTER TABLE stock_movements ALTER COLUMN inventory_item_id DROP NOT NULL")
+
+	// Ensure recipes exist for all catalog products
+	_, _ = db.Exec(ctx, `
+		INSERT INTO product_recipes (product_id, variant_id, inventory_item_id, quantity_required, uom, instructions)
+		VALUES
+		('fa111111-0000-0000-0000-000000000002', NULL, 'f1111111-0000-0000-0000-000000000001', 0.0180, 'kg', '18g espresso beans'),
+		('fa111111-0000-0000-0000-000000000002', NULL, 'f1111111-0000-0000-0000-000000000002', 0.1500, 'liter', '150ml steamed milk'),
+		('fa111111-0000-0000-0000-000000000002', NULL, 'f1111111-0000-0000-0000-000000000005', 1.0000, 'pcs', '1 cup & lid'),
+		('fa111111-0000-0000-0000-000000000003', NULL, 'f1111111-0000-0000-0000-000000000001', 0.0180, 'kg', '18g espresso beans'),
+		('fa111111-0000-0000-0000-000000000003', NULL, 'f1111111-0000-0000-0000-000000000002', 0.1800, 'liter', '180ml steamed milk'),
+		('fa111111-0000-0000-0000-000000000003', NULL, 'f1111111-0000-0000-0000-000000000004', 0.0200, 'bottle', '20ml caramel syrup'),
+		('fa111111-0000-0000-0000-000000000003', NULL, 'f1111111-0000-0000-0000-000000000005', 1.0000, 'pcs', '1 cup & lid'),
+		('fa111111-0000-0000-0000-000000000004', NULL, 'f1111111-0000-0000-0000-000000000007', 0.0200, 'pack', '20g matcha powder'),
+		('fa111111-0000-0000-0000-000000000004', NULL, 'f1111111-0000-0000-0000-000000000002', 0.2000, 'liter', '200ml milk'),
+		('fa111111-0000-0000-0000-000000000004', NULL, 'f1111111-0000-0000-0000-000000000003', 0.0200, 'kg', '20g gula aren'),
+		('fa111111-0000-0000-0000-000000000004', NULL, 'f1111111-0000-0000-0000-000000000005', 1.0000, 'pcs', '1 cup & lid'),
+		('fa111111-0000-0000-0000-000000000006', NULL, 'f1111111-0000-0000-0000-000000000002', 0.1000, 'liter', '100ml cream dairy')
+		ON CONFLICT DO NOTHING`)
+
+	// Ensure initial stock movements if table is empty
+	_, _ = db.Exec(ctx, `
+		INSERT INTO stock_movements (id, inventory_item_id, warehouse_id, type, quantity, balance_after, reference_type, remarks, created_at)
+		SELECT 
+			uuid_generate_v4(),
+			s.inventory_item_id,
+			s.warehouse_id,
+			'in_purchase',
+			s.quantity,
+			s.quantity,
+			'initial_stock',
+			'Saldo Awal Stok Bahan Baku Gudang',
+			NOW() - INTERVAL '3 days'
+		FROM inventory_stocks s
+		WHERE NOT EXISTS (
+			SELECT 1 FROM stock_movements WHERE inventory_item_id = s.inventory_item_id
+		)`)
+
 	return &OperationalHandler{db: db}
 }
 
@@ -26,12 +73,13 @@ func NewOperationalHandler(db *pgxpool.Pool) *OperationalHandler {
 // 1. POS & ORDERS
 // -----------------------------------------------------------------------------
 
-// GetPOSProducts returns all active products with categories and variants
+// GetPOSProducts returns all active products with categories and real-time stock
 func (h *OperationalHandler) GetPOSProducts(w http.ResponseWriter, r *http.Request) {
 	query := `
 		SELECT 
 			p.id, p.name, p.sku, COALESCE(p.description, ''), p.base_price, 
-			p.target_station, COALESCE(p.image_url, ''), c.name as category_name, c.slug as category_slug
+			p.target_station, COALESCE(p.image_url, ''), c.name as category_name, c.slug as category_slug,
+			COALESCE(p.stock, 50) as stock, COALESCE(p.min_stock, 5) as min_stock
 		FROM products p
 		JOIN menu_categories c ON p.category_id = c.id
 		WHERE p.is_active = TRUE AND p.deleted_at IS NULL
@@ -47,19 +95,23 @@ func (h *OperationalHandler) GetPOSProducts(w http.ResponseWriter, r *http.Reque
 	var products []map[string]interface{}
 	for rows.Next() {
 		var id, name, sku, desc, station, img, catName, catSlug string
-		var price float64
-		if err := rows.Scan(&id, &name, &sku, &desc, &price, &station, &img, &catName, &catSlug); err == nil {
+		var price, stock, minStock float64
+		if err := rows.Scan(&id, &name, &sku, &desc, &price, &station, &img, &catName, &catSlug, &stock, &minStock); err == nil {
 			products = append(products, map[string]interface{}{
-				"id":             id,
-				"name":           name,
-				"sku":            sku,
-				"description":    desc,
-				"base_price":     price,
-				"price":          price,
-				"target_station": station,
-				"image_url":      img,
-				"category":       catName,
-				"category_slug":  catSlug,
+				"id":              id,
+				"name":            name,
+				"sku":             sku,
+				"description":     desc,
+				"base_price":      price,
+				"price":           price,
+				"target_station":  station,
+				"image_url":       img,
+				"category":        catName,
+				"category_slug":   catSlug,
+				"stock":           stock,
+				"min_stock":       minStock,
+				"is_out_of_stock": stock <= 0,
+				"is_low_stock":    stock > 0 && stock <= minStock,
 			})
 		}
 	}
@@ -592,6 +644,86 @@ func (h *OperationalHandler) PayOrder(w http.ResponseWriter, r *http.Request) {
 	var orderNum, queueNum, customerName, orderType string
 	_ = tx.QueryRow(r.Context(), "SELECT order_number, COALESCE(queue_number, '-'), COALESCE(customer_name, 'Guest'), order_type FROM orders WHERE id = $1", id).Scan(&orderNum, &queueNum, &customerName, &orderType)
 
+	// DEDUCT STOCK & RECORD TO STOCK_MOVEMENTS
+	var defaultWarehouseID string
+	_ = tx.QueryRow(r.Context(), "SELECT id FROM warehouses ORDER BY type = 'main' DESC LIMIT 1").Scan(&defaultWarehouseID)
+
+	orderItemRows, err := tx.Query(r.Context(), `
+		SELECT oi.product_id, oi.quantity, COALESCE(p.name, 'Produk')
+		FROM order_items oi
+		LEFT JOIN products p ON oi.product_id = p.id
+		WHERE oi.order_id = $1`, id)
+	if err == nil {
+		type soldItem struct {
+			productID string
+			quantity  int
+			name      string
+		}
+		var soldItems []soldItem
+		for orderItemRows.Next() {
+			var si soldItem
+			if scanErr := orderItemRows.Scan(&si.productID, &si.quantity, &si.name); scanErr == nil {
+				soldItems = append(soldItems, si)
+			}
+		}
+		orderItemRows.Close()
+
+		for _, si := range soldItems {
+			// 1. Deduct finished product stock
+			var newStock float64
+			_ = tx.QueryRow(r.Context(), `
+				UPDATE products
+				SET stock = GREATEST(0, stock - $1), updated_at = NOW()
+				WHERE id = $2
+				RETURNING stock`, si.quantity, si.productID).Scan(&newStock)
+
+			// 2. Record finished product stock movement
+			pRemarks := fmt.Sprintf("Penjualan POS #%s - %s (%dx)", orderNum, si.name, si.quantity)
+			_, _ = tx.Exec(r.Context(), `
+				INSERT INTO stock_movements (id, product_id, warehouse_id, type, quantity, balance_after, reference_id, reference_type, remarks, created_at)
+				VALUES ($1, $2, $3, 'out_pos_sales', $4, $5, $6, 'order', $7, NOW())`,
+				uuid.New().String(), si.productID, defaultWarehouseID, si.quantity, newStock, id, pRemarks)
+
+			// 3. Deduct raw materials based on product recipes
+			recipeRows, rErr := tx.Query(r.Context(), `
+				SELECT pr.inventory_item_id, pr.quantity_required, COALESCE(ii.name, 'Bahan')
+				FROM product_recipes pr
+				JOIN inventory_items ii ON pr.inventory_item_id = ii.id
+				WHERE pr.product_id = $1`, si.productID)
+			if rErr == nil {
+				type recItem struct {
+					itemID string
+					reqQty float64
+					name   string
+				}
+				var recList []recItem
+				for recipeRows.Next() {
+					var ri recItem
+					if scanErr := recipeRows.Scan(&ri.itemID, &ri.reqQty, &ri.name); scanErr == nil {
+						recList = append(recList, ri)
+					}
+				}
+				recipeRows.Close()
+
+				for _, ri := range recList {
+					totalMatDeduct := ri.reqQty * float64(si.quantity)
+					var newMatQty float64
+					_ = tx.QueryRow(r.Context(), `
+						UPDATE inventory_stocks
+						SET quantity = GREATEST(0, quantity - $1), updated_at = NOW()
+						WHERE inventory_item_id = $2 AND warehouse_id = $3
+						RETURNING quantity`, totalMatDeduct, ri.itemID, defaultWarehouseID).Scan(&newMatQty)
+
+					matRemarks := fmt.Sprintf("Konsumsi Bahan POS #%s (%s: %dx)", orderNum, si.name, si.quantity)
+					_, _ = tx.Exec(r.Context(), `
+						INSERT INTO stock_movements (id, inventory_item_id, warehouse_id, type, quantity, balance_after, reference_id, reference_type, remarks, created_at)
+						VALUES ($1, $2, $3, 'out_pos_sales', $4, $5, $6, 'order', $7, NOW())`,
+						uuid.New().String(), ri.itemID, defaultWarehouseID, totalMatDeduct, newMatQty, id, matRemarks)
+				}
+			}
+		}
+	}
+
 	_ = tx.Commit(r.Context())
 	writeJSON(w, http.StatusOK, map[string]interface{}{
 		"success":        true,
@@ -826,6 +958,127 @@ func (h *OperationalHandler) GetInventoryStocks(w http.ResponseWriter, r *http.R
 		items = []map[string]interface{}{}
 	}
 	writeJSON(w, http.StatusOK, map[string]interface{}{"data": items})
+}
+
+// GetStockMovements returns historical stock ledger (Kartu Stok)
+func (h *OperationalHandler) GetStockMovements(w http.ResponseWriter, r *http.Request) {
+	movementType := r.URL.Query().Get("type")
+	itemID := r.URL.Query().Get("item_id")
+	search := r.URL.Query().Get("q")
+
+	query := `
+		SELECT 
+			sm.id,
+			sm.type,
+			sm.quantity,
+			COALESCE(sm.balance_after, 0) as balance_after,
+			COALESCE(sm.reference_type, 'pos') as reference_type,
+			COALESCE(o.order_number, po.po_number, sm.reference_type, '-') as reference_no,
+			COALESCE(sm.remarks, '') as remarks,
+			sm.created_at,
+			COALESCE(w.name, 'Main Warehouse') as warehouse_name,
+			COALESCE(ii.name, p.name, 'Item') as item_name,
+			COALESCE(ii.sku, p.sku, '-') as sku,
+			COALESCE(ii.category, c.name, 'Umum') as category,
+			COALESCE(ii.uom, 'porsi') as uom,
+			CASE 
+				WHEN p.id IS NOT NULL THEN 'product' 
+				ELSE 'raw_material' 
+			END as item_type,
+			COALESCE(u.full_name, 'Kasir POS') as operator_name
+		FROM stock_movements sm
+		LEFT JOIN inventory_items ii ON sm.inventory_item_id = ii.id
+		LEFT JOIN products p ON sm.product_id = p.id
+		LEFT JOIN menu_categories c ON p.category_id = c.id
+		LEFT JOIN warehouses w ON sm.warehouse_id = w.id
+		LEFT JOIN orders o ON sm.reference_id = o.id
+		LEFT JOIN purchase_orders po ON sm.reference_id = po.id
+		LEFT JOIN users u ON sm.created_by = u.id
+		WHERE 1=1
+	`
+	var args []interface{}
+	argIdx := 1
+
+	if movementType == "in" {
+		query += " AND sm.type IN ('in_purchase', 'initial_stock', 'in')"
+	} else if movementType == "out" {
+		query += " AND sm.type IN ('out_pos_sales', 'waste', 'out')"
+	} else if movementType == "adjustment" {
+		query += " AND sm.type = 'adjustment'"
+	}
+
+	if itemID != "" {
+		query += fmt.Sprintf(" AND (sm.inventory_item_id::text = $%d OR sm.product_id::text = $%d)", argIdx, argIdx)
+		args = append(args, itemID)
+		argIdx++
+	}
+
+	if search != "" {
+		query += fmt.Sprintf(" AND (ii.name ILIKE $%d OR p.name ILIKE $%d OR sm.remarks ILIKE $%d OR o.order_number ILIKE $%d)", argIdx, argIdx, argIdx, argIdx)
+		args = append(args, "%"+search+"%")
+		argIdx++
+	}
+
+	query += " ORDER BY sm.created_at DESC LIMIT 200"
+
+	rows, err := h.db.Query(r.Context(), query, args...)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	defer rows.Close()
+
+	var movements []map[string]interface{}
+	var totalIn, totalOut float64
+
+	for rows.Next() {
+		var id, smType, refType, refNo, remarks, whName, itemName, sku, category, uom, itemType, operator string
+		var qty, balanceAfter float64
+		var createdAt time.Time
+
+		if err := rows.Scan(&id, &smType, &qty, &balanceAfter, &refType, &refNo, &remarks, &createdAt,
+			&whName, &itemName, &sku, &category, &uom, &itemType, &operator); err == nil {
+
+			direction := "IN"
+			if smType == "out_pos_sales" || smType == "waste" || smType == "out" {
+				direction = "OUT"
+				totalOut += qty
+			} else {
+				totalIn += qty
+			}
+
+			movements = append(movements, map[string]interface{}{
+				"id":            id,
+				"type":          smType,
+				"direction":     direction,
+				"quantity":      qty,
+				"balance_after": balanceAfter,
+				"reference_no":  refNo,
+				"remarks":       remarks,
+				"created_at":    createdAt.Format("2006-01-02 15:04:05"),
+				"warehouse":     whName,
+				"item_name":     itemName,
+				"sku":           sku,
+				"category":      category,
+				"uom":           uom,
+				"item_type":     itemType,
+				"operator":      operator,
+			})
+		}
+	}
+
+	if movements == nil {
+		movements = []map[string]interface{}{}
+	}
+
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"data": movements,
+		"summary": map[string]interface{}{
+			"total_in":        totalIn,
+			"total_out":       totalOut,
+			"total_movements": len(movements),
+		},
+	})
 }
 
 func (h *OperationalHandler) GetPurchaseOrders(w http.ResponseWriter, r *http.Request) {

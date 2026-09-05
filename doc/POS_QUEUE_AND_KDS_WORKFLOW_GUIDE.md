@@ -164,4 +164,31 @@ Halaman `/pos/kds` dilengkapi dengan antarmuka real-time dark mode:
    - Tombol **"Cetak Struk"** per transaksi untuk mencetak ulang struk pembayaran dengan format thermal 80mm.
    - Tombol **"Lihat Detail Struk"** untuk simulasi preview struk kertas thermal kasir.
 
+---
 
+## 8. Integrasi Stok Real-Time & Menu Kartu Stok (Stock Card Ledger)
+
+### A. Ketersediaan Stok Real-Time di Kasir POS (`/pos`)
+1. **Badge Stok Visual**:
+   - Setiap kartu produk di katalog kasir POS menampilkan status ketersediaan stok:
+     - Hijau: `Stok: 48` (kondisi normal aman).
+     - Oranye / Amber: `Sisa 3` (kondisi stok menipis $\le 5$ porsi).
+     - Merah: `Habis` (stok habis $\le 0$).
+2. **Pencegahan Over-Selling**:
+   - Tombol `Add +` dinonaktifkan secara otomatis saat stok bernilai 0.
+   - Sistem mencegah kasir menambah jumlah kuantitas ke keranjang jika melebihi batas sisa stok yang ada.
+
+### B. Otomatisasi Pemotongan Stok saat Pembayaran (`PayOrder`)
+1. **Dua Layer Pemotongan**:
+   - **Produk Jadi**: Stok produk pada tabel `products` langsung dipotong secara otomatis sebesar jumlah pesanan.
+   - **Bahan Baku Resep (BOM)**: Jika produk memiliki formulasi resep di tabel `product_recipes` (misal: biji kopi espresso, susu segar, paper cup, adonan croissant), stok bahan baku pada tabel `inventory_stocks` di gudang utama juga langsung terpotong secara proporsional.
+2. **Pencatatan Buku Besar Mutasi (`stock_movements`)**:
+   - Setiap pemotongan otomatis mencatat baris mutasi keluar (`out_pos_sales`) yang mereferensikan nomor order kasir POS (`#ORD-xxxx`).
+
+### C. Menu Baru: Kartu Stok (`/inventory/stock-card`)
+1. **Akses Menu**:
+   - Navigasi Sidebar: `Inventori` $\rightarrow$ `Kartu Stok`.
+2. **Fitur & Informasi**:
+   - **Ringkasan Metrik**: Total Mutasi Masuk (IN), Total Mutasi Keluar (OUT), Total Transaksi Mutasi, dan Status Real-Time POS.
+   - **Buku Besar Lengkap**: Menampilkan histori tanggal, nama barang & SKU, klasifikasi (Produk Jadi / Bahan Baku), gudang, jenis mutasi (`IN`, `OUT`, `ADJUSTMENT`), kuantitas masuk/keluar, saldo akhir sisa stok, dan nomor referensi order.
+   - **Filter Cepat**: Filter jenis mutasi (Masuk, Keluar, Penyesuaian), filter klasifikasi, dan pencarian instan.

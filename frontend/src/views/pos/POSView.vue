@@ -109,26 +109,52 @@
             <div
               v-for="product in filteredProducts"
               :key="product.id"
-              class="bg-white rounded-2xl p-3 border border-slate-200/80 shadow-sm flex flex-col justify-between hover:border-blue-300 hover:shadow-md transition-all group"
+              class="bg-white rounded-2xl p-3 border border-slate-200/80 shadow-sm flex flex-col justify-between hover:border-blue-300 hover:shadow-md transition-all group relative"
             >
               <div>
-                <div class="w-full h-28 rounded-xl overflow-hidden mb-2.5 bg-slate-100">
+                <div class="w-full h-28 rounded-xl overflow-hidden mb-2.5 bg-slate-100 relative">
                   <img 
                     :src="product.image || product.image_url || 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=300'" 
                     :alt="product.name" 
                     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" 
                   />
+                  <!-- Stock Badge -->
+                  <div class="absolute top-2 right-2">
+                    <span
+                      v-if="product.stock <= 0 || product.is_out_of_stock"
+                      class="px-2 py-0.5 rounded-lg text-[10px] font-black bg-rose-600 text-white shadow-xs"
+                    >
+                      Habis
+                    </span>
+                    <span
+                      v-else-if="product.stock <= 5 || product.is_low_stock"
+                      class="px-2 py-0.5 rounded-lg text-[10px] font-black bg-amber-500 text-white shadow-xs"
+                    >
+                      Sisa {{ product.stock }}
+                    </span>
+                    <span
+                      v-else
+                      class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-slate-900/70 text-white backdrop-blur-xs shadow-xs"
+                    >
+                      Stok: {{ product.stock }}
+                    </span>
+                  </div>
                 </div>
                 <h4 class="font-bold text-slate-900 text-xs truncate">{{ product.name }}</h4>
-                <p class="text-xs font-extrabold text-blue-600 mt-1">Rp {{ (product.price || product.base_price || 0).toLocaleString('id-ID') }}</p>
+                <div class="flex items-center justify-between mt-1">
+                  <p class="text-xs font-extrabold text-blue-600">Rp {{ (product.price || product.base_price || 0).toLocaleString('id-ID') }}</p>
+                  <span class="text-[10px] font-medium text-slate-400">Tersedia {{ product.stock }}</span>
+                </div>
               </div>
 
               <button
                 @click="addToCart(product)"
-                class="mt-3 w-full py-1.5 bg-blue-50 hover:bg-blue-600 text-blue-600 hover:text-white text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                :disabled="product.stock <= 0 || product.is_out_of_stock"
+                class="mt-3 w-full py-1.5 text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-1 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                :class="product.stock <= 0 ? 'bg-slate-100 text-slate-400' : 'bg-blue-50 hover:bg-blue-600 text-blue-600 hover:text-white'"
               >
-                <span>Add</span>
-                <span>+</span>
+                <span>{{ product.stock <= 0 ? 'Habis' : 'Add' }}</span>
+                <span v-if="product.stock > 0">+</span>
               </button>
             </div>
           </div>
@@ -466,7 +492,7 @@ const savingOrder = ref(false)
 
 const products = ref<any[]>([])
 const tablesList = ref<any[]>([])
-const cart = ref<Array<{ id: string, name: string, price: number, qty: number }>>([])
+const cart = ref<Array<{ id: string, name: string, price: number, qty: number, stock?: number }>>([])
 
 // Billing Tab 2 state
 const activeOrders = ref<any[]>([])
@@ -571,11 +597,19 @@ const grandTotal = computed(() => {
 })
 
 const addToCart = (product: any) => {
+  if (product.stock <= 0) {
+    notifyStore.error(`Stok ${product.name} telah habis`, 'Stok Habis')
+    return
+  }
   const existing = cart.value.find(i => i.id === product.id)
   if (existing) {
+    if (existing.qty >= product.stock) {
+      notifyStore.warning(`Stok ${product.name} tidak mencukupi (Tersedia: ${product.stock})`, 'Batas Stok')
+      return
+    }
     existing.qty++
   } else {
-    cart.value.push({ id: product.id, name: product.name, price: product.price, qty: 1 })
+    cart.value.push({ id: product.id, name: product.name, price: product.price, qty: 1, stock: product.stock })
   }
   notifyStore.info(`${product.name} ditambahkan ke pesanan`, 'Menu Ditambahkan')
 }
@@ -583,6 +617,13 @@ const addToCart = (product: any) => {
 const updateQty = (id: string, delta: number) => {
   const idx = cart.value.findIndex(i => i.id === id)
   if (idx > -1) {
+    if (delta > 0) {
+      const prod = products.value.find(p => p.id === id)
+      if (prod && cart.value[idx].qty >= prod.stock) {
+        notifyStore.warning(`Stok ${cart.value[idx].name} tidak mencukupi (Tersedia: ${prod.stock})`, 'Batas Stok')
+        return
+      }
+    }
     cart.value[idx].qty += delta
     if (cart.value[idx].qty <= 0) {
       const removed = cart.value.splice(idx, 1)

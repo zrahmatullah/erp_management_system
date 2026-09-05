@@ -147,6 +147,7 @@ const menuItems = [
     icon: Package,
     children: [
       { label: 'Daftar Stok', path: '/inventory' },
+      { label: 'Kartu Stok', path: '/inventory/stock-card' },
       { label: 'Stock Opname', path: '/inventory/opname' },
       { label: 'Purchase Order', path: '/inventory/po' }
     ]
