@@ -1,0 +1,62 @@
+# ==============================================================================
+# Environment & Secrets (CRITICAL: Do NOT commit secrets!)
+# ==============================================================================
+.env
+.env.*
+!.env.example
+.env_database
+*.env
+*.env.local
+
+# ==============================================================================
+# OS & Editor Files
+# ==============================================================================
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# ==============================================================================
+# Go Backend
+# ==============================================================================
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+backend/bin/
+backend/tmp/
+backend/server.exe
+*.test
+*.out
+
+# ==============================================================================
+# Node & Frontend
+# ==============================================================================
+node_modules/
+dist/
+dist-ssr/
+*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+.eslintcache
+.vite/
+frontend/node_modules/
+frontend/dist/
+
+# ==============================================================================
+# Logs & System Temp
+# ==============================================================================
+*.log
+logs/
+*.pid
+.system_generated/
+*.metadata.json

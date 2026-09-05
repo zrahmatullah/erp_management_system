@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  backend:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/cafe_erp?sslmode=disable
+      - REDIS_URL=redis:6379
+    depends_on:
+      - postgres
+      - redis
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=cafe_erp
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
