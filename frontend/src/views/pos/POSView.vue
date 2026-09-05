@@ -255,7 +255,6 @@
     </div>
 
     <!-- TAB 2: KASIR PEMBAYARAN MEJA (MENUNGGU PEMBAYARAN / BILLING) -->
-    <div v-else class="space-y-4">
     <div v-else-if="activePosTab === 'billing'" class="space-y-4">
       <!-- Filter and Metrics Bar -->
       <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -455,7 +454,6 @@ import { useNotificationStore } from '@/stores/notification.store'
 const route = useRoute()
 const notifyStore = useNotificationStore()
 
-const activePosTab = ref('order') // 'order' or 'billing'
 const activePosTab = ref('order') // 'order', 'billing', or 'history'
 const selectedCategory = ref('All')
 const searchQuery = ref('')
