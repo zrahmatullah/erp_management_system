@@ -21,8 +21,11 @@ func SetupRouter(
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
 	r.Use(appMiddleware.Recovery)
+	r.Use(appMiddleware.SecurityHeaders)
+	r.Use(appMiddleware.RequestSizeLimit(10 << 20)) // OWASP A04/A05: 10MB ceiling to prevent buffer overflow & DoS
 	r.Use(appMiddleware.RequestLogger)
 	r.Use(appMiddleware.CORS())
+	r.Use(appMiddleware.RateLimit) // OWASP A04: Global rate limit
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -34,10 +37,11 @@ func SetupRouter(
 	})
 
 	r.Route("/api/v1", func(r chi.Router) {
-		// Auth Routes
+		// Auth Routes (OWASP A07: Brute-Force Rate Limited)
 		r.Route("/auth", func(r chi.Router) {
-			r.Post("/login", authHandler.Login)
-			r.Post("/refresh", authHandler.RefreshToken)
+			r.With(appMiddleware.AuthRateLimit).Post("/login", authHandler.Login)
+			r.With(appMiddleware.AuthRateLimit).Post("/refresh", authHandler.RefreshToken)
+			r.Post("/logout", authHandler.Logout)
 		})
 
 		// Dashboard Stats
@@ -91,8 +95,9 @@ func SetupRouter(
 			r.Post("/journals", opHandler.CreateJournalEntry)
 		})
 
-		// Master Data Routes (Super Admin CRUD)
+		// Master Data Routes (Super Admin CRUD - OWASP A01 Protected)
 		r.Route("/master", func(r chi.Router) {
+			r.Use(appMiddleware.JWTAuth)
 			// Branches
 			r.Get("/branches", masterHandler.ListBranches)
 			r.Post("/branches", masterHandler.CreateBranch)

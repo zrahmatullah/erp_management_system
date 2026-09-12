@@ -7,6 +7,8 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"cafe-erp-system/backend/pkg/logger"
 )
 
 type MasterHandler struct {
@@ -24,6 +26,11 @@ func writeJSON(w http.ResponseWriter, status int, v interface{}) {
 }
 
 func writeError(w http.ResponseWriter, status int, msg string) {
+	if status >= 500 {
+		logger.Log.Error().Str("raw_error", msg).Int("status", status).Msg("Internal server error")
+		writeJSON(w, status, map[string]string{"error": "Terjadi kesalahan internal pada server"})
+		return
+	}
 	writeJSON(w, status, map[string]string{"error": msg})
 }
 

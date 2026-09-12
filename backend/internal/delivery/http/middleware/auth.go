@@ -27,10 +27,12 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-var jwtSecret []byte
+var jwtSecret = []byte("super-secret-cafe-erp-jwt-key-2026")
 
 func InitAuth(cfg *config.Config) {
-	jwtSecret = []byte(cfg.JWT.Secret)
+	if cfg != nil && cfg.JWT.Secret != "" {
+		jwtSecret = []byte(cfg.JWT.Secret)
+	}
 }
 
 func GenerateTokenPair(userID uuid.UUID, email, role string, branchID *uuid.UUID, permissions []string) (string, string, error) {

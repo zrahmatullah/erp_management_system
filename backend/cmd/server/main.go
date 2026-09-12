@@ -14,6 +14,7 @@ import (
 	"cafe-erp-system/backend/internal/config"
 	appHttp "cafe-erp-system/backend/internal/delivery/http"
 	"cafe-erp-system/backend/internal/delivery/http/handler"
+	appMiddleware "cafe-erp-system/backend/internal/delivery/http/middleware"
 	"cafe-erp-system/backend/internal/repository/postgres"
 	"cafe-erp-system/backend/internal/usecase/auth"
 	"cafe-erp-system/backend/pkg/logger"
@@ -25,6 +26,7 @@ func main() {
 		panic("Failed to load config: " + err.Error())
 	}
 
+	appMiddleware.InitAuth(cfg)
 	logger.InitLogger(cfg.Server.Env)
 	logger.Log.Info().Msg("🚀 Starting Cafe ERP Backend Server...")
 
