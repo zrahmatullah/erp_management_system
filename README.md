@@ -327,6 +327,7 @@ Repository ini menerapkan aturan ketat untuk mencegah kebocoran informasi kreden
 
 Dokumentasi arsitektur sistem, skema basis data, dan modul fungsional tersedia di folder [`doc/`](file:///d:/Project/cafe-erp-system/doc/):
 
+- [`doc/TESTING_STANDARDIZATION.md`](file:///d:/Project/cafe-erp-system/doc/TESTING_STANDARDIZATION.md) : Standarisasi piramida pengujian (Smoke, Unit, Integration, E2E, Regresi) dan otomatisasi CI/CD GitHub Actions.
 - [`doc/OWASP_SECURITY_STANDARDIZATION.md`](file:///d:/Project/cafe-erp-system/doc/OWASP_SECURITY_STANDARDIZATION.md) : Standarisasi dan kepatuhan keamanan sistem berdasarkan OWASP Top 10 (2021) & ASVS v4.0.
 - [`doc/DEBUGGING_AND_BUGFIX_REPORT.md`](file:///d:/Project/cafe-erp-system/doc/DEBUGGING_AND_BUGFIX_REPORT.md) : Laporan lengkap audit sistem, perbaikan bug inventory, PO auto-receipt, stock opname, dan jurnal umum.
 - [`doc/DEPLOYMENT_GUIDE.md`](file:///d:/Project/cafe-erp-system/doc/DEPLOYMENT_GUIDE.md) : Panduan komprehensif deployment produksi (Docker & VPS Systemd/Nginx).
