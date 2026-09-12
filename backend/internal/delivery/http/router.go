@@ -68,7 +68,11 @@ func SetupRouter(
 			r.Get("/stocks", opHandler.GetInventoryStocks)
 			r.Get("/stock-movements", opHandler.GetStockMovements)
 			r.Get("/purchase-orders", opHandler.GetPurchaseOrders)
+			r.Post("/purchase-orders", opHandler.CreatePurchaseOrder)
+			r.Get("/purchase-orders/{id}", opHandler.GetPurchaseOrderDetail)
+			r.Put("/purchase-orders/{id}/status", opHandler.UpdatePurchaseOrderStatus)
 			r.Get("/opnames", opHandler.GetStockOpnames)
+			r.Post("/opnames", opHandler.CreateStockOpname)
 		})
 
 		// HRIS Operations
@@ -84,6 +88,7 @@ func SetupRouter(
 		r.Route("/finance", func(r chi.Router) {
 			r.Get("/overview", opHandler.GetFinanceOverview)
 			r.Get("/journals", opHandler.GetJournalEntries)
+			r.Post("/journals", opHandler.CreateJournalEntry)
 		})
 
 		// Master Data Routes (Super Admin CRUD)

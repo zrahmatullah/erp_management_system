@@ -51,10 +51,10 @@ const fetchFinanceData = async () => {
     if (jRes.data?.data) {
       recentJournals.value = jRes.data.data.map((j: any) => ({
         date: j.entry_date || '2026-09-04',
-        ref: j.entry_number || 'JV-001',
+        ref: j.reference_no || j.entry_number || 'JV-001',
         desc: j.description || 'Jurnal Transaksi',
-        debit: Number(j.debit || 0),
-        credit: Number(j.credit || 0),
+        debit: Number(j.total_debit ?? j.debit ?? 0),
+        credit: Number(j.total_credit ?? j.credit ?? 0),
         status: j.status || 'Posted'
       }))
     }

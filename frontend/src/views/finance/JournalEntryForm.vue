@@ -30,7 +30,8 @@ const fetchAccounts = async () => {
     const res = await axios.get('/api/v1/master/accounts')
     const list = Array.isArray(res.data) ? res.data : (res.data?.data || [])
     accounts.value = list.map((a: any) => ({
-      id: a.code || a.id,
+      id: a.id,
+      code: a.code,
       label: `${a.code} - ${a.name}`
     }))
     if (accounts.value.length > 0 && rows.value.length > 0 && !rows.value[0].accountId) {
@@ -94,13 +95,37 @@ const formatNum = (val: number) => {
   return Number(val || 0).toLocaleString('id-ID')
 }
 
-const handlePosting = () => {
+const submitting = ref(false)
+
+const handlePosting = async () => {
   if (!isBalanced.value) {
     notifyStore.warning('Jurnal belum seimbang! Total Debit harus sama dengan Total Kredit.', 'Validasi Keseimbangan')
     return
   }
-  notifyStore.success(`Jurnal ${referenceNo.value} berhasil di-posting ke Buku Besar!`, 'Jurnal Diposting')
-  router.push('/finance')
+
+  submitting.value = true
+  try {
+    const payload = {
+      reference_no: referenceNo.value,
+      entry_date: entryDate.value,
+      description: description.value,
+      lines: rows.value.map(r => ({
+        account_id: r.accountId,
+        description: r.memo || description.value,
+        debit: Number(r.debit || 0),
+        credit: Number(r.credit || 0)
+      }))
+    }
+
+    const res = await axios.post('/api/v1/finance/journals', payload)
+    notifyStore.success(res.data?.message || `Jurnal ${referenceNo.value} berhasil di-posting ke Buku Besar!`, 'Jurnal Diposting')
+    router.push('/finance')
+  } catch (err: any) {
+    console.error('Failed to post journal:', err)
+    notifyStore.error(err.response?.data?.message || 'Gagal menyimpan jurnal ke server', 'Error')
+  } finally {
+    submitting.value = false
+  }
 }
 </script>
 

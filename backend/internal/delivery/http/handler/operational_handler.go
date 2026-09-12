@@ -1124,6 +1124,268 @@ func (h *OperationalHandler) GetPurchaseOrders(w http.ResponseWriter, r *http.Re
 	writeJSON(w, http.StatusOK, map[string]interface{}{"data": list})
 }
 
+func (h *OperationalHandler) GetPurchaseOrderDetail(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	var po struct {
+		ID           string  `json:"id"`
+		PONumber     string  `json:"po_number"`
+		SupplierID   string  `json:"supplier_id"`
+		Supplier     string  `json:"supplier"`
+		Status       string  `json:"status"`
+		TotalAmount  float64 `json:"total_amount"`
+		Notes        string  `json:"notes"`
+		OrderDate    string  `json:"order_date"`
+		ExpectedDate string  `json:"expected_date"`
+	}
+	var ordDate, expDate time.Time
+	var supName, notes string
+
+	err := h.db.QueryRow(r.Context(), `
+		SELECT po.id, po.po_number, po.supplier_id, s.name, po.status, po.total_amount,
+		       COALESCE(po.notes, ''), po.ordered_date, COALESCE(po.expected_date, po.ordered_date)
+		FROM purchase_orders po
+		JOIN suppliers s ON po.supplier_id = s.id
+		WHERE po.id::text = $1 OR po.po_number = $1`, id).Scan(
+		&po.ID, &po.PONumber, &po.SupplierID, &supName, &po.Status, &po.TotalAmount,
+		&notes, &ordDate, &expDate)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "Purchase order not found")
+		return
+	}
+	po.Supplier = supName
+	po.Notes = notes
+	po.OrderDate = ordDate.Format("2006-01-02")
+	po.ExpectedDate = expDate.Format("2006-01-02")
+
+	// Fetch items
+	itemRows, err := h.db.Query(r.Context(), `
+		SELECT poi.id, poi.inventory_item_id, ii.sku, ii.name, ii.uom, poi.quantity, poi.unit_price, poi.total_price, COALESCE(poi.quantity_received, 0)
+		FROM purchase_order_items poi
+		JOIN inventory_items ii ON poi.inventory_item_id = ii.id
+		WHERE poi.purchase_order_id = $1`, po.ID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	defer itemRows.Close()
+
+	var items []map[string]interface{}
+	for itemRows.Next() {
+		var itemId, invId, sku, name, uom string
+		var qty, unitPrice, totalPrice, qtyRec float64
+		if err := itemRows.Scan(&itemId, &invId, &sku, &name, &uom, &qty, &unitPrice, &totalPrice, &qtyRec); err == nil {
+			items = append(items, map[string]interface{}{
+				"id":                itemId,
+				"inventory_item_id": invId,
+				"sku":               sku,
+				"name":              name,
+				"uom":               uom,
+				"quantity":          qty,
+				"unit_price":        unitPrice,
+				"total_price":       totalPrice,
+				"quantity_received": qtyRec,
+			})
+		}
+	}
+	if items == nil {
+		items = []map[string]interface{}{}
+	}
+
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"data": map[string]interface{}{
+			"id":            po.ID,
+			"po_number":     po.PONumber,
+			"supplier_id":   po.SupplierID,
+			"supplier":      po.Supplier,
+			"status":        po.Status,
+			"total_amount":  po.TotalAmount,
+			"notes":         po.Notes,
+			"order_date":    po.OrderDate,
+			"expected_date": po.ExpectedDate,
+			"items":         items,
+		},
+	})
+}
+
+func (h *OperationalHandler) CreatePurchaseOrder(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		SupplierID   string `json:"supplier_id"`
+		Notes        string `json:"notes"`
+		ExpectedDate string `json:"expected_date"`
+		Items        []struct {
+			InventoryItemID string  `json:"inventory_item_id"`
+			Quantity        float64 `json:"quantity"`
+			UnitPrice       float64 `json:"unit_price"`
+		} `json:"items"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, "Invalid payload: "+err.Error())
+		return
+	}
+
+	if body.SupplierID == "" || len(body.Items) == 0 {
+		writeError(w, http.StatusBadRequest, "Supplier and at least 1 item are required")
+		return
+	}
+
+	var branchID string
+	_ = h.db.QueryRow(r.Context(), "SELECT id FROM branches LIMIT 1").Scan(&branchID)
+
+	poID := uuid.New().String()
+	poNumber := fmt.Sprintf("PO-%s-%04d", time.Now().Format("20060102"), time.Now().Unix()%10000)
+
+	var totalAmount float64
+	for _, it := range body.Items {
+		totalAmount += it.Quantity * it.UnitPrice
+	}
+
+	tx, err := h.db.Begin(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	defer tx.Rollback(r.Context())
+
+	_, err = tx.Exec(r.Context(), `
+		INSERT INTO purchase_orders (id, branch_id, supplier_id, po_number, status, total_amount, notes, ordered_date, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, 'draft', $5, $6, CURRENT_DATE, NOW(), NOW())`,
+		poID, branchID, body.SupplierID, poNumber, totalAmount, body.Notes)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "Failed to create PO: "+err.Error())
+		return
+	}
+
+	for _, it := range body.Items {
+		itemTotal := it.Quantity * it.UnitPrice
+		_, err = tx.Exec(r.Context(), `
+			INSERT INTO purchase_order_items (id, purchase_order_id, inventory_item_id, quantity, unit_price, total_price, quantity_received, created_at)
+			VALUES ($1, $2, $3, $4, $5, $6, 0, NOW())`,
+			uuid.New().String(), poID, it.InventoryItemID, it.Quantity, it.UnitPrice, itemTotal)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "Failed to create PO item: "+err.Error())
+			return
+		}
+	}
+
+	if err := tx.Commit(r.Context()); err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusCreated, map[string]interface{}{
+		"message": "Purchase order created successfully",
+		"data": map[string]interface{}{
+			"id":           poID,
+			"po_number":    poNumber,
+			"total_amount": totalAmount,
+			"status":       "draft",
+		},
+	})
+}
+
+func (h *OperationalHandler) UpdatePurchaseOrderStatus(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	var body struct {
+		Status string `json:"status"` // 'draft', 'submitted', 'manager_approved', 'approved', 'sent', 'received', 'rejected'
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, "Invalid payload")
+		return
+	}
+
+	tx, err := h.db.Begin(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	defer tx.Rollback(r.Context())
+
+	var currentStatus, poNumber, branchID string
+	err = tx.QueryRow(r.Context(), "SELECT status, po_number, branch_id FROM purchase_orders WHERE id = $1", id).Scan(&currentStatus, &poNumber, &branchID)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "Purchase order not found")
+		return
+	}
+
+	// If status changed to received and not already received, receive stock!
+	if body.Status == "received" && currentStatus != "received" {
+		var warehouseID string
+		_ = tx.QueryRow(r.Context(), "SELECT id FROM warehouses WHERE branch_id = $1 ORDER BY type = 'main' DESC LIMIT 1", branchID).Scan(&warehouseID)
+		if warehouseID == "" {
+			_ = tx.QueryRow(r.Context(), "SELECT id FROM warehouses LIMIT 1").Scan(&warehouseID)
+		}
+
+		itemRows, err := tx.Query(r.Context(), `
+			SELECT poi.inventory_item_id, poi.quantity, ii.name
+			FROM purchase_order_items poi
+			JOIN inventory_items ii ON poi.inventory_item_id = ii.id
+			WHERE poi.purchase_order_id = $1`, id)
+		if err == nil {
+			type poRecItem struct {
+				itemID string
+				qty    float64
+				name   string
+			}
+			var recItems []poRecItem
+			for itemRows.Next() {
+				var it poRecItem
+				if scanErr := itemRows.Scan(&it.itemID, &it.qty, &it.name); scanErr == nil {
+					recItems = append(recItems, it)
+				}
+			}
+			itemRows.Close()
+
+			// Update quantity_received in purchase_order_items
+			_, _ = tx.Exec(r.Context(), "UPDATE purchase_order_items SET quantity_received = quantity WHERE purchase_order_id = $1", id)
+
+			for _, it := range recItems {
+				// Upsert stock in inventory_stocks
+				var newStock float64
+				var exists bool
+				_ = tx.QueryRow(r.Context(), "SELECT EXISTS(SELECT 1 FROM inventory_stocks WHERE inventory_item_id = $1 AND warehouse_id = $2)", it.itemID, warehouseID).Scan(&exists)
+				if exists {
+					_ = tx.QueryRow(r.Context(), `
+						UPDATE inventory_stocks
+						SET quantity = quantity + $1, updated_at = NOW()
+						WHERE inventory_item_id = $2 AND warehouse_id = $3
+						RETURNING quantity`, it.qty, it.itemID, warehouseID).Scan(&newStock)
+				} else {
+					newStock = it.qty
+					_, _ = tx.Exec(r.Context(), `
+						INSERT INTO inventory_stocks (id, inventory_item_id, warehouse_id, quantity, created_at, updated_at)
+						VALUES ($1, $2, $3, $4, NOW(), NOW())`,
+						uuid.New().String(), it.itemID, warehouseID, newStock)
+				}
+
+				// Record in stock_movements
+				rem := fmt.Sprintf("Penerimaan PO #%s - %s (+%.2f)", poNumber, it.name, it.qty)
+				_, _ = tx.Exec(r.Context(), `
+					INSERT INTO stock_movements (id, inventory_item_id, warehouse_id, type, quantity, balance_after, reference_id, reference_type, remarks, created_at)
+					VALUES ($1, $2, $3, 'in_purchase', $4, $5, $6, 'purchase_order', $7, NOW())`,
+					uuid.New().String(), it.itemID, warehouseID, it.qty, newStock, id, rem)
+			}
+		}
+	}
+
+	_, err = tx.Exec(r.Context(), "UPDATE purchase_orders SET status = $1, updated_at = NOW() WHERE id = $2", body.Status, id)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	if err := tx.Commit(r.Context()); err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"success": true,
+		"status":  body.Status,
+		"message": fmt.Sprintf("Status PO %s berhasil diubah menjadi %s", poNumber, body.Status),
+	})
+}
+
 func (h *OperationalHandler) GetStockOpnames(w http.ResponseWriter, r *http.Request) {
 	query := `
 		SELECT 
@@ -1163,6 +1425,99 @@ func (h *OperationalHandler) GetStockOpnames(w http.ResponseWriter, r *http.Requ
 		list = []map[string]interface{}{}
 	}
 	writeJSON(w, http.StatusOK, map[string]interface{}{"data": list})
+}
+
+func (h *OperationalHandler) CreateStockOpname(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		WarehouseID string `json:"warehouse_id"`
+		Notes       string `json:"notes"`
+		Items       []struct {
+			InventoryItemID string  `json:"inventory_item_id"`
+			SystemStock     float64 `json:"system_stock"`
+			PhysicalStock   float64 `json:"physical_stock"`
+			Notes           string  `json:"notes"`
+		} `json:"items"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, "Invalid payload: "+err.Error())
+		return
+	}
+
+	var branchID string
+	_ = h.db.QueryRow(r.Context(), "SELECT id FROM branches LIMIT 1").Scan(&branchID)
+	if body.WarehouseID == "" {
+		_ = h.db.QueryRow(r.Context(), "SELECT id FROM warehouses WHERE branch_id = $1 ORDER BY type = 'main' DESC LIMIT 1", branchID).Scan(&body.WarehouseID)
+	}
+
+	soID := uuid.New().String()
+	opNumber := fmt.Sprintf("SO-%s-%03d", time.Now().Format("2006-01"), time.Now().Unix()%1000)
+
+	tx, err := h.db.Begin(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	defer tx.Rollback(r.Context())
+
+	_, err = tx.Exec(r.Context(), `
+		INSERT INTO stock_opnames (id, branch_id, warehouse_id, opname_number, opname_date, status, notes, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, CURRENT_DATE, 'completed', $5, NOW(), NOW())`,
+		soID, branchID, body.WarehouseID, opNumber, body.Notes)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "Failed to create opname: "+err.Error())
+		return
+	}
+
+	for _, it := range body.Items {
+		diff := it.PhysicalStock - it.SystemStock
+		_, err = tx.Exec(r.Context(), `
+			INSERT INTO stock_opname_items (id, stock_opname_id, inventory_item_id, system_stock, physical_stock, difference, notes, created_at)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`,
+			uuid.New().String(), soID, it.InventoryItemID, it.SystemStock, it.PhysicalStock, diff, it.Notes)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "Failed to create opname item: "+err.Error())
+			return
+		}
+
+		// If there is difference, adjust inventory_stocks & record in stock_movements!
+		if diff != 0 {
+			var newStock float64
+			_ = tx.QueryRow(r.Context(), `
+				UPDATE inventory_stocks
+				SET quantity = $1, updated_at = NOW()
+				WHERE inventory_item_id = $2 AND warehouse_id = $3
+				RETURNING quantity`, it.PhysicalStock, it.InventoryItemID, body.WarehouseID).Scan(&newStock)
+
+			var itemName string
+			_ = tx.QueryRow(r.Context(), "SELECT name FROM inventory_items WHERE id = $1", it.InventoryItemID).Scan(&itemName)
+
+			rem := fmt.Sprintf("Penyesuaian Opname #%s (%s: %+0.2f)", opNumber, itemName, diff)
+			adjQty := diff
+			if adjQty < 0 {
+				adjQty = -adjQty
+			}
+			_, _ = tx.Exec(r.Context(), `
+				INSERT INTO stock_movements (id, inventory_item_id, warehouse_id, type, quantity, balance_after, reference_id, reference_type, remarks, created_at)
+				VALUES ($1, $2, $3, 'adjustment', $4, $5, $6, 'opname', $7, NOW())`,
+				uuid.New().String(), it.InventoryItemID, body.WarehouseID, adjQty, newStock, soID, rem)
+		}
+	}
+
+	if err := tx.Commit(r.Context()); err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusCreated, map[string]interface{}{
+		"message": "Stock opname saved and adjustments applied successfully",
+		"data": map[string]interface{}{
+			"id":            soID,
+			"opname_number": opNumber,
+			"total_items":   len(body.Items),
+			"status":        "completed",
+		},
+	})
 }
 
 // -----------------------------------------------------------------------------
@@ -1520,6 +1875,101 @@ func (h *OperationalHandler) GetJournalEntries(w http.ResponseWriter, r *http.Re
 		list = []map[string]interface{}{}
 	}
 	writeJSON(w, http.StatusOK, map[string]interface{}{"data": list})
+}
+
+func (h *OperationalHandler) CreateJournalEntry(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		ReferenceNo string `json:"reference_no"`
+		EntryDate   string `json:"entry_date"`
+		Description string `json:"description"`
+		Lines       []struct {
+			AccountID   string  `json:"account_id"`
+			Description string  `json:"description"`
+			Debit       float64 `json:"debit"`
+			Credit      float64 `json:"credit"`
+		} `json:"lines"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, "Invalid payload: "+err.Error())
+		return
+	}
+
+	if len(body.Lines) < 2 {
+		writeError(w, http.StatusBadRequest, "A journal entry must have at least 2 lines")
+		return
+	}
+
+	var totalDebit, totalCredit float64
+	for _, l := range body.Lines {
+		totalDebit += l.Debit
+		totalCredit += l.Credit
+	}
+
+	if fmt.Sprintf("%.2f", totalDebit) != fmt.Sprintf("%.2f", totalCredit) {
+		writeError(w, http.StatusBadRequest, "Journal must be balanced: Total Debit must equal Total Credit")
+		return
+	}
+
+	var branchID string
+	_ = h.db.QueryRow(r.Context(), "SELECT id FROM branches LIMIT 1").Scan(&branchID)
+
+	if body.ReferenceNo == "" {
+		body.ReferenceNo = fmt.Sprintf("JV-%s-%04d", time.Now().Format("2006"), time.Now().Unix()%10000)
+	}
+	if body.EntryDate == "" {
+		body.EntryDate = time.Now().Format("2006-01-02")
+	}
+
+	entryID := uuid.New().String()
+	tx, err := h.db.Begin(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	defer tx.Rollback(r.Context())
+
+	_, err = tx.Exec(r.Context(), `
+		INSERT INTO journal_entries (id, branch_id, reference_number, entry_date, description, status, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, 'posted', NOW(), NOW())`,
+		entryID, branchID, body.ReferenceNo, body.EntryDate, body.Description)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "Failed to create journal entry: "+err.Error())
+		return
+	}
+
+	for _, l := range body.Lines {
+		var accID string
+		_ = tx.QueryRow(r.Context(), "SELECT id FROM chart_of_accounts WHERE id::text = $1 OR code = $1 LIMIT 1", l.AccountID).Scan(&accID)
+		if accID == "" {
+			accID = l.AccountID
+		}
+
+		_, err = tx.Exec(r.Context(), `
+			INSERT INTO journal_entry_lines (id, journal_entry_id, account_id, description, debit, credit, created_at)
+			VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
+			uuid.New().String(), entryID, accID, l.Description, l.Debit, l.Credit)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "Failed to create journal line: "+err.Error())
+			return
+		}
+	}
+
+	if err := tx.Commit(r.Context()); err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusCreated, map[string]interface{}{
+		"message": "Journal entry posted successfully",
+		"data": map[string]interface{}{
+			"id":           entryID,
+			"reference_no": body.ReferenceNo,
+			"entry_date":   body.EntryDate,
+			"total_debit":  totalDebit,
+			"total_credit": totalCredit,
+		},
+	})
 }
 
 // -----------------------------------------------------------------------------

@@ -327,6 +327,7 @@ Repository ini menerapkan aturan ketat untuk mencegah kebocoran informasi kreden
 
 Dokumentasi arsitektur sistem, skema basis data, dan modul fungsional tersedia di folder [`doc/`](file:///d:/Project/cafe-erp-system/doc/):
 
+- [`doc/DEBUGGING_AND_BUGFIX_REPORT.md`](file:///d:/Project/cafe-erp-system/doc/DEBUGGING_AND_BUGFIX_REPORT.md) : Laporan lengkap audit sistem, perbaikan bug inventory, PO auto-receipt, stock opname, dan jurnal umum.
 - [`doc/DEPLOYMENT_GUIDE.md`](file:///d:/Project/cafe-erp-system/doc/DEPLOYMENT_GUIDE.md) : Panduan komprehensif deployment produksi (Docker & VPS Systemd/Nginx).
 - [`doc/POS_TABLE_ORDER_AND_BILLING_GUIDE.md`](file:///d:/Project/cafe-erp-system/doc/POS_TABLE_ORDER_AND_BILLING_GUIDE.md) : Panduan alur POS denah meja interaktif & sistem kasir 2-tab.
 - [`doc/MODAL_AND_DIALOG_STANDARDIZATION_GUIDE.md`](file:///d:/Project/cafe-erp-system/doc/MODAL_AND_DIALOG_STANDARDIZATION_GUIDE.md) : Standarisasi UI komponen AppModal dan Global Dialog reaktif.

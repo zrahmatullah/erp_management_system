@@ -1,6 +1,5 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
 import AppLayout from '@/components/layout/AppLayout.vue'
-import { requireAuth } from './guards'
 
 const routes: Array<RouteRecordRaw> = [
   {
