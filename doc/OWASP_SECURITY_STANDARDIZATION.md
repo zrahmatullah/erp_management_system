@@ -183,3 +183,4 @@ Saat melakukan deployment ke server produksi atau cloud VPS:
 3. **Database Network Isolation:** Pastikan port database PostgreSQL `5432` tidak dibuka ke publik internet (`listen_addresses = 'localhost'` atau di dalam Docker internal network).
 4. **Non-Root Execution:** Jalankan binary backend Go di bawah user non-root (`www-data` atau user aplikasi terisolasi).
 5. **Backup Terjadwal:** Aktifkan cron backup database berkala dengan enkripsi GPG untuk menjamin integritas data (OWASP ASVS V8).
+
