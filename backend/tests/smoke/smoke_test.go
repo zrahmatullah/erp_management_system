@@ -133,3 +133,4 @@ func TestSmoke_AuthSanity(t *testing.T) {
 		t.Errorf("Expected non-empty JWT token in login response")
 	}
 }
+

@@ -11,8 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgxpool"
 	"cafe-erp-system/backend/internal/config"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func getBaseURL() string {
@@ -274,4 +275,3 @@ func TestIntegration_PO_Receipt_StockAddition(t *testing.T) {
 		t.Logf("✅ PO Receipt stock movement verified in Kartu Stok (Count: %d)", poMovementCount)
 	}
 }
-

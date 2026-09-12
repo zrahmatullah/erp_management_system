@@ -161,3 +161,4 @@ Sebelum kode baru dimerge ke branch `dev` atau diajukan ke `main`, developer waj
 - [x] **E2E Test**: Alur pengguna end-to-end tidak menghasilkan error HTTP 4xx/5xx.
 - [x] **TypeScript Check**: `vue-tsc --noEmit` lolos 0 error.
 - [x] **Full Regression Script**: `scripts/run_regression.ps1` (atau `.sh`) lolos 100% hijau.
+

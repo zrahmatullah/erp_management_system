@@ -125,3 +125,4 @@ jobs:
 
       - name: Regression Pipeline Success
         run: echo "🎉 All regression tests passed successfully! Pull request is safe to merge."
+
