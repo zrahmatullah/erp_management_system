@@ -286,11 +286,13 @@
     </div>
 
     <!-- Modal Preview Struk Billing -->
-    <Transition name="fade">
-      <div
-        v-if="selectedPreviewReceipt"
-        class="fixed md:left-64 inset-y-0 right-0 left-0 z-50 flex items-center justify-center bg-slate-950/35 backdrop-blur-[1px] p-4 transition-all duration-200"
-      >
+    <Teleport to="body">
+      <Transition name="fade">
+        <div
+          v-if="selectedPreviewReceipt"
+          class="fixed md:left-64 inset-y-0 right-0 left-0 z-50 flex items-center justify-center bg-slate-950/45 backdrop-blur-sm p-4 transition-all duration-200"
+          @click.self="selectedPreviewReceipt = null"
+        >
         <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 flex flex-col max-h-[90vh]">
           <!-- Modal Header -->
           <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
@@ -407,6 +409,7 @@
         </div>
       </div>
     </Transition>
+    </Teleport>
   </div>
 </template>
 

@@ -1,7 +1,8 @@
 <template>
-  <Transition name="emp-modal-fade">
-    <div v-if="show" class="fixed md:left-64 inset-y-0 right-0 left-0 z-50 flex items-center justify-center bg-slate-950/35 backdrop-blur-[1px] p-4 overflow-y-auto transition-all duration-200">
-      <div class="bg-white rounded-3xl max-w-4xl w-full p-6 shadow-2xl shadow-slate-950/25 border border-slate-100/90 my-8 transform transition-all duration-300 ease-out">
+  <Teleport to="body">
+    <Transition name="emp-modal-fade">
+      <div v-if="show" class="fixed md:left-64 inset-y-0 right-0 left-0 z-50 flex items-center justify-center bg-slate-950/45 backdrop-blur-sm p-4 overflow-y-auto transition-all duration-200">
+        <div class="bg-white rounded-3xl max-w-4xl w-full p-6 shadow-2xl shadow-slate-950/25 border border-slate-100/90 my-8 transform transition-all duration-300 ease-out">
       <!-- Header -->
       <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-6">
         <div class="flex items-center gap-3">
@@ -116,9 +117,10 @@
           <span class="font-bold text-slate-900">Jl. Sudirman No. 45, Jakarta Selatan</span>
         </div>
       </div>
-    </div>
-  </div>
-</Transition>
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
 </template>
 
 <script setup lang="ts">

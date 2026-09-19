@@ -1,6 +1,7 @@
 <template>
-  <Transition name="table-modal-fade">
-    <div v-if="show" class="fixed md:left-64 inset-y-0 right-0 left-0 z-50 flex items-center justify-center bg-slate-950/35 backdrop-blur-[1px] p-4 transition-all duration-200">
+  <Teleport to="body">
+    <Transition name="table-modal-fade">
+      <div v-if="show" class="fixed md:left-64 inset-y-0 right-0 left-0 z-50 flex items-center justify-center bg-slate-950/45 backdrop-blur-sm p-4 transition-all duration-200">
       <div class="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl shadow-slate-950/25 border border-slate-100/90 transform transition-all duration-300 ease-out">
       <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-4">
         <div>
@@ -130,6 +131,7 @@
       </div>
     </div>
   </Transition>
+</Teleport>
 </template>
 
 <script setup lang="ts">

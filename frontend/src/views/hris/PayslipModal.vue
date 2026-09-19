@@ -69,8 +69,9 @@ const takeHomePay = () => {
 </script>
 
 <template>
-  <Transition name="slip-modal-fade">
-    <div v-if="show" class="fixed md:left-64 inset-y-0 right-0 left-0 z-50 flex items-center justify-center bg-slate-950/35 backdrop-blur-[1px] p-4 overflow-y-auto transition-all duration-200">
+  <Teleport to="body">
+    <Transition name="slip-modal-fade">
+      <div v-if="show" class="fixed md:left-64 inset-y-0 right-0 left-0 z-50 flex items-center justify-center bg-slate-950/45 backdrop-blur-sm p-4 overflow-y-auto transition-all duration-200">
       <div class="bg-white rounded-3xl shadow-2xl shadow-slate-950/25 border border-slate-100/90 w-full max-w-3xl overflow-hidden my-8 transform transition-all duration-300 ease-out">
       
       <!-- Top Action Bar -->
@@ -220,6 +221,7 @@ const takeHomePay = () => {
     </div>
   </div>
 </Transition>
+  </Teleport>
 </template>
 
 <style scoped>

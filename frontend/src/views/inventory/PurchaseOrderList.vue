@@ -428,8 +428,9 @@
     <!-- ========================================================================= -->
     <!-- MODAL 1: CREATE PR                                                       -->
     <!-- ========================================================================= -->
-    <Transition name="fade">
-      <div v-if="showCreatePRModal" class="fixed md:left-64 inset-y-0 right-0 left-0 z-50 flex items-center justify-center p-4 bg-slate-950/35 backdrop-blur-[1px]">
+    <Teleport to="body">
+      <Transition name="fade">
+        <div v-if="showCreatePRModal" class="fixed md:left-64 inset-y-0 right-0 left-0 z-50 flex items-center justify-center p-4 bg-slate-950/45 backdrop-blur-sm">
         <div class="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-slate-100 max-h-[90vh] flex flex-col">
           <div class="flex items-center justify-between pb-4 border-b border-slate-100">
             <div>
@@ -546,12 +547,14 @@
         </div>
       </div>
     </Transition>
+    </Teleport>
 
     <!-- ========================================================================= -->
     <!-- MODAL 2: CONVERT PR TO PO                                                -->
     <!-- ========================================================================= -->
-    <Transition name="fade">
-      <div v-if="showConvertPRModal" class="fixed md:left-64 inset-y-0 right-0 left-0 z-50 flex items-center justify-center p-4 bg-slate-950/35 backdrop-blur-[1px]">
+    <Teleport to="body">
+      <Transition name="fade">
+        <div v-if="showConvertPRModal" class="fixed md:left-64 inset-y-0 right-0 left-0 z-50 flex items-center justify-center p-4 bg-slate-950/45 backdrop-blur-sm">
         <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100">
           <div class="flex items-center justify-between pb-4 border-b border-slate-100">
             <div>
@@ -632,12 +635,14 @@
         </div>
       </div>
     </Transition>
+    </Teleport>
 
     <!-- ========================================================================= -->
     <!-- MODAL 3: CREATE DIRECT PO                                                -->
     <!-- ========================================================================= -->
-    <Transition name="fade">
-      <div v-if="showCreatePOModal" class="fixed md:left-64 inset-y-0 right-0 left-0 z-50 flex items-center justify-center p-4 bg-slate-950/35 backdrop-blur-[1px]">
+    <Teleport to="body">
+      <Transition name="fade">
+        <div v-if="showCreatePOModal" class="fixed md:left-64 inset-y-0 right-0 left-0 z-50 flex items-center justify-center p-4 bg-slate-950/45 backdrop-blur-sm">
         <div class="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-slate-100 max-h-[90vh] flex flex-col">
           <div class="flex items-center justify-between pb-4 border-b border-slate-100">
             <div>
@@ -757,12 +762,14 @@
         </div>
       </div>
     </Transition>
+    </Teleport>
 
     <!-- ========================================================================= -->
     <!-- MODAL 4: CREATE GRN                                                      -->
     <!-- ========================================================================= -->
-    <Transition name="fade">
-      <div v-if="showCreateGRNModal" class="fixed md:left-64 inset-y-0 right-0 left-0 z-50 flex items-center justify-center p-4 bg-slate-950/35 backdrop-blur-[1px]">
+    <Teleport to="body">
+      <Transition name="fade">
+        <div v-if="showCreateGRNModal" class="fixed md:left-64 inset-y-0 right-0 left-0 z-50 flex items-center justify-center p-4 bg-slate-950/45 backdrop-blur-sm">
         <div class="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-slate-100 max-h-[90vh] flex flex-col">
           <div class="flex items-center justify-between pb-4 border-b border-slate-100">
             <div>
@@ -899,12 +906,14 @@
         </div>
       </div>
     </Transition>
+    </Teleport>
 
     <!-- ========================================================================= -->
     <!-- MODAL 5: CREATE INVOICE (FAKTUR & PPN 11%)                                -->
     <!-- ========================================================================= -->
-    <Transition name="fade">
-      <div v-if="showCreateInvoiceModal" class="fixed md:left-64 inset-y-0 right-0 left-0 z-50 flex items-center justify-center p-4 bg-slate-950/35 backdrop-blur-[1px]">
+    <Teleport to="body">
+      <Transition name="fade">
+        <div v-if="showCreateInvoiceModal" class="fixed md:left-64 inset-y-0 right-0 left-0 z-50 flex items-center justify-center p-4 bg-slate-950/45 backdrop-blur-sm">
         <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100">
           <div class="flex items-center justify-between pb-4 border-b border-slate-100">
             <div>
@@ -1015,12 +1024,14 @@
         </div>
       </div>
     </Transition>
+    </Teleport>
 
     <!-- ========================================================================= -->
     <!-- MODAL 6: CREATE PAYMENT                                                  -->
     <!-- ========================================================================= -->
-    <Transition name="fade">
-      <div v-if="showCreatePaymentModal" class="fixed md:left-64 inset-y-0 right-0 left-0 z-50 flex items-center justify-center p-4 bg-slate-950/35 backdrop-blur-[1px]">
+    <Teleport to="body">
+      <Transition name="fade">
+        <div v-if="showCreatePaymentModal" class="fixed md:left-64 inset-y-0 right-0 left-0 z-50 flex items-center justify-center p-4 bg-slate-950/45 backdrop-blur-sm">
         <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100">
           <div class="flex items-center justify-between pb-4 border-b border-slate-100">
             <div>
@@ -1115,12 +1126,14 @@
         </div>
       </div>
     </Transition>
+    </Teleport>
 
     <!-- ========================================================================= -->
     <!-- MODAL 7: VIEW PO DETAIL                                                  -->
     <!-- ========================================================================= -->
-    <Transition name="fade">
-      <div v-if="showDetailModal" class="fixed md:left-64 inset-y-0 right-0 left-0 z-50 flex items-center justify-center p-4 bg-slate-950/35 backdrop-blur-[1px]">
+    <Teleport to="body">
+      <Transition name="fade">
+        <div v-if="showDetailModal" class="fixed md:left-64 inset-y-0 right-0 left-0 z-50 flex items-center justify-center p-4 bg-slate-950/45 backdrop-blur-sm">
         <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100">
           <div class="flex items-center justify-between pb-4 border-b border-slate-100">
             <div>
@@ -1196,6 +1209,7 @@
         </div>
       </div>
     </Transition>
+    </Teleport>
 
   </div>
 </template>
