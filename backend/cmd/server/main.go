@@ -60,9 +60,10 @@ func main() {
 	authHandler := handler.NewAuthHandler(authUsecase)
 	masterHandler := handler.NewMasterHandler(dbpool)
 	opHandler := handler.NewOperationalHandler(dbpool)
+	p2pHandler := handler.NewP2PHandler(dbpool)
 
 	// Router
-	router := appHttp.SetupRouter(authHandler, masterHandler, opHandler)
+	router := appHttp.SetupRouter(authHandler, masterHandler, opHandler, p2pHandler)
 
 	srv := &http.Server{
 		Addr:    ":" + cfg.Server.Port,

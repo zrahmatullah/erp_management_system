@@ -289,7 +289,7 @@
     <Transition name="fade">
       <div
         v-if="selectedPreviewReceipt"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 backdrop-blur-sm p-4 transition-all"
+        class="fixed md:left-64 inset-y-0 right-0 left-0 z-50 flex items-center justify-center bg-slate-950/35 backdrop-blur-[1px] p-4 transition-all duration-200"
       >
         <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 flex flex-col max-h-[90vh]">
           <!-- Modal Header -->

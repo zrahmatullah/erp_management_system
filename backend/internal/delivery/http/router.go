@@ -15,6 +15,7 @@ func SetupRouter(
 	authHandler *handler.AuthHandler,
 	masterHandler *handler.MasterHandler,
 	opHandler *handler.OperationalHandler,
+	p2pHandler *handler.P2PHandler,
 ) *chi.Mux {
 	r := chi.NewRouter()
 
@@ -68,6 +69,7 @@ func SetupRouter(
 		})
 
 		// Inventory Operations
+		// Inventory & Procure-to-Pay (P2P) Operations
 		r.Route("/inventory", func(r chi.Router) {
 			r.Get("/stocks", opHandler.GetInventoryStocks)
 			r.Get("/stock-movements", opHandler.GetStockMovements)
@@ -77,6 +79,18 @@ func SetupRouter(
 			r.Put("/purchase-orders/{id}/status", opHandler.UpdatePurchaseOrderStatus)
 			r.Get("/opnames", opHandler.GetStockOpnames)
 			r.Post("/opnames", opHandler.CreateStockOpname)
+
+			// P2P Full Cycle
+			r.Get("/pr", p2pHandler.GetPurchaseRequisitions)
+			r.Post("/pr", p2pHandler.CreatePurchaseRequisition)
+			r.Put("/pr/{id}/status", p2pHandler.UpdatePurchaseRequisitionStatus)
+			r.Post("/pr/{id}/convert-to-po", p2pHandler.ConvertPRToPO)
+			r.Get("/grn", p2pHandler.GetGoodsReceiptNotes)
+			r.Post("/grn", p2pHandler.CreateGoodsReceiptNote)
+			r.Get("/invoices", p2pHandler.GetVendorInvoices)
+			r.Post("/invoices", p2pHandler.CreateVendorInvoice)
+			r.Get("/vendor-payments", p2pHandler.GetVendorPayments)
+			r.Post("/vendor-payments", p2pHandler.CreateVendorPayment)
 		})
 
 		// HRIS Operations
@@ -151,6 +165,10 @@ func SetupRouter(
 			r.Get("/shifts", masterHandler.ListShifts)
 			r.Get("/departments", masterHandler.ListDepartments)
 			r.Get("/positions", masterHandler.ListPositions)
+
+			// Company Profile
+			r.Get("/company-profile", p2pHandler.GetCompanyProfile)
+			r.Put("/company-profile", p2pHandler.UpdateCompanyProfile)
 		})
 	})
 

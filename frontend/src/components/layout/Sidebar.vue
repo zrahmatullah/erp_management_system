@@ -16,7 +16,7 @@
 
     <!-- Navigation Menu -->
     <div class="flex-1 overflow-y-auto px-3 py-4 space-y-1.5 custom-scrollbar">
-      <template v-for="item in menuItems" :key="item.path || item.label">
+      <template v-for="item in filteredMenuItems" :key="item.path || item.label">
         <!-- Item without children -->
         <router-link
           v-if="!item.children"
@@ -67,15 +67,18 @@
     <div class="p-3 border-t border-slate-800/80 bg-slate-950/40">
       <div class="flex items-center justify-between px-2 py-2">
         <div class="flex items-center gap-2.5 overflow-hidden">
-          <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-sm font-bold text-slate-200 shrink-0">
-            SA
+          <div class="w-8 h-8 rounded-full bg-blue-600/80 border border-blue-400/30 flex items-center justify-center text-xs font-black text-white shrink-0 shadow-inner">
+            {{ avatarInitials }}
           </div>
           <div class="overflow-hidden">
-            <div class="text-xs font-semibold text-white truncate">Super Admin</div>
-            <div class="text-[10px] text-slate-400 truncate">admin@cafe-erp.com</div>
+            <div class="text-xs font-bold text-white truncate">{{ userName }}</div>
+            <div class="text-[10px] text-blue-400 font-medium truncate flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+              {{ userRoleBadge }}
+            </div>
           </div>
         </div>
-        <button @click="handleLogout" title="Logout" class="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-slate-800 transition-colors">
+        <button @click="handleLogout" title="Keluar dari Sistem" class="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-slate-800 transition-colors cursor-pointer">
           <LogOut class="w-4 h-4" />
         </button>
       </div>
@@ -84,7 +87,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   LayoutDashboard,
@@ -94,7 +97,6 @@ import {
   DollarSign,
   FileBarChart,
   Settings,
-  Database,
   Coffee,
   ChevronDown,
   LogOut
@@ -104,6 +106,24 @@ import { useAuthStore } from '@/stores/auth.store'
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
+
+const userName = computed(() => {
+  return authStore.fullName || authStore.user?.firstName || 'Pengguna'
+})
+
+const userRoleBadge = computed(() => {
+  return authStore.currentRole || 'Staff'
+})
+
+const avatarInitials = computed(() => {
+  const name = userName.value.trim()
+  if (!name) return 'U'
+  const parts = name.split(' ')
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[1][0]).toUpperCase()
+  }
+  return name.slice(0, 2).toUpperCase()
+})
 
 const openGroups = ref<Record<string, boolean>>({
   'POS & Pesanan': true,
@@ -139,7 +159,8 @@ const menuItems = [
       { label: 'Kasir POS', path: '/pos' },
       { label: 'Denah Meja', path: '/pos/tables' },
       { label: 'Kitchen KDS', path: '/pos/kds' },
-      { label: 'Riwayat Transaksi', path: '/pos/transactions' }
+      { label: 'Riwayat Transaksi', path: '/pos/transactions' },
+      { label: 'Katalog Menu & Produk', path: '/menu/products' }
     ]
   },
   {
@@ -149,7 +170,7 @@ const menuItems = [
       { label: 'Daftar Stok', path: '/inventory' },
       { label: 'Kartu Stok', path: '/inventory/stock-card' },
       { label: 'Stock Opname', path: '/inventory/opname' },
-      { label: 'Purchase Order', path: '/inventory/po' }
+      { label: 'P2P Procurement Hub', path: '/inventory/po', badge: 'P2P' }
     ]
   },
   {
@@ -180,24 +201,32 @@ const menuItems = [
     label: 'Pengaturan',
     icon: Settings,
     children: [
+      { label: 'Profil Perusahaan', path: '/settings/company' },
       { label: '⭐ Data Master CRUD', path: '/settings/master', badge: 'Super Admin' },
       { label: 'Peran & Matriks Izin', path: '/settings/roles' }
     ]
   }
 ]
 
+const filteredMenuItems = computed(() => {
+  const role = (authStore.currentRole || '').toLowerCase()
+  if (!role || role.includes('super admin') || role.includes('owner') || role.includes('admin')) {
+    return menuItems
+  }
+  if (role.includes('manager')) {
+    return menuItems.filter(m => m.label !== 'Pengaturan')
+  }
+  if (role.includes('kasir') || role.includes('cashier')) {
+    return menuItems.filter(m => m.label === 'POS & Pesanan' || m.label === 'Dashboard')
+  }
+  if (role.includes('gudang') || role.includes('warehouse')) {
+    return menuItems.filter(m => m.label === 'Inventori' || m.label === 'Dashboard')
+  }
+  return menuItems
+})
+
 const handleLogout = () => {
   authStore.logout()
   router.push('/login')
 }
 </script>
-
-<style scoped>
-.custom-scrollbar::-webkit-scrollbar {
-  width: 4px;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #334155;
-  border-radius: 4px;
-}
-</style>

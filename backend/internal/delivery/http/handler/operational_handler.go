@@ -480,7 +480,7 @@ func (h *OperationalHandler) CreatePOSOrder(w http.ResponseWriter, r *http.Reque
 	}
 
 	orderID := uuid.New().String()
-	orderNum := fmt.Sprintf("ORD-%s", time.Now().Format("20060102-150405"))
+	orderNum := fmt.Sprintf("ORD-%s-%s", time.Now().Format("20060102-150405"), uuid.New().String()[:4])
 	orderType := body.OrderType
 	if orderType == "" {
 		orderType = "dine_in"

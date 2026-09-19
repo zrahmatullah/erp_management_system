@@ -3,10 +3,12 @@ import { ref, computed } from 'vue';
 import type { User, Permission } from '@/types/auth';
 
 export const useAuthStore = defineStore('auth', () => {
-  const user = ref<User | null>(null);
+  const savedUser = localStorage.getItem('user');
+  const user = ref<User | null>(savedUser ? JSON.parse(savedUser) : null);
   const token = ref<string | null>(localStorage.getItem('token'));
   const refreshTokenValue = ref<string | null>(localStorage.getItem('refreshToken'));
-  const permissions = ref<Permission[]>([]);
+  const savedPerms = localStorage.getItem('permissions');
+  const permissions = ref<Permission[]>(savedPerms ? JSON.parse(savedPerms) : []);
 
   const isAuthenticated = computed(() => !!token.value);
   const fullName = computed(() => user.value ? `${user.value.firstName} ${user.value.lastName}` : '');
@@ -23,6 +25,8 @@ export const useAuthStore = defineStore('auth', () => {
     permissions.value = perms;
     localStorage.setItem('token', newToken);
     localStorage.setItem('refreshToken', newRefreshToken);
+    localStorage.setItem('user', JSON.stringify(userData));
+    localStorage.setItem('permissions', JSON.stringify(perms));
   };
 
   const logout = () => {
@@ -32,6 +36,8 @@ export const useAuthStore = defineStore('auth', () => {
     permissions.value = [];
     localStorage.removeItem('token');
     localStorage.removeItem('refreshToken');
+    localStorage.removeItem('user');
+    localStorage.removeItem('permissions');
   };
 
   const setUser = (userData: User) => {

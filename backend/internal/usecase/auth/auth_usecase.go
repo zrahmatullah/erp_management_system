@@ -36,7 +36,21 @@ func (u *AuthUsecaseImpl) Login(ctx context.Context, req domain.LoginRequest) (d
 		return domain.LoginResponse{}, errors.New("account is disabled")
 	}
 
-	accessToken, refreshToken, err := middleware.GenerateTokenPair(user.ID, user.Email, "Super Admin", user.BranchID, []string{})
+	roleName, roleID, permissions, err := u.userRepo.GetUserRoleAndPermissions(ctx, user.ID)
+	if err == nil && roleID != nil {
+		user.RoleID = roleID
+		user.RoleName = roleName
+	}
+	if roleName == "" {
+		roleName = "Super Admin"
+	}
+
+	var permStrings []string
+	for _, p := range permissions {
+		permStrings = append(permStrings, p.Module+":"+p.Action)
+	}
+
+	accessToken, refreshToken, err := middleware.GenerateTokenPair(user.ID, user.Email, roleName, user.BranchID, permStrings)
 	if err != nil {
 		return domain.LoginResponse{}, err
 	}
@@ -45,6 +59,8 @@ func (u *AuthUsecaseImpl) Login(ctx context.Context, req domain.LoginRequest) (d
 		Token:        accessToken,
 		RefreshToken: refreshToken,
 		User:         *user,
+		Role:         roleName,
+		Permissions:  permissions,
 	}, nil
 }
 
@@ -83,7 +99,21 @@ func (u *AuthUsecaseImpl) RefreshToken(ctx context.Context, token string) (domai
 		return domain.LoginResponse{}, err
 	}
 
-	accessToken, refreshToken, err := middleware.GenerateTokenPair(user.ID, user.Email, "Super Admin", user.BranchID, []string{})
+	roleName, roleID, permissions, _ := u.userRepo.GetUserRoleAndPermissions(ctx, user.ID)
+	if roleID != nil {
+		user.RoleID = roleID
+		user.RoleName = roleName
+	}
+	if roleName == "" {
+		roleName = "Super Admin"
+	}
+
+	var permStrings []string
+	for _, p := range permissions {
+		permStrings = append(permStrings, p.Module+":"+p.Action)
+	}
+
+	accessToken, refreshToken, err := middleware.GenerateTokenPair(user.ID, user.Email, roleName, user.BranchID, permStrings)
 	if err != nil {
 		return domain.LoginResponse{}, err
 	}
@@ -92,13 +122,35 @@ func (u *AuthUsecaseImpl) RefreshToken(ctx context.Context, token string) (domai
 		Token:        accessToken,
 		RefreshToken: refreshToken,
 		User:         *user,
+		Role:         roleName,
+		Permissions:  permissions,
 	}, nil
 }
 
 func (u *AuthUsecaseImpl) ForgotPassword(ctx context.Context, email string) error {
+	_, err := u.userRepo.GetByEmail(ctx, email)
+	if err != nil {
+		return errors.New("user with this email does not exist")
+	}
 	return nil
 }
 
 func (u *AuthUsecaseImpl) ResetPassword(ctx context.Context, token, newPassword string) error {
-	return nil
+	claims, err := middleware.ValidateToken(token)
+	if err != nil {
+		return errors.New("invalid or expired reset token")
+	}
+
+	user, err := u.userRepo.GetByID(ctx, claims.UserID)
+	if err != nil {
+		return err
+	}
+
+	hashedPassword, err := crypto.HashPassword(newPassword)
+	if err != nil {
+		return err
+	}
+
+	user.PasswordHash = hashedPassword
+	return u.userRepo.Update(ctx, user)
 }

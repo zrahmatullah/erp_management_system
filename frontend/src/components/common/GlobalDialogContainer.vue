@@ -2,7 +2,7 @@
   <Transition name="dialog-fade">
     <div
       v-if="dialogStore.isOpen"
-      class="fixed inset-0 z-9999 flex items-center justify-center bg-slate-950/40 backdrop-blur-md p-4 transition-all duration-300"
+      class="fixed md:left-64 inset-y-0 right-0 left-0 z-9999 flex items-center justify-center bg-slate-950/35 backdrop-blur-[1px] p-4 transition-all duration-200"
       @click.self="dialogStore.handleCancel"
       @keydown.esc="dialogStore.handleCancel"
     >

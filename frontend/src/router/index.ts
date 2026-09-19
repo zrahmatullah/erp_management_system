@@ -117,6 +117,22 @@ const routes: Array<RouteRecordRaw> = [
         path: 'settings/roles',
         name: 'RoleManagement',
         component: () => import('@/views/settings/RoleManagement.vue')
+      },
+      {
+        path: 'settings/company',
+        name: 'CompanyProfile',
+        component: () => import('@/views/settings/CompanyProfile.vue')
+      },
+      // Menu Management
+      {
+        path: 'menu/products',
+        name: 'ProductList',
+        component: () => import('@/views/menu/ProductList.vue')
+      },
+      {
+        path: 'menu/products/create',
+        name: 'ProductCreate',
+        component: () => import('@/views/menu/ProductForm.vue')
       }
     ]
   },

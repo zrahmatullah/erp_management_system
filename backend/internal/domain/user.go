@@ -17,6 +17,8 @@ type User struct {
 	AvatarURL    string     `json:"avatar_url"`
 	IsActive     bool       `json:"is_active"`
 	BranchID     *uuid.UUID `json:"branch_id"`
+	RoleID       *uuid.UUID `json:"role_id,omitempty"`
+	RoleName     string     `json:"role_name,omitempty"`
 }
 
 type Role struct {
@@ -49,9 +51,11 @@ type LoginRequest struct {
 }
 
 type LoginResponse struct {
-	Token        string `json:"token"`
-	RefreshToken string `json:"refresh_token"`
-	User         User   `json:"user"`
+	Token        string       `json:"token"`
+	RefreshToken string       `json:"refresh_token"`
+	User         User         `json:"user"`
+	Role         string       `json:"role"`
+	Permissions  []Permission `json:"permissions"`
 }
 
 type RegisterRequest struct {
@@ -70,6 +74,7 @@ type UserRepository interface {
 	Update(ctx context.Context, user *User) error
 	Delete(ctx context.Context, id uuid.UUID) error
 	List(ctx context.Context, limit, offset int) ([]User, error)
+	GetUserRoleAndPermissions(ctx context.Context, userID uuid.UUID) (roleName string, roleID *uuid.UUID, permissions []Permission, err error)
 }
 
 type RoleRepository interface {

@@ -84,18 +84,30 @@ func main() {
 	fmt.Printf("✅ Connected to '%s' successfully!\n", dbName)
 
 	// Find migration scripts
-	migrationFiles := []string{
-		"migrations/000001_full_cafe_erp_schema.sql",
-		"migrations/000002_complete_seed_data.sql",
-		"migrations/000003_operational_seed_data.sql",
+	migDir := "migrations"
+	if _, err := os.Stat(migDir); os.IsNotExist(err) {
+		migDir = filepath.Join("backend", "migrations")
+		if _, err := os.Stat(migDir); os.IsNotExist(err) {
+			migDir = filepath.Join("..", "migrations")
+		}
 	}
 
-	for _, relPath := range migrationFiles {
-		fullPath := relPath
+	// Canonical migrations in execution order
+	migrationFiles := []string{
+		"000001_full_cafe_erp_schema.sql",
+		"000002_complete_seed_data.sql",
+		"000003_operational_seed_data.sql",
+		"000004_add_queue_number.sql",
+		"000005_add_product_stock_and_recipes.sql",
+		"000006_p2p_procurement_cycle.sql",
+	}
+
+	for _, fileName := range migrationFiles {
+		fullPath := filepath.Join(migDir, fileName)
 		if _, err := os.Stat(fullPath); os.IsNotExist(err) {
-			fullPath = filepath.Join("..", relPath)
+			fullPath = filepath.Join("..", "migrations", fileName)
 			if _, err := os.Stat(fullPath); os.IsNotExist(err) {
-				fullPath = filepath.Join("backend", relPath)
+				fullPath = filepath.Join("backend", "migrations", fileName)
 			}
 		}
 
@@ -111,7 +123,7 @@ func main() {
 			fmt.Printf("❌ Failed to execute migration %s: %v\n", fullPath, err)
 			os.Exit(1)
 		}
-		fmt.Printf("✅ Migration %s applied successfully!\n", filepath.Base(fullPath))
+		fmt.Printf("✅ Migration %s applied successfully!\n", fileName)
 	}
 
 	// Ensure all initial users have valid bcrypt hash for Admin@123
