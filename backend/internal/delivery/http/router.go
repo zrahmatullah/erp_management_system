@@ -16,6 +16,7 @@ func SetupRouter(
 	masterHandler *handler.MasterHandler,
 	opHandler *handler.OperationalHandler,
 	p2pHandler *handler.P2PHandler,
+	hrisHandler *handler.HRISHandler,
 ) *chi.Mux {
 	r := chi.NewRouter()
 
@@ -95,13 +96,35 @@ func SetupRouter(
 			r.Post("/vendor-payments", p2pHandler.CreateVendorPayment)
 		})
 
-		// HRIS Operations
+		// HRIS Operations (Protected with JWTAuth)
 		r.Route("/hris", func(r chi.Router) {
-			r.Get("/employees", opHandler.GetEmployees)
-			r.Get("/attendances", opHandler.GetAttendances)
-			r.Get("/leaves", opHandler.GetLeaves)
-			r.Get("/payrolls", opHandler.GetPayrolls)
-			r.Get("/schedules", opHandler.GetShiftSchedules)
+			r.Use(appMiddleware.JWTAuth)
+
+			// Employees
+			r.Get("/employees", hrisHandler.GetEmployees)
+			r.Post("/employees", hrisHandler.CreateEmployee)
+			r.Put("/employees/{id}", hrisHandler.UpdateEmployee)
+			r.Delete("/employees/{id}", hrisHandler.DeleteEmployee)
+
+			// Attendances
+			r.Get("/attendances", hrisHandler.GetAttendances)
+			r.Get("/attendances/today-status", hrisHandler.GetTodayAttendanceStatus)
+			r.Post("/attendances/clock-in", hrisHandler.ClockIn)
+			r.Post("/attendances/clock-out", hrisHandler.ClockOut)
+
+			// Leaves & Approval
+			r.Get("/leaves", hrisHandler.GetLeaves)
+			r.Post("/leaves", hrisHandler.CreateLeave)
+			r.Put("/leaves/{id}/status", hrisHandler.UpdateLeaveStatus)
+
+			// Shift Schedules
+			r.Get("/schedules", hrisHandler.GetShiftSchedules)
+			r.Post("/schedules", hrisHandler.SetShiftSchedule)
+
+			// Payroll
+			r.Get("/payrolls", hrisHandler.GetPayrolls)
+			r.Post("/payrolls/run", hrisHandler.RunPayroll)
+			r.Post("/payrolls/batch-approve", hrisHandler.BatchApprovePayroll)
 		})
 
 		// Finance Operations

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { Printer, X, Coffee } from 'lucide-vue-next'
 
 const props = defineProps<{
@@ -27,7 +28,7 @@ const emit = defineEmits<{
   (e: 'close'): void
 }>()
 
-const formatRupiah = (val: number) => {
+const formatRupiah = (val?: number) => {
   return 'Rp ' + Number(val || 0).toLocaleString('id-ID')
 }
 
@@ -35,32 +36,33 @@ const printSlip = () => {
   window.print()
 }
 
-// Defaults for preview if no employee passed
-const emp = props.employee || {
-  name: 'Sarah Andini',
-  nik: 'EMP-003',
-  position: 'Barista',
-  department: 'Front of House',
-  bank: 'BCA - 1234567890',
-  period: 'September 2026',
-  basicSalary: 5500000,
-  mealAllowance: 600000,
-  transportAllowance: 400000,
-  overtimePay: 570000,
-  overtimeHours: 12,
-  bpjsHealth: 55000,
-  bpjsEmployment: 110000,
-  pph21: 145000,
-  latenessDeduction: 50000,
-  latenessCount: 2
-}
+const emp = computed(() => {
+  return props.employee || {
+    name: '-',
+    nik: '-',
+    position: '-',
+    department: '-',
+    bank: '-',
+    period: '-',
+    basicSalary: 0,
+    mealAllowance: 0,
+    transportAllowance: 0,
+    overtimePay: 0,
+    overtimeHours: 0,
+    bpjsHealth: 0,
+    bpjsEmployment: 0,
+    pph21: 0,
+    latenessDeduction: 0,
+    latenessCount: 0
+  }
+})
 
 const totalPendapatan = () => {
-  return (emp.basicSalary || 0) + (emp.mealAllowance || 0) + (emp.transportAllowance || 0) + (emp.overtimePay || 0)
+  return (emp.value.basicSalary || 0) + (emp.value.mealAllowance || 0) + (emp.value.transportAllowance || 0) + (emp.value.overtimePay || 0)
 }
 
 const totalPotongan = () => {
-  return (emp.bpjsHealth || 0) + (emp.bpjsEmployment || 0) + (emp.pph21 || 0) + (emp.latenessDeduction || 0)
+  return (emp.value.bpjsHealth || 0) + (emp.value.bpjsEmployment || 0) + (emp.value.pph21 || 0) + (emp.value.latenessDeduction || 0)
 }
 
 const takeHomePay = () => {

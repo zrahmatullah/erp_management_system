@@ -61,9 +61,10 @@ func main() {
 	masterHandler := handler.NewMasterHandler(dbpool)
 	opHandler := handler.NewOperationalHandler(dbpool)
 	p2pHandler := handler.NewP2PHandler(dbpool)
+	hrisHandler := handler.NewHRISHandler(dbpool)
 
 	// Router
-	router := appHttp.SetupRouter(authHandler, masterHandler, opHandler, p2pHandler)
+	router := appHttp.SetupRouter(authHandler, masterHandler, opHandler, p2pHandler, hrisHandler)
 
 	srv := &http.Server{
 		Addr:    ":" + cfg.Server.Port,

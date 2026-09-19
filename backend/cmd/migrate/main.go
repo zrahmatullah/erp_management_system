@@ -100,6 +100,7 @@ func main() {
 		"000004_add_queue_number.sql",
 		"000005_add_product_stock_and_recipes.sql",
 		"000006_p2p_procurement_cycle.sql",
+		"000007_hris_employee_schedules.sql",
 	}
 
 	for _, fileName := range migrationFiles {
