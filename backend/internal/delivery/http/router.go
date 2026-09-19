@@ -83,8 +83,10 @@ func SetupRouter(
 			// P2P Full Cycle
 			r.Get("/pr", p2pHandler.GetPurchaseRequisitions)
 			r.Post("/pr", p2pHandler.CreatePurchaseRequisition)
+			r.Post("/pr/from-menu", p2pHandler.CreatePRFromDepletedMenu)
 			r.Put("/pr/{id}/status", p2pHandler.UpdatePurchaseRequisitionStatus)
 			r.Post("/pr/{id}/convert-to-po", p2pHandler.ConvertPRToPO)
+			r.Post("/pr/{id}/convert-po", p2pHandler.ConvertPRToPO)
 			r.Get("/grn", p2pHandler.GetGoodsReceiptNotes)
 			r.Post("/grn", p2pHandler.CreateGoodsReceiptNote)
 			r.Get("/invoices", p2pHandler.GetVendorInvoices)
@@ -135,11 +137,14 @@ func SetupRouter(
 			r.Put("/categories/{id}", masterHandler.UpdateCategory)
 			r.Delete("/categories/{id}", masterHandler.DeleteCategory)
 
-			// Products
+			// Products & Recipes (BOM)
 			r.Get("/products", masterHandler.ListProducts)
 			r.Post("/products", masterHandler.CreateProduct)
 			r.Put("/products/{id}", masterHandler.UpdateProduct)
 			r.Delete("/products/{id}", masterHandler.DeleteProduct)
+			r.Get("/products/{id}/recipe", masterHandler.GetProductRecipe)
+			r.Put("/products/{id}/recipe", masterHandler.UpdateProductRecipe)
+			r.Get("/recipes", masterHandler.ListRecipes)
 
 			// Inventory Items
 			r.Get("/inventory-items", masterHandler.ListInventoryItems)

@@ -30,23 +30,45 @@ func NewOperationalHandler(db *pgxpool.Pool) *OperationalHandler {
 	_, _ = db.Exec(ctx, "ALTER TABLE stock_movements ADD COLUMN IF NOT EXISTS balance_after NUMERIC(12, 4) DEFAULT 0")
 	_, _ = db.Exec(ctx, "ALTER TABLE stock_movements ALTER COLUMN inventory_item_id DROP NOT NULL")
 
+	// Deduplicate product_recipes and ensure unique constraint
+	_, _ = db.Exec(ctx, `
+		DELETE FROM product_recipes a USING product_recipes b 
+		WHERE a.ctid < b.ctid AND a.product_id = b.product_id AND a.inventory_item_id = b.inventory_item_id;
+	`)
+	_, _ = db.Exec(ctx, `CREATE UNIQUE INDEX IF NOT EXISTS idx_recipes_product_item ON product_recipes (product_id, inventory_item_id);`)
+
 	// Ensure recipes exist for all catalog products
 	_, _ = db.Exec(ctx, `
 		INSERT INTO product_recipes (product_id, variant_id, inventory_item_id, quantity_required, uom, instructions)
 		VALUES
+		-- Cafe Latte: Espresso Beans (18g), Fresh Milk (200ml), Cup (1 pcs)
+		('fa111111-0000-0000-0000-000000000001', NULL, 'f1111111-0000-0000-0000-000000000001', 0.0180, 'kg', '18g espresso beans'),
+		('fa111111-0000-0000-0000-000000000001', NULL, 'f1111111-0000-0000-0000-000000000002', 0.2000, 'liter', '200ml steamed fresh milk'),
+		('fa111111-0000-0000-0000-000000000001', NULL, 'f1111111-0000-0000-0000-000000000005', 1.0000, 'pcs', '1 paper cup & lid'),
+
+		-- Cappuccino: Coffee Beans (18g), Milk (150ml), Cup (1 pcs)
 		('fa111111-0000-0000-0000-000000000002', NULL, 'f1111111-0000-0000-0000-000000000001', 0.0180, 'kg', '18g espresso beans'),
 		('fa111111-0000-0000-0000-000000000002', NULL, 'f1111111-0000-0000-0000-000000000002', 0.1500, 'liter', '150ml steamed milk'),
 		('fa111111-0000-0000-0000-000000000002', NULL, 'f1111111-0000-0000-0000-000000000005', 1.0000, 'pcs', '1 cup & lid'),
+
+		-- Caramel Macchiato: Coffee Beans (18g), Milk (180ml), Caramel Syrup (20ml), Cup (1 pcs)
 		('fa111111-0000-0000-0000-000000000003', NULL, 'f1111111-0000-0000-0000-000000000001', 0.0180, 'kg', '18g espresso beans'),
-		('fa111111-0000-0000-0000-000000000003', NULL, 'f1111111-0000-0000-0000-000000000002', 0.1800, 'liter', '180ml steamed milk'),
+		('fa111111-0000-0000-0000-000000000002', NULL, 'f1111111-0000-0000-0000-000000000002', 0.1800, 'liter', '180ml steamed milk'),
 		('fa111111-0000-0000-0000-000000000003', NULL, 'f1111111-0000-0000-0000-000000000004', 0.0200, 'bottle', '20ml caramel syrup'),
 		('fa111111-0000-0000-0000-000000000003', NULL, 'f1111111-0000-0000-0000-000000000005', 1.0000, 'pcs', '1 cup & lid'),
+
+		-- Matcha Green Tea Latte: Matcha Powder (20g), Milk (200ml), Sugar Syrup (20g), Cup (1 pcs)
 		('fa111111-0000-0000-0000-000000000004', NULL, 'f1111111-0000-0000-0000-000000000007', 0.0200, 'pack', '20g matcha powder'),
-		('fa111111-0000-0000-0000-000000000004', NULL, 'f1111111-0000-0000-0000-000000000002', 0.2000, 'liter', '200ml milk'),
-		('fa111111-0000-0000-0000-000000000004', NULL, 'f1111111-0000-0000-0000-000000000003', 0.0200, 'kg', '20g gula aren'),
-		('fa111111-0000-0000-0000-000000000004', NULL, 'f1111111-0000-0000-0000-000000000005', 1.0000, 'pcs', '1 cup & lid'),
+		('fa111111-0000-0000-0000-000000000002', NULL, 'f1111111-0000-0000-0000-000000000002', 0.2000, 'liter', '200ml milk'),
+		('fa111111-0000-0000-0000-000000000003', NULL, 'f1111111-0000-0000-0000-000000000003', 0.0200, 'kg', '20g gula aren'),
+		('fa111111-0000-0000-0000-000000000005', NULL, 'f1111111-0000-0000-0000-000000000005', 1.0000, 'pcs', '1 cup & lid'),
+
+		-- Butter Croissant: Croissant Dough (1 pcs)
+		('fa111111-0000-0000-0000-000000000005', NULL, 'f1111111-0000-0000-0000-000000000006', 1.0000, 'pcs', '1 pcs dough pastry siap panggang'),
+
+		-- Basque Burnt Cheesecake: Dairy/Cream Cheese
 		('fa111111-0000-0000-0000-000000000006', NULL, 'f1111111-0000-0000-0000-000000000002', 0.1000, 'liter', '100ml cream dairy')
-		ON CONFLICT DO NOTHING`)
+		ON CONFLICT (product_id, inventory_item_id) DO NOTHING`)
 
 	// Ensure initial stock movements if table is empty
 	_, _ = db.Exec(ctx, `
@@ -73,15 +95,56 @@ func NewOperationalHandler(db *pgxpool.Pool) *OperationalHandler {
 // 1. POS & ORDERS
 // -----------------------------------------------------------------------------
 
-// GetPOSProducts returns all active products with categories and real-time stock
+// GetPOSProducts returns all active products with categories and real-time stock synchronized with warehouse recipe ingredients
 func (h *OperationalHandler) GetPOSProducts(w http.ResponseWriter, r *http.Request) {
 	query := `
+		WITH ingredient_stocks AS (
+			SELECT inventory_item_id, COALESCE(SUM(quantity), 0) as total_qty
+			FROM inventory_stocks
+			GROUP BY inventory_item_id
+		),
+		recipe_portions AS (
+			SELECT 
+				pr.product_id,
+				COUNT(pr.id) as total_recipe_items,
+				COALESCE(MIN(FLOOR(COALESCE(ist.total_qty, 0) / NULLIF(pr.quantity_required, 0))), 0) AS max_cookable,
+				json_agg(
+					json_build_object(
+						'item_id', ii.id,
+						'name', ii.name,
+						'required_qty', pr.quantity_required,
+						'uom', pr.uom,
+						'current_stock', COALESCE(ist.total_qty, 0),
+						'can_make', FLOOR(COALESCE(ist.total_qty, 0) / NULLIF(pr.quantity_required, 0))
+					)
+				) as recipe_breakdown,
+				(
+					SELECT ii2.name || ' (Sisa ' || TRIM(TO_CHAR(COALESCE(ist2.total_qty, 0), 'FM999999990.00')) || ' ' || pr2.uom || ')'
+					FROM product_recipes pr2
+					JOIN inventory_items ii2 ON pr2.inventory_item_id = ii2.id
+					LEFT JOIN ingredient_stocks ist2 ON pr2.inventory_item_id = ist2.inventory_item_id
+					WHERE pr2.product_id = pr.product_id
+					ORDER BY (COALESCE(ist2.total_qty, 0) / NULLIF(pr2.quantity_required, 0)) ASC
+					LIMIT 1
+				) as bottleneck_item
+			FROM product_recipes pr
+			JOIN inventory_items ii ON pr.inventory_item_id = ii.id
+			LEFT JOIN ingredient_stocks ist ON pr.inventory_item_id = ist.inventory_item_id
+			WHERE pr.deleted_at IS NULL
+			GROUP BY pr.product_id
+		)
 		SELECT 
 			p.id, p.name, p.sku, COALESCE(p.description, ''), p.base_price, 
 			p.target_station, COALESCE(p.image_url, ''), c.name as category_name, c.slug as category_slug,
-			COALESCE(p.stock, 50) as stock, COALESCE(p.min_stock, 5) as min_stock
+			COALESCE(p.stock, 50) as base_stock, 
+			COALESCE(p.min_stock, 5) as min_stock,
+			rp.max_cookable,
+			rp.total_recipe_items,
+			COALESCE(rp.recipe_breakdown, '[]'::json) as recipe_items,
+			COALESCE(rp.bottleneck_item, '') as bottleneck_ingredient
 		FROM products p
 		JOIN menu_categories c ON p.category_id = c.id
+		LEFT JOIN recipe_portions rp ON p.id = rp.product_id
 		WHERE p.is_active = TRUE AND p.deleted_at IS NULL
 		ORDER BY c.sort_order ASC, p.name ASC`
 
@@ -94,24 +157,52 @@ func (h *OperationalHandler) GetPOSProducts(w http.ResponseWriter, r *http.Reque
 
 	var products []map[string]interface{}
 	for rows.Next() {
-		var id, name, sku, desc, station, img, catName, catSlug string
-		var price, stock, minStock float64
-		if err := rows.Scan(&id, &name, &sku, &desc, &price, &station, &img, &catName, &catSlug, &stock, &minStock); err == nil {
+		var id, name, sku, desc, station, img, catName, catSlug, bottleneck string
+		var price, baseStock, minStock float64
+		var maxCookable *float64
+		var totalRecipeItems *int
+		var recipeItemsJSON []byte
+
+		if err := rows.Scan(&id, &name, &sku, &desc, &price, &station, &img, &catName, &catSlug,
+			&baseStock, &minStock, &maxCookable, &totalRecipeItems, &recipeItemsJSON, &bottleneck); err == nil {
+
+			hasRecipe := totalRecipeItems != nil && *totalRecipeItems > 0
+			effectiveStock := baseStock
+			if hasRecipe && maxCookable != nil {
+				// Real-time stock derived from warehouse ingredients!
+				effectiveStock = *maxCookable
+			}
+
+			var recipeList []map[string]interface{}
+			if len(recipeItemsJSON) > 0 {
+				_ = json.Unmarshal(recipeItemsJSON, &recipeList)
+			}
+			if recipeList == nil {
+				recipeList = []map[string]interface{}{}
+			}
+
+			isOutOfStock := effectiveStock <= 0
+			isLowStock := effectiveStock > 0 && effectiveStock <= minStock
+
 			products = append(products, map[string]interface{}{
-				"id":              id,
-				"name":            name,
-				"sku":             sku,
-				"description":     desc,
-				"base_price":      price,
-				"price":           price,
-				"target_station":  station,
-				"image_url":       img,
-				"category":        catName,
-				"category_slug":   catSlug,
-				"stock":           stock,
-				"min_stock":       minStock,
-				"is_out_of_stock": stock <= 0,
-				"is_low_stock":    stock > 0 && stock <= minStock,
+				"id":                    id,
+				"name":                  name,
+				"sku":                   sku,
+				"description":           desc,
+				"base_price":            price,
+				"price":                 price,
+				"target_station":        station,
+				"image_url":             img,
+				"category":              catName,
+				"category_slug":         catSlug,
+				"stock":                 effectiveStock,
+				"base_stock":            baseStock,
+				"min_stock":             minStock,
+				"has_recipe":            hasRecipe,
+				"is_out_of_stock":       isOutOfStock,
+				"is_low_stock":          isLowStock,
+				"bottleneck_ingredient": bottleneck,
+				"recipe_items":          recipeList,
 			})
 		}
 	}

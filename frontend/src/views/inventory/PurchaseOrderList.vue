@@ -144,20 +144,33 @@
               </td>
             </tr>
             <tr v-for="pr in filteredPRList" :key="pr.id" class="hover:bg-slate-50/70 transition-colors">
-              <td class="py-3 px-4 font-mono font-bold text-blue-600">{{ pr.pr_number }}</td>
+              <td class="py-3 px-4">
+                <div class="flex items-center gap-2">
+                  <span class="font-mono font-bold text-blue-600">{{ pr.pr_number }}</span>
+                  <span
+                    v-if="pr.pr_number?.startsWith('PR-MENU-') || pr.notes?.includes('Ref Menu')"
+                    class="px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider bg-cyan-100 text-cyan-800 border border-cyan-200"
+                  >
+                    Restock Menu
+                  </span>
+                </div>
+                <div v-if="pr.notes" class="text-[10px] text-slate-400 truncate max-w-xs mt-0.5" :title="pr.notes">
+                  {{ pr.notes }}
+                </div>
+              </td>
               <td class="py-3 px-4 font-semibold text-slate-900">{{ pr.department }}</td>
               <td class="py-3 px-4">{{ formatDate(pr.created_at) }}</td>
               <td class="py-3 px-4">{{ formatDate(pr.required_date) }}</td>
               <td class="py-3 px-4 font-semibold text-slate-800">Rp {{ formatNum(pr.estimated_total) }}</td>
               <td class="py-3 px-4">
                 <span :class="getStatusBadgeClass(pr.status)" class="px-2.5 py-0.5 rounded-full text-[10px] font-bold">
-                  {{ pr.status }}
+                  {{ pr.status === 'pending_approval' ? 'Pending Gudang' : pr.status }}
                 </span>
               </td>
               <td class="py-3 px-4 text-right">
                 <div class="flex items-center justify-end gap-1.5">
                   <button
-                    v-if="pr.status === 'draft' || pr.status === 'submitted'"
+                    v-if="pr.status === 'draft' || pr.status === 'submitted' || pr.status === 'pending_approval'"
                     @click="approvePR(pr)"
                     class="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 cursor-pointer"
                     title="Setujui PR"
@@ -165,9 +178,10 @@
                     <CheckCircle2 class="w-4 h-4" />
                   </button>
                   <button
-                    v-if="pr.status === 'approved'"
+                    v-if="pr.status === 'approved' || pr.status === 'pending_approval'"
                     @click="openConvertPRModal(pr)"
                     class="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-[11px] shadow-xs cursor-pointer flex items-center gap-1"
+                    title="Konversi ke Purchase Order (PO)"
                   >
                     <span>Jadikan PO</span>
                     <ArrowRight class="w-3 h-3" />
@@ -1344,6 +1358,7 @@ const getStatusBadgeClass = (status: string) => {
       return 'bg-blue-100 text-blue-800'
     case 'draft':
     case 'submitted':
+    case 'pending_approval':
     case 'unpaid':
       return 'bg-amber-100 text-amber-800'
     case 'rejected':

@@ -145,16 +145,29 @@
                   <p class="text-xs font-extrabold text-blue-600">Rp {{ (product.price || product.base_price || 0).toLocaleString('id-ID') }}</p>
                   <span class="text-[10px] font-medium text-slate-400">Tersedia {{ product.stock }}</span>
                 </div>
+                <div v-if="product.bottleneck_ingredient && (product.stock <= 5 || product.is_out_of_stock)" class="text-[9px] font-semibold text-rose-500 truncate mt-0.5" :title="product.bottleneck_ingredient">
+                  Habis: {{ product.bottleneck_ingredient }}
+                </div>
               </div>
 
+              <!-- Out of Stock PO Request / Normal Add Button -->
+              <div v-if="product.stock <= 0 || product.is_out_of_stock" class="mt-3">
+                <button
+                  @click="openDraftPOModal(product)"
+                  class="w-full py-1.5 text-xs font-black rounded-xl bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                  title="Ajukan Draft PO Bahan Baku ke Tim Gudang"
+                >
+                  <ShoppingBag class="w-3.5 h-3.5" />
+                  <span>Minta PO (Draft)</span>
+                </button>
+              </div>
               <button
+                v-else
                 @click="addToCart(product)"
-                :disabled="product.stock <= 0 || product.is_out_of_stock"
-                class="mt-3 w-full py-1.5 text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-1 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                :class="product.stock <= 0 ? 'bg-slate-100 text-slate-400' : 'bg-blue-50 hover:bg-blue-600 text-blue-600 hover:text-white'"
+                class="mt-3 w-full py-1.5 text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-1 cursor-pointer bg-blue-50 hover:bg-blue-600 text-blue-600 hover:text-white"
               >
-                <span>{{ product.stock <= 0 ? 'Habis' : 'Add' }}</span>
-                <span v-if="product.stock > 0">+</span>
+                <span>Add</span>
+                <span>+</span>
               </button>
             </div>
           </div>
@@ -451,6 +464,109 @@
       @close="showBillingPaymentModal = false"
       @success="handleBillingPaymentSuccess"
     />
+
+    <!-- Modal Ajukan Draft PO dari POS -->
+    <Teleport to="body">
+      <div
+        v-if="showDraftPOModal"
+        class="fixed md:left-64 inset-y-0 right-0 left-0 z-50 bg-slate-950/45 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto"
+      >
+        <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl border border-slate-200 overflow-hidden my-6">
+          <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-amber-50/60">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center font-black shrink-0">
+                <ShoppingBag class="w-5 h-5" />
+              </div>
+              <div>
+                <h3 class="font-black text-slate-900 text-sm">Ajukan Draft PO Bahan Baku</h3>
+                <p class="text-[11px] text-slate-500 mt-0.5">Kirim permintaan restock langsung ke Tim Gudang</p>
+              </div>
+            </div>
+            <button
+              @click="showDraftPOModal = false"
+              class="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+            >
+              <X class="w-4 h-4" />
+            </button>
+          </div>
+
+          <div class="p-5 space-y-4 text-xs">
+            <!-- Selected Product Info -->
+            <div class="p-3 rounded-xl border border-slate-200 bg-slate-50/60 flex items-center gap-3">
+              <img
+                :src="selectedProductForPO?.image || selectedProductForPO?.image_url || 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=200'"
+                :alt="selectedProductForPO?.name"
+                class="w-12 h-12 rounded-lg object-cover bg-slate-200 shrink-0"
+              />
+              <div class="min-w-0 flex-1">
+                <div class="font-bold text-slate-900 truncate">{{ selectedProductForPO?.name }}</div>
+                <div class="text-[11px] text-slate-500">
+                  Stok: <span class="text-rose-600 font-bold">0 Porsi (Habis)</span>
+                  <span v-if="selectedProductForPO?.bottleneck_ingredient" class="ml-1 text-slate-400 block truncate">
+                    {{ selectedProductForPO?.bottleneck_ingredient }}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Target Portions -->
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Target Porsi yang Dibutuhkan</label>
+              <div class="flex items-center gap-2 mb-2">
+                <button
+                  v-for="p in [25, 50, 100]"
+                  :key="p"
+                  type="button"
+                  @click="draftPOForm.target_portions = p"
+                  class="px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer"
+                  :class="draftPOForm.target_portions === p ? 'bg-amber-500 text-white shadow-xs' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
+                >
+                  {{ p }} Porsi
+                </button>
+              </div>
+              <input
+                v-model.number="draftPOForm.target_portions"
+                type="number"
+                min="1"
+                class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-amber-500 font-bold text-slate-900 outline-none"
+              />
+            </div>
+
+            <!-- Notes -->
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Catatan Tambahan untuk Gudang</label>
+              <input
+                v-model="draftPOForm.notes"
+                type="text"
+                placeholder="Contoh: Stok susu & cup habis di bar kasir"
+                class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white outline-none"
+              />
+            </div>
+
+            <div class="p-3 rounded-xl bg-blue-50/70 border border-blue-200 text-blue-900 text-[11px]">
+              Draft Purchase Requisition (PR) akan otomatis dibuat dan siap diproses menjadi PO oleh <strong>Tim Gudang</strong>.
+            </div>
+          </div>
+
+          <div class="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-end gap-2">
+            <button
+              @click="showDraftPOModal = false"
+              class="px-4 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 text-xs font-bold hover:bg-slate-100 cursor-pointer"
+            >
+              Batal
+            </button>
+            <button
+              @click="submitDraftPOFromPOS"
+              :disabled="submittingPO"
+              class="px-4 py-2 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-md shadow-amber-500/30 cursor-pointer flex items-center gap-1.5"
+            >
+              <ShoppingBag class="w-4 h-4" />
+              <span>{{ submittingPO ? 'Mengirim...' : 'Kirim ke Tim Gudang' }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -473,7 +589,9 @@ import {
   ReceiptText,
   RotateCw,
   CheckCircle2,
-  Send
+  Send,
+  ShoppingBag,
+  X
 } from 'lucide-vue-next'
 import { useNotificationStore } from '@/stores/notification.store'
 
@@ -489,6 +607,53 @@ const discount = ref(0)
 const showPaymentModal = ref(false)
 const loading = ref(false)
 const savingOrder = ref(false)
+
+// Draft PO modal state
+const showDraftPOModal = ref(false)
+const submittingPO = ref(false)
+const selectedProductForPO = ref<any>(null)
+const draftPOForm = ref({
+  target_portions: 50,
+  department: 'Kitchen & Bar',
+  notes: ''
+})
+
+const openDraftPOModal = (product: any) => {
+  selectedProductForPO.value = product
+  draftPOForm.value = {
+    target_portions: 50,
+    department: 'Kitchen & Bar',
+    notes: `Permintaan restock bahan baku menu ${product.name} (stok habis di POS).`
+  }
+  showDraftPOModal.value = true
+}
+
+const submitDraftPOFromPOS = async () => {
+  if (!selectedProductForPO.value) return
+  if (draftPOForm.value.target_portions <= 0) {
+    notifyStore.warning('Masukkan jumlah target porsi yang valid!', 'Validasi')
+    return
+  }
+
+  submittingPO.value = true
+  try {
+    const res = await axios.post('/api/v1/inventory/pr/from-menu', {
+      product_id: selectedProductForPO.value.id,
+      target_portions: Number(draftPOForm.value.target_portions),
+      department: draftPOForm.value.department,
+      notes: draftPOForm.value.notes
+    })
+    notifyStore.success(
+      res.data?.message || `Draft PR ${res.data?.pr_number || ''} berhasil dikirim ke Tim Gudang!`,
+      'Draft PO Terkirim'
+    )
+    showDraftPOModal.value = false
+  } catch (err: any) {
+    notifyStore.error(err.response?.data?.message || 'Gagal mengajukan draft PO', 'Error')
+  } finally {
+    submittingPO.value = false
+  }
+}
 
 const products = ref<any[]>([])
 const tablesList = ref<any[]>([])
@@ -515,7 +680,13 @@ const fetchPOSData = async () => {
         name: p.name,
         price: p.price || p.base_price || 0,
         category: p.category || 'Coffee',
-        image: p.image_url || p.image || 'https://images.unsplash.com/photo-1570968915860-54d5c301fa9f?w=300'
+        image: p.image_url || p.image || 'https://images.unsplash.com/photo-1570968915860-54d5c301fa9f?w=300',
+        stock: p.stock !== undefined ? p.stock : 0,
+        is_out_of_stock: p.is_out_of_stock ?? (p.stock <= 0),
+        is_low_stock: p.is_low_stock ?? (p.stock > 0 && p.stock <= 5),
+        bottleneck_ingredient: p.bottleneck_ingredient || '',
+        has_recipe: p.has_recipe,
+        recipe_items: p.recipe_items || []
       }))
     }
     if (tRes.data?.data) {

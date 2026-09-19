@@ -182,6 +182,139 @@ func (h *P2PHandler) CreatePurchaseRequisition(w http.ResponseWriter, r *http.Re
 	})
 }
 
+// CreatePRFromDepletedMenu creates a draft Purchase Requisition automatically based on an out-of-stock menu's recipe
+func (h *P2PHandler) CreatePRFromDepletedMenu(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	var body struct {
+		ProductID      string  `json:"product_id"`
+		TargetPortions float64 `json:"target_portions"`
+		Notes          string  `json:"notes"`
+		Department     string  `json:"department"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, "Invalid request payload")
+		return
+	}
+
+	if body.ProductID == "" {
+		writeError(w, http.StatusBadRequest, "product_id wajib diisi")
+		return
+	}
+
+	if body.TargetPortions <= 0 {
+		body.TargetPortions = 50
+	}
+	if body.Department == "" {
+		body.Department = "Kitchen & Bar"
+	}
+
+	var productName, productSKU string
+	err := h.db.QueryRow(ctx, "SELECT name, sku FROM products WHERE id = $1 AND deleted_at IS NULL", body.ProductID).Scan(&productName, &productSKU)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "Menu produk tidak ditemukan")
+		return
+	}
+
+	recipeQuery := `
+		SELECT pr.inventory_item_id, pr.quantity_required, pr.uom, ii.name, COALESCE(ii.average_cost, 0)
+		FROM product_recipes pr
+		JOIN inventory_items ii ON pr.inventory_item_id = ii.id
+		WHERE pr.product_id = $1 AND pr.deleted_at IS NULL`
+
+	rows, err := h.db.Query(ctx, recipeQuery, body.ProductID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	defer rows.Close()
+
+	type recipeMat struct {
+		itemID  string
+		reqQty  float64
+		uom     string
+		name    string
+		avgCost float64
+	}
+	var mats []recipeMat
+	for rows.Next() {
+		var m recipeMat
+		if scanErr := rows.Scan(&m.itemID, &m.reqQty, &m.uom, &m.name, &m.avgCost); scanErr == nil {
+			mats = append(mats, m)
+		}
+	}
+
+	if len(mats) == 0 {
+		writeError(w, http.StatusBadRequest, fmt.Sprintf("Menu '%s' belum memiliki mapping resep bahan baku di sistem.", productName))
+		return
+	}
+
+	var branchID string
+	_ = h.db.QueryRow(ctx, "SELECT id FROM branches LIMIT 1").Scan(&branchID)
+
+	prID := uuid.New().String()
+	prNumber := fmt.Sprintf("PR-MENU-%s-%04d", time.Now().Format("20060102"), time.Now().Unix()%10000)
+	reqDate := time.Now().Add(2 * 24 * time.Hour)
+
+	notes := body.Notes
+	if notes == "" {
+		notes = fmt.Sprintf("Pengajuan otomatis dari Menu/POS: Stok '%s' habis. Permintaan bahan untuk target %d porsi.", productName, int(body.TargetPortions))
+	} else {
+		notes = fmt.Sprintf("%s (Ref Menu: %s x %d porsi)", notes, productName, int(body.TargetPortions))
+	}
+
+	var totalEst float64
+	for _, m := range mats {
+		neededQty := m.reqQty * body.TargetPortions
+		totalEst += neededQty * m.avgCost
+	}
+
+	tx, err := h.db.Begin(ctx)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	defer tx.Rollback(ctx)
+
+	_, err = tx.Exec(ctx, `
+		INSERT INTO purchase_requisitions (id, branch_id, pr_number, department, status, required_date, notes, total_estimated_cost, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, 'pending_approval', $5, $6, $7, NOW(), NOW())`,
+		prID, branchID, prNumber, body.Department, reqDate, notes, totalEst)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	for _, m := range mats {
+		neededQty := m.reqQty * body.TargetPortions
+		estItemTotal := neededQty * m.avgCost
+		itemNote := fmt.Sprintf("Bahan untuk %s (%.3f %s/porsi)", productName, m.reqQty, m.uom)
+		_, err = tx.Exec(ctx, `
+			INSERT INTO purchase_requisition_items (id, purchase_requisition_id, inventory_item_id, quantity, estimated_unit_price, estimated_total_price, notes, created_at)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`,
+			uuid.New().String(), prID, m.itemID, neededQty, m.avgCost, estItemTotal, itemNote)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusCreated, map[string]interface{}{
+		"success":        true,
+		"message":        fmt.Sprintf("Draft PO / Purchase Requisition %s berhasil diajukan ke Tim Gudang!", prNumber),
+		"pr_id":          prID,
+		"pr_number":      prNumber,
+		"product_name":   productName,
+		"items_count":    len(mats),
+		"total_est_cost": totalEst,
+	})
+}
+
 func (h *P2PHandler) UpdatePurchaseRequisitionStatus(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	id := chi.URLParam(r, "id")
@@ -210,11 +343,11 @@ func (h *P2PHandler) ConvertPRToPO(w http.ResponseWriter, r *http.Request) {
 	prID := chi.URLParam(r, "id")
 
 	var body struct {
-		SupplierID   string  `json:"supplier_id"`
-		TaxType      string  `json:"tax_type"`      // 'include', 'exclude', 'non_pkp'
-		PaymentTerms string  `json:"payment_terms"` // 'cod', 'net_14', 'net_30'
-		ExpectedDate string  `json:"expected_date"`
-		Notes        string  `json:"notes"`
+		SupplierID   string `json:"supplier_id"`
+		TaxType      string `json:"tax_type"`      // 'include', 'exclude', 'non_pkp'
+		PaymentTerms string `json:"payment_terms"` // 'cod', 'net_14', 'net_30'
+		ExpectedDate string `json:"expected_date"`
+		Notes        string `json:"notes"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		writeError(w, http.StatusBadRequest, "Invalid payload")

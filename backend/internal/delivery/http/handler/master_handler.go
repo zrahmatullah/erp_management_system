@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"math"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -435,13 +436,48 @@ func (h *MasterHandler) DeleteCategory(w http.ResponseWriter, r *http.Request) {
 // -----------------------------------------------------------------------------
 func (h *MasterHandler) ListProducts(w http.ResponseWriter, r *http.Request) {
 	query := `
-		SELECT p.id, p.category_id, c.name as category_name, p.name, p.sku, 
-		       COALESCE(p.description, ''), p.base_price, p.target_station, 
-		       COALESCE(p.image_url, ''), p.is_active, p.created_at
+		WITH ingredient_stocks AS (
+			SELECT inventory_item_id, COALESCE(SUM(quantity), 0) as total_qty
+			FROM inventory_stocks
+			GROUP BY inventory_item_id
+		),
+		recipe_agg AS (
+			SELECT 
+				pr.product_id,
+				COUNT(pr.id) as total_ingredients,
+				COALESCE(SUM(pr.quantity_required * COALESCE(ii.average_cost, 0)), 0) as total_cogs,
+				COALESCE(MIN(FLOOR(COALESCE(ist.total_qty, 0) / NULLIF(pr.quantity_required, 0))), 0) AS max_cookable,
+				(
+					SELECT ii2.name || ' (Sisa ' || TRIM(TO_CHAR(COALESCE(ist2.total_qty, 0), 'FM999999990.00')) || ' ' || pr2.uom || ')'
+					FROM product_recipes pr2
+					JOIN inventory_items ii2 ON pr2.inventory_item_id = ii2.id
+					LEFT JOIN ingredient_stocks ist2 ON pr2.inventory_item_id = ist2.inventory_item_id
+					WHERE pr2.product_id = pr.product_id
+					ORDER BY (COALESCE(ist2.total_qty, 0) / NULLIF(pr2.quantity_required, 0)) ASC
+					LIMIT 1
+				) as bottleneck_item
+			FROM product_recipes pr
+			JOIN inventory_items ii ON pr.inventory_item_id = ii.id
+			LEFT JOIN ingredient_stocks ist ON pr.inventory_item_id = ist.inventory_item_id
+			WHERE pr.deleted_at IS NULL
+			GROUP BY pr.product_id
+		)
+		SELECT 
+			p.id, p.category_id, c.name as category_name, p.name, p.sku, 
+			COALESCE(p.description, ''), p.base_price, p.target_station, 
+			COALESCE(p.image_url, ''), p.is_active, p.created_at,
+			COALESCE(p.stock, 50) as base_stock,
+			COALESCE(p.min_stock, 5) as min_stock,
+			ra.total_ingredients,
+			ra.total_cogs,
+			ra.max_cookable,
+			COALESCE(ra.bottleneck_item, '') as bottleneck_ingredient
 		FROM products p
 		LEFT JOIN menu_categories c ON p.category_id = c.id
+		LEFT JOIN recipe_agg ra ON p.id = ra.product_id
 		WHERE p.deleted_at IS NULL
 		ORDER BY p.name ASC`
+
 	rows, err := h.db.Query(r.Context(), query)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
@@ -451,15 +487,60 @@ func (h *MasterHandler) ListProducts(w http.ResponseWriter, r *http.Request) {
 
 	var list []map[string]interface{}
 	for rows.Next() {
-		var id, catID, catName, name, sku, desc, station, img string
-		var price float64
+		var id, catID, catName, name, sku, desc, station, img, bottleneck string
+		var price, baseStock, minStock float64
 		var isActive bool
 		var createdAt interface{}
-		if err := rows.Scan(&id, &catID, &catName, &name, &sku, &desc, &price, &station, &img, &isActive, &createdAt); err == nil {
+		var totalIngredients *int
+		var totalCOGS, maxCookable *float64
+
+		if err := rows.Scan(&id, &catID, &catName, &name, &sku, &desc, &price, &station, &img, &isActive, &createdAt,
+			&baseStock, &minStock, &totalIngredients, &totalCOGS, &maxCookable, &bottleneck); err == nil {
+
+			hasRecipe := totalIngredients != nil && *totalIngredients > 0
+			effectiveStock := baseStock
+			if hasRecipe && maxCookable != nil {
+				effectiveStock = *maxCookable
+			}
+
+			cogs := 0.0
+			if totalCOGS != nil {
+				cogs = *totalCOGS
+			}
+
+			grossProfit := price - cogs
+			marginPercent := 0.0
+			if price > 0 {
+				marginPercent = (grossProfit / price) * 100
+			}
+
+			ingCount := 0
+			if totalIngredients != nil {
+				ingCount = *totalIngredients
+			}
+
 			list = append(list, map[string]interface{}{
-				"id": id, "category_id": catID, "category_name": catName,
-				"name": name, "sku": sku, "description": desc, "base_price": price,
-				"target_station": station, "image_url": img, "is_active": isActive,
+				"id":                    id,
+				"category_id":           catID,
+				"category_name":         catName,
+				"name":                  name,
+				"sku":                   sku,
+				"description":           desc,
+				"base_price":            price,
+				"price":                 price,
+				"target_station":        station,
+				"image_url":             img,
+				"is_active":             isActive,
+				"stock":                 effectiveStock,
+				"base_stock":            baseStock,
+				"min_stock":             minStock,
+				"has_recipe":            hasRecipe,
+				"total_ingredients":     ingCount,
+				"cogs":                  cogs,
+				"gross_profit":          grossProfit,
+				"margin_percent":        marginPercent,
+				"is_out_of_stock":       effectiveStock <= 0,
+				"bottleneck_ingredient": bottleneck,
 			})
 		}
 	}
@@ -531,6 +612,268 @@ func (h *MasterHandler) DeleteProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]string{"message": "Product deleted"})
+}
+
+// -----------------------------------------------------------------------------
+// 5b. MAPPING RESEP & BAHAN BAKU (BILL OF MATERIALS / BOM)
+// -----------------------------------------------------------------------------
+
+// GetProductRecipe returns the recipe (BOM) for a specific product including raw material costs and available cookable portions
+func (h *MasterHandler) GetProductRecipe(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	ctx := r.Context()
+
+	var prodID, name, sku, img string
+	var basePrice float64
+	err := h.db.QueryRow(ctx, `
+		SELECT id, name, sku, base_price, COALESCE(image_url, '')
+		FROM products
+		WHERE id = $1 AND deleted_at IS NULL`, id).Scan(&prodID, &name, &sku, &basePrice, &img)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "Produk tidak ditemukan")
+		return
+	}
+
+	query := `
+		SELECT 
+			pr.id, pr.inventory_item_id, ii.name, ii.sku, pr.quantity_required, pr.uom,
+			COALESCE(ii.average_cost, 0) as unit_cost,
+			(pr.quantity_required * COALESCE(ii.average_cost, 0)) as cost_subtotal,
+			COALESCE(st.total_stock, 0) as current_stock,
+			COALESCE(pr.instructions, '') as instructions
+		FROM product_recipes pr
+		JOIN inventory_items ii ON pr.inventory_item_id = ii.id
+		LEFT JOIN (
+			SELECT inventory_item_id, COALESCE(SUM(quantity), 0) as total_stock
+			FROM inventory_stocks
+			GROUP BY inventory_item_id
+		) st ON pr.inventory_item_id = st.inventory_item_id
+		WHERE pr.product_id = $1 AND pr.deleted_at IS NULL
+		ORDER BY ii.name ASC`
+
+	rows, err := h.db.Query(ctx, query, id)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	defer rows.Close()
+
+	var items []map[string]interface{}
+	var totalCOGS float64
+	var minCookable *float64
+
+	for rows.Next() {
+		var rID, invID, iName, iSKU, uom, instructions string
+		var reqQty, unitCost, costSubtotal, curStock float64
+		if err := rows.Scan(&rID, &invID, &iName, &iSKU, &reqQty, &uom, &unitCost, &costSubtotal, &curStock, &instructions); err == nil {
+			totalCOGS += costSubtotal
+			canMake := 0.0
+			if reqQty > 0 {
+				canMake = math.Floor(curStock / reqQty)
+			}
+			if minCookable == nil || canMake < *minCookable {
+				canMakeCopy := canMake
+				minCookable = &canMakeCopy
+			}
+
+			items = append(items, map[string]interface{}{
+				"id":                rID,
+				"inventory_item_id": invID,
+				"item_name":         iName,
+				"sku":               iSKU,
+				"quantity_required": reqQty,
+				"uom":               uom,
+				"unit_cost":         unitCost,
+				"cost_subtotal":     costSubtotal,
+				"current_stock":     curStock,
+				"can_make_portions": canMake,
+				"instructions":      instructions,
+			})
+		}
+	}
+	if items == nil {
+		items = []map[string]interface{}{}
+	}
+
+	cookablePortions := 0.0
+	if minCookable != nil {
+		cookablePortions = *minCookable
+	}
+
+	grossProfit := basePrice - totalCOGS
+	var marginPercent float64
+	if basePrice > 0 {
+		marginPercent = (grossProfit / basePrice) * 100
+	}
+
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"product_id":           prodID,
+		"product_name":         name,
+		"sku":                  sku,
+		"base_price":           basePrice,
+		"image_url":            img,
+		"items":                items,
+		"total_cogs":           totalCOGS,
+		"gross_profit":         grossProfit,
+		"gross_margin_percent": marginPercent,
+		"cookable_portions":    cookablePortions,
+	})
+}
+
+// UpdateProductRecipe updates or creates recipe ingredients for a product
+func (h *MasterHandler) UpdateProductRecipe(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	ctx := r.Context()
+
+	var body struct {
+		Items []struct {
+			InventoryItemID  string  `json:"inventory_item_id"`
+			QuantityRequired float64 `json:"quantity_required"`
+			UOM              string  `json:"uom"`
+			Instructions     string  `json:"instructions"`
+		} `json:"items"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, "Payload resep tidak valid")
+		return
+	}
+
+	tx, err := h.db.Begin(ctx)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	defer tx.Rollback(ctx)
+
+	// Clear existing recipe items for this product
+	_, err = tx.Exec(ctx, "DELETE FROM product_recipes WHERE product_id = $1", id)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// Insert new items
+	for _, it := range body.Items {
+		if it.InventoryItemID == "" || it.QuantityRequired <= 0 {
+			continue
+		}
+		if it.UOM == "" {
+			_ = tx.QueryRow(ctx, "SELECT uom FROM inventory_items WHERE id = $1", it.InventoryItemID).Scan(&it.UOM)
+			if it.UOM == "" {
+				it.UOM = "pcs"
+			}
+		}
+		_, err = tx.Exec(ctx, `
+			INSERT INTO product_recipes (id, product_id, inventory_item_id, quantity_required, uom, instructions, created_at, updated_at)
+			VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())`,
+			uuid.New().String(), id, it.InventoryItemID, it.QuantityRequired, it.UOM, it.Instructions)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"success": true,
+		"message": "Mapping resep dan takaran bahan berhasil disimpan",
+	})
+}
+
+// ListRecipes returns an overview of all menu products with their recipe mapping status, COGS, and cookable portions
+func (h *MasterHandler) ListRecipes(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	query := `
+		WITH ingredient_stocks AS (
+			SELECT inventory_item_id, COALESCE(SUM(quantity), 0) as total_qty
+			FROM inventory_stocks
+			GROUP BY inventory_item_id
+		),
+		recipe_agg AS (
+			SELECT 
+				pr.product_id,
+				COUNT(pr.id) as total_ingredients,
+				COALESCE(SUM(pr.quantity_required * COALESCE(ii.average_cost, 0)), 0) as total_cogs,
+				COALESCE(MIN(FLOOR(COALESCE(ist.total_qty, 0) / NULLIF(pr.quantity_required, 0))), 0) AS max_cookable,
+				(
+					SELECT ii2.name || ' (Sisa ' || TRIM(TO_CHAR(COALESCE(ist2.total_qty, 0), 'FM999999990.00')) || ' ' || pr2.uom || ')'
+					FROM product_recipes pr2
+					JOIN inventory_items ii2 ON pr2.inventory_item_id = ii2.id
+					LEFT JOIN ingredient_stocks ist2 ON pr2.inventory_item_id = ist2.inventory_item_id
+					WHERE pr2.product_id = pr.product_id
+					ORDER BY (COALESCE(ist2.total_qty, 0) / NULLIF(pr2.quantity_required, 0)) ASC
+					LIMIT 1
+				) as bottleneck_item
+			FROM product_recipes pr
+			JOIN inventory_items ii ON pr.inventory_item_id = ii.id
+			LEFT JOIN ingredient_stocks ist ON pr.inventory_item_id = ist.inventory_item_id
+			WHERE pr.deleted_at IS NULL
+			GROUP BY pr.product_id
+		)
+		SELECT 
+			p.id, p.name, p.sku, COALESCE(c.name, 'Uncategorized') as category_name,
+			p.base_price, COALESCE(p.image_url, ''), p.is_active,
+			COALESCE(ra.total_ingredients, 0) as total_ingredients,
+			COALESCE(ra.total_cogs, 0) as total_cogs,
+			COALESCE(ra.max_cookable, 0) as max_cookable,
+			COALESCE(ra.bottleneck_item, '') as bottleneck_ingredient
+		FROM products p
+		LEFT JOIN menu_categories c ON p.category_id = c.id
+		LEFT JOIN recipe_agg ra ON p.id = ra.product_id
+		WHERE p.deleted_at IS NULL
+		ORDER BY p.name ASC`
+
+	rows, err := h.db.Query(ctx, query)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	defer rows.Close()
+
+	var list []map[string]interface{}
+	for rows.Next() {
+		var id, name, sku, catName, img, bottleneck string
+		var basePrice, totalCOGS, maxCookable float64
+		var totalIngredients int
+		var isActive bool
+
+		if err := rows.Scan(&id, &name, &sku, &catName, &basePrice, &img, &isActive,
+			&totalIngredients, &totalCOGS, &maxCookable, &bottleneck); err == nil {
+
+			grossProfit := basePrice - totalCOGS
+			marginPercent := 0.0
+			if basePrice > 0 {
+				marginPercent = (grossProfit / basePrice) * 100
+			}
+
+			list = append(list, map[string]interface{}{
+				"product_id":            id,
+				"product_name":          name,
+				"sku":                   sku,
+				"category":              catName,
+				"base_price":            basePrice,
+				"image_url":             img,
+				"is_active":             isActive,
+				"has_recipe":            totalIngredients > 0,
+				"total_ingredients":     totalIngredients,
+				"cogs":                  totalCOGS,
+				"gross_profit":          grossProfit,
+				"margin_percent":        marginPercent,
+				"cookable_portions":     maxCookable,
+				"bottleneck_ingredient": bottleneck,
+			})
+		}
+	}
+	if list == nil {
+		list = []map[string]interface{}{}
+	}
+
+	writeJSON(w, http.StatusOK, list)
 }
 
 // -----------------------------------------------------------------------------
