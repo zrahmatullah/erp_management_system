@@ -1,5 +1,5 @@
 <template>
-  <n-config-provider>
+  <n-config-provider :theme-overrides="themeOverrides">
     <n-notification-provider>
       <n-message-provider>
         <n-dialog-provider>
@@ -13,7 +13,21 @@
 </template>
 
 <script setup lang="ts">
-import { NConfigProvider, NNotificationProvider, NMessageProvider, NDialogProvider } from 'naive-ui'
+import { NConfigProvider, NNotificationProvider, NMessageProvider, NDialogProvider, type GlobalThemeOverrides } from 'naive-ui'
 import ToastContainer from '@/components/common/ToastContainer.vue'
 import GlobalDialogContainer from '@/components/common/GlobalDialogContainer.vue'
+
+const themeOverrides: GlobalThemeOverrides = {
+  common: {
+    fontSize: '14.5px',
+    fontSizeMedium: '14.5px',
+    fontSizeLarge: '16px',
+    heightMedium: '38px',
+    heightLarge: '42px',
+    borderRadius: '12px',
+    primaryColor: '#2563EB',
+    primaryColorHover: '#1D4ED8',
+    primaryColorPressed: '#1E40AF'
+  }
+}
 </script>

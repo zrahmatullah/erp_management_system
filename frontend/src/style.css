@@ -3,8 +3,49 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    font-size: 16.5px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
   body {
-    @apply bg-slate-50 text-slate-900 antialiased font-sans m-0 p-0;
+    @apply bg-slate-50 text-slate-900 antialiased font-sans m-0 p-0 text-sm;
+    letter-spacing: -0.011em;
+  }
+
+  /* Form Controls Ergonomic Touch & Click Scale */
+  input:not([type="checkbox"]):not([type="radio"]), 
+  select, 
+  textarea {
+    @apply text-sm transition-all;
+    line-height: 1.45;
+  }
+
+  input:not([type="checkbox"]):not([type="radio"]), 
+  select {
+    min-height: 2.5rem; /* ~41px comfortable height */
+  }
+
+  /* Button ergonomics: Ensure touch/click targets are never cramped */
+  button.cursor-pointer:not(.p-1):not(.p-1\.5):not(.p-0):not(.p-0\.5) {
+    min-height: 2.375rem; /* ~39px */
   }
 }
 
+@layer utilities {
+  /* Prevent microscopic pixel text across legacy badges and tags */
+  .text-\[9px\] {
+    font-size: 0.725rem !important; /* ~12px */
+    line-height: 1rem !important;
+  }
+  .text-\[10px\] {
+    font-size: 0.785rem !important; /* ~13px */
+    line-height: 1.15rem !important;
+  }
+  .text-\[11px\] {
+    font-size: 0.845rem !important; /* ~14px */
+    line-height: 1.25rem !important;
+  }
+}
