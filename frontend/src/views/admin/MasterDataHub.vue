@@ -273,6 +273,47 @@ const currentEditId = ref<string | null>(null)
 // Extra dropdown options
 const branchOptions = ref<{label: string, value: string}[]>([])
 const categoryOptions = ref<{label: string, value: string}[]>([])
+const roleOptions = ref<{label: string, value: string}[]>([])
+const employeeOptions = ref<{label: string, value: string}[]>([])
+
+const rawEmployees = ref<any[]>([])
+
+const loadDropdownMasters = async () => {
+  try {
+    const [bRes, cRes, rRes, eRes] = await Promise.all([
+      axios.get('/api/v1/master/branches'),
+      axios.get('/api/v1/master/categories'),
+      axios.get('/api/v1/master/roles'),
+      axios.get('/api/v1/hris/employees')
+    ])
+    branchOptions.value = (Array.isArray(bRes.data) ? bRes.data : (bRes.data?.data || [])).map((b: any) => ({ label: b.name, value: b.id }))
+    categoryOptions.value = (Array.isArray(cRes.data) ? cRes.data : (cRes.data?.data || [])).map((c: any) => ({ label: c.name, value: c.id }))
+    roleOptions.value = (Array.isArray(rRes.data) ? rRes.data : (rRes.data?.data || [])).map((r: any) => ({ label: r.name, value: r.id }))
+    rawEmployees.value = eRes.data?.data || []
+    employeeOptions.value = [
+      { label: '-- Tanpa Tautan Staf --', value: '' },
+      ...rawEmployees.value.map((e: any) => ({
+        label: `${e.full_name} (${e.nik} - ${e.position_name || 'Staff'})`,
+        value: e.id
+      }))
+    ]
+  } catch (err) {
+    console.error('Failed to load dropdown masters:', err)
+  }
+}
+
+watch(() => formData.value.employee_id, (newEmpId) => {
+  if (activeTab.value === 'users' && newEmpId) {
+    const emp = rawEmployees.value.find((e: any) => e.id === newEmpId)
+    if (emp) {
+      if (!formData.value.full_name) formData.value.full_name = emp.full_name
+      if (!formData.value.email) formData.value.email = emp.email
+      if (!formData.value.phone && emp.phone) formData.value.phone = emp.phone
+      if (!formData.value.branch_id && emp.branch_id) formData.value.branch_id = emp.branch_id
+      if (!formData.value.username && emp.email) formData.value.username = emp.email.split('@')[0]
+    }
+  }
+})
 
 const activeTabLabel = computed(() => {
   return masterTabs.find(t => t.key === activeTab.value)?.label || 'Data'
@@ -291,6 +332,7 @@ const columnsConfig: Record<string, { label: string, key: string, type?: string,
     { label: 'Username', key: 'username', bold: true },
     { label: 'Nama Lengkap', key: 'full_name' },
     { label: 'Email', key: 'email' },
+    { label: 'Staf HRIS', key: 'employee_name' },
     { label: 'Peran (Role)', key: 'role_name' },
     { label: 'Cabang', key: 'branch_name' },
     { label: 'Status', key: 'is_active' }
@@ -375,6 +417,7 @@ const currentColumns = computed(() => {
 
 // Form field definitions for Create / Edit modal
 const formFieldsConfig: Record<string, any[]> = {
+const formFieldsConfig = computed<Record<string, any[]>>(() => ({
   branches: [
     { label: 'Kode Cabang', key: 'code', placeholder: 'e.g. B-SENO-01' },
     { label: 'Nama Cabang', key: 'name', placeholder: 'e.g. Kopi Kenangan Senopati' },
@@ -384,9 +427,14 @@ const formFieldsConfig: Record<string, any[]> = {
     { label: 'Status', key: 'is_active', type: 'checkbox', checkboxLabel: 'Cabang Beroperasi Aktif' }
   ],
   users: [
+    { label: 'Tautkan dengan Staf HRIS (Opsional)', key: 'employee_id', type: 'select', options: employeeOptions.value },
+    { label: 'Nama Lengkap', key: 'full_name', placeholder: 'Budi Santoso' },
     { label: 'Username', key: 'username', placeholder: 'e.g. barista_budi' },
     { label: 'Email', key: 'email', placeholder: 'budi@cafe-erp.com' },
     { label: 'Nama Lengkap', key: 'full_name', placeholder: 'Budi Santoso' },
+    { label: 'Password (Opsional jika ubah)', key: 'password', placeholder: 'Default: Admin@123' },
+    { label: 'Peran Sistem (Role)', key: 'role_id', type: 'select', options: roleOptions.value },
+    { label: 'Cabang Penempatan', key: 'branch_id', type: 'select', options: branchOptions.value },
     { label: 'Nomor Telepon', key: 'phone', placeholder: '08123456789' },
     { label: 'PIN Kasir (4-6 Digit)', key: 'pin_code', placeholder: '1234' },
     { label: 'Status', key: 'is_active', type: 'checkbox', checkboxLabel: 'Pengguna Aktif' }
@@ -453,9 +501,11 @@ const formFieldsConfig: Record<string, any[]> = {
     { label: 'Status', key: 'is_active', type: 'checkbox', checkboxLabel: 'Akun Aktif' }
   ]
 }
+}))
 
 const currentFormFields = computed(() => {
   return formFieldsConfig[activeTab.value] || [
+  return formFieldsConfig.value[activeTab.value] || [
     { label: 'Nama Data', key: 'name', placeholder: 'Masukkan nama' }
   ]
 })
@@ -491,6 +541,7 @@ watch(activeTab, () => {
 
 onMounted(() => {
   fetchData()
+  loadDropdownMasters()
 })
 
 // Open create modal

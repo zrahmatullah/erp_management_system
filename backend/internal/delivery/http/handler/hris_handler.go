@@ -63,7 +63,9 @@ func (h *HRISHandler) GetEmployees(w http.ResponseWriter, r *http.Request) {
 			COALESCE(e.bank_account, '-') as bank_account,
 			COALESCE(e.bank_account_name, concat(e.first_name, ' ', e.last_name)) as bank_account_name,
 			COALESCE(e.photo_url, '') as photo_url,
-			COALESCE(e.remaining_leave, 12) as remaining_leave
+			COALESCE(e.remaining_leave, 12) as remaining_leave,
+			COALESCE(e.branch_id::text, '') as branch_id,
+			COALESCE(e.user_id::text, '') as user_id
 		FROM employees e
 		LEFT JOIN departments d ON e.department_id = d.id
 		LEFT JOIN positions p ON e.position_id = p.id
@@ -81,6 +83,7 @@ func (h *HRISHandler) GetEmployees(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var id, nik, first, last, email, phone, deptID, dept, posID, pos, jobTitle string
 		var empType, status, gender, marital, addr, nationalID, taxID, bankName, bankAcc, bankAccName, photo string
+		var branchID, userID string
 		var salary float64
 		var joinDate time.Time
 		var endDate *time.Time
@@ -92,24 +95,30 @@ func (h *HRISHandler) GetEmployees(w http.ResponseWriter, r *http.Request) {
 			&salary, &empType, &status, &joinDate, &endDate,
 			&gender, &marital, &addr, &nationalID, &taxID,
 			&bankName, &bankAcc, &bankAccName, &photo, &remainingLeave,
+			&branchID, &userID,
 		); err == nil {
 			endStr := ""
 			if endDate != nil {
 				endStr = endDate.Format("2006-01-02")
 			}
+			fullName := fmt.Sprintf("%s %s", first, last)
 			list = append(list, map[string]interface{}{
 				"id":                id,
 				"nik":               nik,
 				"first_name":        first,
 				"last_name":         last,
-				"name":              fmt.Sprintf("%s %s", first, last),
+				"name":              fullName,
+				"full_name":         fullName,
 				"email":             email,
 				"phone":             phone,
 				"department_id":     deptID,
 				"department":        dept,
 				"position_id":       posID,
 				"position":          pos,
+				"position_name":     pos,
 				"job_title":         jobTitle,
+				"branch_id":         branchID,
+				"user_id":           userID,
 				"basic_salary":      salary,
 				"employment_type":   empType,
 				"status":            status,
@@ -423,16 +432,16 @@ func (h *HRISHandler) GetTodayAttendanceStatus(w http.ResponseWriter, r *http.Re
 	}
 
 	writeJSON(w, http.StatusOK, map[string]interface{}{
-		"date":             today,
-		"total_employees":  totalEmployees,
-		"total_present":    presentCount + lateCount,
-		"on_time":          presentCount,
-		"late":             lateCount,
-		"on_leave":         leaveCount,
-		"has_clocked_in":   hasClockedIn,
-		"attendance_id":    attendanceID,
-		"clock_in_time":    clockInTime,
-		"clock_out_time":   clockOutTime,
+		"date":            today,
+		"total_employees": totalEmployees,
+		"total_present":   presentCount + lateCount,
+		"on_time":         presentCount,
+		"late":            lateCount,
+		"on_leave":        leaveCount,
+		"has_clocked_in":  hasClockedIn,
+		"attendance_id":   attendanceID,
+		"clock_in_time":   clockInTime,
+		"clock_out_time":  clockOutTime,
 	})
 }
 

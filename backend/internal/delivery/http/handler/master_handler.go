@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"math"
 	"net/http"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"golang.org/x/crypto/bcrypt"
 
 	"cafe-erp-system/backend/pkg/logger"
 )
@@ -133,10 +135,14 @@ func (h *MasterHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 	query := `
 		SELECT u.id, u.username, u.email, u.full_name, COALESCE(u.phone, ''), u.is_active, 
 		       COALESCE(r.id::text, ''), COALESCE(r.name, 'No Role'),
-		       COALESCE(b.id::text, ''), COALESCE(b.name, 'All Branches')
+		       COALESCE(b.id::text, ''), COALESCE(b.name, 'All Branches'),
+		       COALESCE(e.id::text, ''), COALESCE(e.nik, ''), COALESCE(concat(e.first_name, ' ', e.last_name), ''),
+		       COALESCE(p.title, '')
 		FROM users u
 		LEFT JOIN roles r ON u.role_id = r.id
 		LEFT JOIN branches b ON u.branch_id = b.id
+		LEFT JOIN employees e ON e.user_id = u.id AND e.deleted_at IS NULL
+		LEFT JOIN positions p ON e.position_id = p.id
 		WHERE u.deleted_at IS NULL
 		ORDER BY u.created_at ASC`
 	rows, err := h.db.Query(r.Context(), query)
@@ -149,12 +155,19 @@ func (h *MasterHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 	var list []map[string]interface{}
 	for rows.Next() {
 		var id, username, email, fullName, phone, roleID, roleName, branchID, branchName string
+		var empID, empNik, empName, empPos string
 		var isActive bool
-		if err := rows.Scan(&id, &username, &email, &fullName, &phone, &isActive, &roleID, &roleName, &branchID, &branchName); err == nil {
+		if err := rows.Scan(
+			&id, &username, &email, &fullName, &phone, &isActive,
+			&roleID, &roleName, &branchID, &branchName,
+			&empID, &empNik, &empName, &empPos,
+		); err == nil {
 			list = append(list, map[string]interface{}{
 				"id": id, "username": username, "email": email, "full_name": fullName,
 				"phone": phone, "is_active": isActive, "role_id": roleID, "role_name": roleName,
 				"branch_id": branchID, "branch_name": branchName,
+				"employee_id": empID, "employee_nik": empNik,
+				"employee_name": empName, "employee_position": empPos,
 			})
 		}
 	}
@@ -166,47 +179,81 @@ func (h *MasterHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 
 func (h *MasterHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	var body struct {
-		Username string  `json:"username"`
-		Email    string  `json:"email"`
-		FullName string  `json:"full_name"`
-		Phone    string  `json:"phone"`
-		RoleID   *string `json:"role_id"`
-		BranchID *string `json:"branch_id"`
-		PINCode  string  `json:"pin_code"`
-		IsActive bool    `json:"is_active"`
+		Username   string  `json:"username"`
+		Email      string  `json:"email"`
+		Password   string  `json:"password"`
+		FullName   string  `json:"full_name"`
+		Phone      string  `json:"phone"`
+		RoleID     *string `json:"role_id"`
+		BranchID   *string `json:"branch_id"`
+		EmployeeID *string `json:"employee_id"`
+		PINCode    string  `json:"pin_code"`
+		IsActive   bool    `json:"is_active"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		writeError(w, http.StatusBadRequest, "Invalid JSON body")
 		return
 	}
 
-	defaultPasswordHash := "$2a$12$Z0o2.J.YJ1oN2w3K6T0buexM.iP9Lp0nLp5R6m3p3mK5C4R7D0QjO" // Admin@123
+	if body.Email == "" {
+		writeError(w, http.StatusBadRequest, "Email wajib diisi")
+		return
+	}
+
+	if body.Username == "" {
+		parts := strings.Split(body.Email, "@")
+		body.Username = parts[0]
+	}
+
+	passwordHash := "$2a$12$wsfbgmY5LXr9BzAcXdu2PeNwsIB5mONs.CQho/8ofs5wIfw9C0HyK" // Default Admin@123
+	if strings.TrimSpace(body.Password) != "" {
+		hashed, err := bcrypt.GenerateFromPassword([]byte(body.Password), bcrypt.DefaultCost)
+		if err == nil {
+			passwordHash = string(hashed)
+		}
+	}
+
 	newID := uuid.New()
 	query := `INSERT INTO users (id, username, email, password_hash, full_name, phone, role_id, branch_id, pin_code, is_active, created_at, updated_at)
 			  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW()) RETURNING id`
-	err := h.db.QueryRow(r.Context(), query, newID, body.Username, body.Email, defaultPasswordHash, body.FullName, body.Phone, body.RoleID, body.BranchID, body.PINCode, body.IsActive).Scan(&newID)
+	err := h.db.QueryRow(r.Context(), query, newID, body.Username, body.Email, passwordHash, body.FullName, body.Phone, body.RoleID, body.BranchID, body.PINCode, body.IsActive).Scan(&newID)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	writeJSON(w, http.StatusCreated, map[string]interface{}{"id": newID, "message": "User created successfully"})
+
+	// Link user to employee if employee_id provided
+	if body.EmployeeID != nil && *body.EmployeeID != "" {
+		_, _ = h.db.Exec(r.Context(), `UPDATE employees SET user_id = $1 WHERE id = $2`, newID, *body.EmployeeID)
+	}
+
+	writeJSON(w, http.StatusCreated, map[string]interface{}{"id": newID, "message": "User berhasil dibuat dan ditautkan ke sistem"})
 }
 
 func (h *MasterHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	var body struct {
-		Username string  `json:"username"`
-		Email    string  `json:"email"`
-		FullName string  `json:"full_name"`
-		Phone    string  `json:"phone"`
-		RoleID   *string `json:"role_id"`
-		BranchID *string `json:"branch_id"`
-		PINCode  string  `json:"pin_code"`
-		IsActive bool    `json:"is_active"`
+		Username   string  `json:"username"`
+		Email      string  `json:"email"`
+		Password   string  `json:"password"`
+		FullName   string  `json:"full_name"`
+		Phone      string  `json:"phone"`
+		RoleID     *string `json:"role_id"`
+		BranchID   *string `json:"branch_id"`
+		EmployeeID *string `json:"employee_id"`
+		PINCode    string  `json:"pin_code"`
+		IsActive   bool    `json:"is_active"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		writeError(w, http.StatusBadRequest, "Invalid JSON body")
 		return
+	}
+
+	if strings.TrimSpace(body.Password) != "" {
+		hashed, err := bcrypt.GenerateFromPassword([]byte(body.Password), bcrypt.DefaultCost)
+		if err == nil {
+			_, _ = h.db.Exec(r.Context(), `UPDATE users SET password_hash=$1 WHERE id=$2`, string(hashed), id)
+		}
 	}
 
 	query := `UPDATE users SET username=$1, email=$2, full_name=$3, phone=$4, role_id=$5, branch_id=$6, pin_code=$7, is_active=$8, updated_at=NOW()
@@ -217,16 +264,30 @@ func (h *MasterHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]string{"message": "User updated successfully"})
+
+	// Handle employee linkage
+	if body.EmployeeID != nil {
+		// Clear previous linkage for this user
+		_, _ = h.db.Exec(r.Context(), `UPDATE employees SET user_id=NULL WHERE user_id=$1`, id)
+		if *body.EmployeeID != "" {
+			_, _ = h.db.Exec(r.Context(), `UPDATE employees SET user_id=$1 WHERE id=$2`, id, *body.EmployeeID)
+		}
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{"message": "User berhasil diperbarui"})
 }
 
 func (h *MasterHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
+	// Unlink employee first
+	_, _ = h.db.Exec(r.Context(), `UPDATE employees SET user_id=NULL WHERE user_id=$1`, id)
 	_, err := h.db.Exec(r.Context(), `UPDATE users SET deleted_at=NOW() WHERE id=$1`, id)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]string{"message": "User deleted successfully"})
+	writeJSON(w, http.StatusOK, map[string]string{"message": "User berhasil dinonaktifkan/dihapus"})
 }
 
 // -----------------------------------------------------------------------------
