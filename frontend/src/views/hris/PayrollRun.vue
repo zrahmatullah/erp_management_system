@@ -133,6 +133,10 @@ const summary = computed(() => {
   return { gross, deduction, net, paidCount }
 })
 
+const allPaid = computed(() => {
+  return employees.value.length > 0 && employees.value.every(e => e.is_paid)
+})
+
 const formatNum = (val: number) => {
   return Number(val || 0).toLocaleString('id-ID')
 }
@@ -183,6 +187,11 @@ const runCalculation = async () => {
 }
 
 const handleApprove = async () => {
+  if (allPaid.value) {
+    notifyStore.info('Seluruh data penggajian periode ini sudah disetujui dan dicairkan.', 'Sudah Lunas')
+    currentStep.value = 5
+    return
+  }
   approving.value = true
   try {
     const res = await axios.post('/api/v1/hris/payrolls/batch-approve', {
@@ -197,7 +206,12 @@ const handleApprove = async () => {
     await fetchPayrolls()
   } catch (err: any) {
     console.error('Batch approve failed:', err)
-    notifyStore.error(err.response?.data?.error || 'Gagal menyetujui payroll. Pastikan role Anda memiliki wewenang Super Admin atau Manager.', 'Akses Ditolak')
+    const isForbidden = err.response?.status === 403
+    const title = isForbidden ? 'Akses Ditolak' : 'Pemberitahuan Payroll'
+    const msg = err.response?.data?.error || err.response?.data?.message || (isForbidden 
+      ? 'Gagal menyetujui payroll. Pastikan role Anda memiliki wewenang Super Admin atau Manager.' 
+      : 'Gagal memproses persetujuan payroll.')
+    notifyStore.error(msg, title)
   } finally {
     approving.value = false
   }
@@ -476,14 +490,31 @@ const handleApprove = async () => {
         >
           Kembali ke Review
         </button>
-        <button 
-          @click="handleApprove"
-          :disabled="approving || employees.length === 0"
-          class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 rounded-xl text-xs font-bold text-white shadow-md shadow-blue-600/30 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-60"
-        >
-          <CheckCircle2 class="w-4 h-4" />
-          {{ approving ? 'Memproses Jurnal...' : 'Setujui & Terbitkan Jurnal Akuntansi' }}
-        </button>
+
+        <div class="flex items-center gap-3">
+          <div v-if="allPaid" class="flex items-center gap-2 text-xs font-bold text-emerald-700 bg-emerald-50 px-4 py-2.5 rounded-xl border border-emerald-200">
+            <Check class="w-4 h-4 text-emerald-600" />
+            <span>Seluruh Gaji Periode Ini Sudah Dicairkan</span>
+          </div>
+
+          <button 
+            v-if="!allPaid"
+            @click="handleApprove"
+            :disabled="approving || employees.length === 0"
+            class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 rounded-xl text-xs font-bold text-white shadow-md shadow-blue-600/30 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-60"
+          >
+            <CheckCircle2 class="w-4 h-4" />
+            {{ approving ? 'Memproses Jurnal...' : 'Setujui & Terbitkan Jurnal Akuntansi' }}
+          </button>
+
+          <button 
+            v-else
+            @click="currentStep = 5"
+            class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 rounded-xl text-xs font-bold text-white shadow-md transition-all flex items-center gap-2 cursor-pointer"
+          >
+            <span>Lihat Ringkasan Jurnal</span>
+          </button>
+        </div>
       </div>
     </div>
 

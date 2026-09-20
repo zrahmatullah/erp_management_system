@@ -1,11 +1,8 @@
 <template>
   <div class="space-y-6">
     <!-- Header -->
-    <div class="flex items-center justify-between">
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
-        <h2 class="text-2xl font-black text-slate-900 tracking-tight">Manajemen Peran & Izin</h2>
-        <p class="text-xs text-slate-500 mt-1">Atur hak akses pengguna secara granular per modul sistem (RBAC)</p>
         <div class="flex items-center gap-2.5">
           <h2 class="text-2xl font-black text-slate-900 tracking-tight">Manajemen Peran & Akun Pengguna</h2>
           <span class="px-2.5 py-0.5 rounded-full text-xs font-black bg-blue-100 text-blue-800 border border-blue-200 shadow-xs">
@@ -39,50 +36,27 @@
     <!-- Main Navigation Tabs -->
     <div class="flex items-center gap-4 border-b border-slate-200 text-xs font-bold">
       <button
-        @click="showAddRoleModal = true"
-        class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl shadow-md transition-colors cursor-pointer"
         @click="activeMainTab = 'matrix'"
         class="pb-3 transition-colors relative cursor-pointer flex items-center gap-2"
         :class="activeMainTab === 'matrix' ? 'text-blue-600' : 'text-slate-500 hover:text-slate-800'"
       >
-        Tambah Peran
         <Shield class="w-4 h-4" />
         <span>Matriks Hak Akses Peran</span>
         <span v-if="activeMainTab === 'matrix'" class="absolute bottom-0 inset-x-0 h-0.5 bg-blue-600 rounded-full"></span>
       </button>
-    </div>
 
-    <!-- Role Selection Tabs (Matches Mockup) -->
-    <div class="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-3">
       <button
-        v-for="role in roles"
-        :key="role.id"
-        @click="selectRole(role)"
-        class="p-3 rounded-2xl border transition-all text-center flex flex-col items-center justify-center gap-1.5 cursor-pointer"
-        :class="selectedRole?.id === role.id 
-          ? 'bg-blue-50/70 border-blue-500 text-blue-700 shadow-sm' 
-          : 'bg-white border-slate-200/80 text-slate-700 hover:border-slate-300 hover:bg-slate-50'"
         @click="activeMainTab = 'users'"
         class="pb-3 transition-colors relative cursor-pointer flex items-center gap-2"
         :class="activeMainTab === 'users' ? 'text-blue-600' : 'text-slate-500 hover:text-slate-800'"
       >
-        <component :is="role.icon" class="w-5 h-5 shrink-0" :class="selectedRole?.id === role.id ? 'text-blue-600' : 'text-slate-500'" />
-        <span class="text-xs font-bold truncate w-full">{{ role.name }}</span>
         <Users class="w-4 h-4" />
         <span>Daftar Pengguna & Penugasan Staf</span>
-        <span class="px-1.5 py-0.2 rounded-md text-[10px] bg-slate-100 text-slate-600">{{ userList.length }}</span>
+        <span class="px-1.5 py-0.5 rounded-md text-[10px] bg-slate-100 text-slate-600">{{ userList.length }}</span>
         <span v-if="activeMainTab === 'users'" class="absolute bottom-0 inset-x-0 h-0.5 bg-blue-600 rounded-full"></span>
       </button>
     </div>
 
-    <!-- Permission Matrix Table (Matches Mockup) -->
-    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6">
-      <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
-        <div>
-          <h3 class="font-bold text-slate-900 text-sm">
-            Matriks Hak Akses: <span class="text-blue-600 font-extrabold">{{ selectedRole?.name }}</span>
-          </h3>
-          <p class="text-xs text-slate-400">Centang izin yang diperbolehkan untuk peran ini</p>
     <!-- ========================================================================= -->
     <!-- TAB 1: MATRIKS HAK AKSES PERAN                                            -->
     <!-- ========================================================================= -->
@@ -114,7 +88,6 @@
           </div>
           <span class="text-xs text-slate-400 font-medium">{{ permissionModules.length }} modul terkonfigurasi</span>
         </div>
-        <span class="text-xs text-slate-400 font-medium">{{ permissions.length }} modul terkonfigurasi</span>
 
         <div class="overflow-x-auto">
           <table class="w-full text-left text-xs">
@@ -187,61 +160,6 @@
       </div>
     </div>
 
-      <div class="overflow-x-auto">
-        <table class="w-full text-left text-xs">
-          <thead>
-            <tr class="text-slate-600 border-b border-slate-200 uppercase font-bold text-[11px] bg-slate-50/50">
-              <th class="py-3 px-4">Module</th>
-              <th class="py-3 px-4 text-center">Lihat (View)</th>
-              <th class="py-3 px-4 text-center">Buat (Create)</th>
-              <th class="py-3 px-4 text-center">Edit</th>
-              <th class="py-3 px-4 text-center">Hapus (Delete)</th>
-              <th class="py-3 px-4 text-center">Setujui (Approve)</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-100 text-slate-700 font-medium">
-            <tr v-for="mod in permissionModules" :key="mod.key" class="hover:bg-slate-50/60 transition-colors">
-              <td class="py-3 px-4 font-bold text-slate-900">
-                {{ mod.label }}
-              </td>
-              <td class="py-3 px-4 text-center">
-                <input
-                  type="checkbox"
-                  v-model="matrix[mod.key].view"
-                  class="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300 cursor-pointer"
-                />
-              </td>
-              <td class="py-3 px-4 text-center">
-                <input
-                  type="checkbox"
-                  v-model="matrix[mod.key].create"
-                  class="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300 cursor-pointer"
-                />
-              </td>
-              <td class="py-3 px-4 text-center">
-                <input
-                  type="checkbox"
-                  v-model="matrix[mod.key].edit"
-                  class="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300 cursor-pointer"
-                />
-              </td>
-              <td class="py-3 px-4 text-center">
-                <input
-                  type="checkbox"
-                  v-model="matrix[mod.key].delete"
-                  class="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300 cursor-pointer"
-                />
-              </td>
-              <td class="py-3 px-4 text-center">
-                <input
-                  type="checkbox"
-                  v-model="matrix[mod.key].approve"
-                  class="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300 cursor-pointer"
-                />
-              </td>
-            </tr>
-          </tbody>
-        </table>
     <!-- ========================================================================= -->
     <!-- TAB 2: DAFTAR PENGGUNA & PENUGASAN STAF                                   -->
     <!-- ========================================================================= -->
@@ -289,16 +207,6 @@
         </div>
       </div>
 
-      <!-- Save Button -->
-      <div class="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
-        <span class="text-xs text-slate-400">Perubahan hak akses akan langsung aktif pada sesi kasir & admin berikutnya</span>
-        <button
-          @click="savePermissions"
-          :disabled="saving"
-          class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-600/30 transition-all cursor-pointer disabled:opacity-50"
-        >
-          {{ saving ? 'Menyimpan...' : 'Simpan Perubahan' }}
-        </button>
       <!-- Filters & User Table -->
       <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 space-y-4">
         <!-- Search & Filter Bar -->
@@ -689,7 +597,6 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
 import { ref, reactive, computed, onMounted } from 'vue'
 import axios from 'axios'
 import {
@@ -701,7 +608,6 @@ import {
   Users,
   Package,
   FileSpreadsheet,
-  UtensilsCrossed
   UtensilsCrossed,
   Plus,
   UserPlus,
@@ -752,30 +658,6 @@ const roles = ref<RoleItem[]>([
 
 const selectedRole = ref<RoleItem>(roles.value[2])
 const saving = ref(false)
-const showAddRoleModal = ref(false)
-
-const fetchRoles = async () => {
-  try {
-    const res = await axios.get('/api/v1/master/roles')
-    const list = Array.isArray(res.data) ? res.data : (res.data?.data || [])
-    if (list.length > 0) {
-      roles.value = list.map((r: any) => ({
-        id: r.id,
-        name: r.name,
-        desc: r.description,
-        icon: getRoleIcon(r.name)
-      }))
-      selectedRole.value = roles.value.find((r: any) => r.name.toLowerCase().includes('manager')) || roles.value[0]
-    }
-  } catch (err) {
-    console.error('Failed to load master roles:', err)
-  }
-}
-
-onMounted(() => {
-  fetchRoles()
-})
-const permissions = ref<any[]>([])
 
 const permissionModules = [
   { key: 'dashboard', label: 'Dashboard' },
@@ -795,19 +677,13 @@ const permissionModules = [
 const matrix = reactive<Record<string, { view: boolean, create: boolean, edit: boolean, delete: boolean, approve: boolean }>>({
   dashboard: { view: true, create: false, edit: false, delete: false, approve: false },
   pos: { view: true, create: true, edit: true, delete: false, approve: false },
-  orders: { view: true, create: true, edit: true, delete: true, approve: true },
-  payments: { view: true, create: true, edit: false, delete: false, approve: false },
   kitchen: { view: true, create: true, edit: true, delete: false, approve: false },
   tables: { view: true, create: true, edit: true, delete: false, approve: false },
   inventory: { view: true, create: false, edit: true, delete: false, approve: false },
   purchasing: { view: true, create: true, edit: false, delete: false, approve: true },
-  hris: { view: true, create: true, edit: true, delete: false, approve: false },
   hris: { view: true, create: true, edit: true, delete: false, approve: true },
   payroll: { view: true, create: true, edit: true, delete: false, approve: true },
   finance: { view: true, create: false, edit: false, delete: false, approve: false },
-  kitchen: { view: true, create: true, edit: true, delete: false, approve: false },
-  tables: { view: true, create: true, edit: true, delete: false, approve: false },
-  payroll: { view: true, create: false, edit: false, delete: false, approve: false },
   reports: { view: true, create: false, edit: false, delete: false, approve: false },
   settings: { view: true, create: false, edit: false, delete: false, approve: false },
   master: { view: true, create: true, edit: true, delete: true, approve: true }
@@ -825,8 +701,6 @@ const selectRole = (role: RoleItem) => {
     })
   } else if (role.name === 'Kasir') {
     Object.keys(matrix).forEach(k => {
-      matrix[k].view = k === 'pos' || k === 'payments'
-      matrix[k].create = k === 'pos' || k === 'payments'
       matrix[k].view = k === 'pos' || k === 'kitchen'
       matrix[k].create = k === 'pos'
       matrix[k].edit = false
@@ -840,7 +714,6 @@ const savePermissions = () => {
   saving.value = true
   setTimeout(() => {
     saving.value = false
-    notifyStore.success(`Matriks hak akses untuk peran '${selectedRole.value.name}' berhasil disimpan!`, 'Izin Disimpan')
     notifyStore.success(`Matriks hak akses untuk peran '${selectedRole.value.name}' berhasil disimpan ke sistem!`, 'Izin Disimpan')
   }, 400)
 }

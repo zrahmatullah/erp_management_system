@@ -63,6 +63,7 @@ func (h *HRISHandler) GetEmployees(w http.ResponseWriter, r *http.Request) {
 			COALESCE(e.bank_account, '-') as bank_account,
 			COALESCE(e.bank_account_name, concat(e.first_name, ' ', e.last_name)) as bank_account_name,
 			COALESCE(e.photo_url, '') as photo_url,
+			COALESCE(e.remaining_leave, 12) as remaining_leave
 			COALESCE(e.remaining_leave, 12) as remaining_leave,
 			COALESCE(e.branch_id::text, '') as branch_id,
 			COALESCE(e.user_id::text, '') as user_id
@@ -1146,13 +1147,14 @@ func (h *HRISHandler) RunPayroll(w http.ResponseWriter, r *http.Request) {
 			e.id, firstDay, lastDay).Scan(&existingRecID)
 
 		if chkErr == nil {
-			// Update existing record
+			// Update existing record and reset status to pending for review & approval
 			_, _ = tx.Exec(ctx, `
 				UPDATE payroll_records SET
 					basic_salary = $1, allowances = $2, overtime_pay = $3, gross_salary = $4,
 					bpjs_deduction = $5, tax_deduction = $6, total_deductions = $7, net_salary = $8,
+					is_paid = FALSE, paid_at = NULL,
 					updated_at = NOW()
-				WHERE id = $9 AND is_paid = FALSE`,
+				WHERE id = $9`,
 				e.salary, allowance, overtimePay, grossSalary, bpjs, tax, totalDeductions, netSalary, existingRecID)
 		} else {
 			_, _ = tx.Exec(ctx, query,
@@ -1220,7 +1222,7 @@ func (h *HRISHandler) BatchApprovePayroll(w http.ResponseWriter, r *http.Request
 
 	err = tx.QueryRow(ctx, query, args...).Scan(&count, &totalNet)
 	if err != nil || count == 0 {
-		writeError(w, http.StatusBadRequest, "Tidak ada data payroll pending yang siap disetujui")
+		writeError(w, http.StatusBadRequest, "Semua data payroll pada periode ini sudah disetujui / tidak ada data pending.")
 		return
 	}
 

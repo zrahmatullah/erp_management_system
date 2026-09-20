@@ -416,7 +416,6 @@ const currentColumns = computed(() => {
 })
 
 // Form field definitions for Create / Edit modal
-const formFieldsConfig: Record<string, any[]> = {
 const formFieldsConfig = computed<Record<string, any[]>>(() => ({
   branches: [
     { label: 'Kode Cabang', key: 'code', placeholder: 'e.g. B-SENO-01' },
@@ -431,7 +430,6 @@ const formFieldsConfig = computed<Record<string, any[]>>(() => ({
     { label: 'Nama Lengkap', key: 'full_name', placeholder: 'Budi Santoso' },
     { label: 'Username', key: 'username', placeholder: 'e.g. barista_budi' },
     { label: 'Email', key: 'email', placeholder: 'budi@cafe-erp.com' },
-    { label: 'Nama Lengkap', key: 'full_name', placeholder: 'Budi Santoso' },
     { label: 'Password (Opsional jika ubah)', key: 'password', placeholder: 'Default: Admin@123' },
     { label: 'Peran Sistem (Role)', key: 'role_id', type: 'select', options: roleOptions.value },
     { label: 'Cabang Penempatan', key: 'branch_id', type: 'select', options: branchOptions.value },
@@ -500,11 +498,9 @@ const formFieldsConfig = computed<Record<string, any[]>>(() => ({
     { label: 'Deskripsi Akun', key: 'description', placeholder: 'Keterangan fungsi akun' },
     { label: 'Status', key: 'is_active', type: 'checkbox', checkboxLabel: 'Akun Aktif' }
   ]
-}
 }))
 
 const currentFormFields = computed(() => {
-  return formFieldsConfig[activeTab.value] || [
   return formFieldsConfig.value[activeTab.value] || [
     { label: 'Nama Data', key: 'name', placeholder: 'Masukkan nama' }
   ]
