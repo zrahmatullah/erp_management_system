@@ -217,10 +217,49 @@ const filteredMenuItems = computed(() => {
     return menuItems.filter(m => m.label !== 'Pengaturan')
   }
   if (role.includes('kasir') || role.includes('cashier')) {
-    return menuItems.filter(m => m.label === 'POS & Pesanan' || m.label === 'Dashboard')
+    return menuItems
+      .filter(m => m.label === 'POS & Pesanan' || m.label === 'Dashboard' || m.label === 'HRIS & Staf')
+      .map(m => {
+        if (m.label === 'HRIS & Staf' && m.children) {
+          return {
+            ...m,
+            children: m.children.filter(c => c.path === '/hris/attendance' || c.path === '/hris/leaves')
+          }
+        }
+        return m
+      })
   }
-  if (role.includes('gudang') || role.includes('warehouse')) {
-    return menuItems.filter(m => m.label === 'Inventori' || m.label === 'Dashboard')
+  if (role.includes('gudang') || role.includes('warehouse') || role.includes('inventory')) {
+    return menuItems
+      .filter(m => m.label === 'Inventori' || m.label === 'Dashboard' || m.label === 'HRIS & Staf')
+      .map(m => {
+        if (m.label === 'HRIS & Staf' && m.children) {
+          return {
+            ...m,
+            children: m.children.filter(c => c.path === '/hris/attendance' || c.path === '/hris/leaves')
+          }
+        }
+        return m
+      })
+  }
+  if (role.includes('akuntan') || role.includes('finance')) {
+    return menuItems
+      .filter(m => m.label === 'Keuangan' || m.label === 'Laporan & Analitik' || m.label === 'Dashboard' || m.label === 'Inventori' || m.label === 'HRIS & Staf')
+      .map(m => {
+        if (m.label === 'Inventori' && m.children) {
+          return {
+            ...m,
+            children: m.children.filter(c => c.path === '/inventory/po')
+          }
+        }
+        if (m.label === 'HRIS & Staf' && m.children) {
+          return {
+            ...m,
+            children: m.children.filter(c => c.path === '/hris/payroll')
+          }
+        }
+        return m
+      })
   }
   return menuItems
 })

@@ -14,17 +14,47 @@
       </button>
     </div>
 
-    <!-- Tabs -->
-    <div class="flex items-center gap-6 border-b border-slate-200 text-sm font-bold">
+    <!-- Tabs Navigation -->
+    <div class="flex items-center gap-4 sm:gap-6 border-b border-slate-200 text-xs sm:text-sm font-bold">
       <button
-        v-for="t in ['Cuti Tim', 'Semua Cuti']"
-        :key="t"
-        @click="activeTab = t"
-        class="pb-3 transition-colors relative cursor-pointer"
-        :class="activeTab === t ? 'text-blue-600' : 'text-slate-500 hover:text-slate-800'"
+        @click="activeTab = 'Cuti Tim'"
+        class="pb-3 transition-colors relative cursor-pointer flex items-center gap-2"
+        :class="activeTab === 'Cuti Tim' ? 'text-blue-600' : 'text-slate-500 hover:text-slate-800'"
       >
-        {{ t }}
-        <span v-if="activeTab === t" class="absolute bottom-0 inset-x-0 h-0.5 bg-blue-600 rounded-full"></span>
+        <span>Cuti Tim</span>
+        <span 
+          v-if="pendingLeavesCount > 0" 
+          class="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-500 text-white shadow-xs animate-pulse"
+          title="Permohonan cuti menunggu persetujuan supervisor/manager"
+        >
+          {{ pendingLeavesCount }} Menunggu
+        </span>
+        <span v-if="activeTab === 'Cuti Tim'" class="absolute bottom-0 inset-x-0 h-0.5 bg-blue-600 rounded-full"></span>
+      </button>
+
+      <button
+        @click="activeTab = 'Semua Cuti'"
+        class="pb-3 transition-colors relative cursor-pointer flex items-center gap-2"
+        :class="activeTab === 'Semua Cuti' ? 'text-blue-600' : 'text-slate-500 hover:text-slate-800'"
+      >
+        <span>Semua Cuti</span>
+        <span class="px-1.5 py-0.5 rounded-md text-[10px] bg-slate-100 text-slate-600 font-semibold">
+          {{ leaves.length }}
+        </span>
+        <span v-if="activeTab === 'Semua Cuti'" class="absolute bottom-0 inset-x-0 h-0.5 bg-blue-600 rounded-full"></span>
+      </button>
+
+      <button
+        v-if="myLeaves.length > 0 || currentEmployee"
+        @click="activeTab = 'Cuti Saya'"
+        class="pb-3 transition-colors relative cursor-pointer flex items-center gap-2"
+        :class="activeTab === 'Cuti Saya' ? 'text-blue-600' : 'text-slate-500 hover:text-slate-800'"
+      >
+        <span>Cuti Saya</span>
+        <span class="px-1.5 py-0.5 rounded-md text-[10px] bg-blue-50 text-blue-700 font-semibold">
+          {{ myLeaves.length }}
+        </span>
+        <span v-if="activeTab === 'Cuti Saya'" class="absolute bottom-0 inset-x-0 h-0.5 bg-blue-600 rounded-full"></span>
       </button>
     </div>
 
@@ -32,21 +62,55 @@
     <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
       <!-- Table Section (3 cols) -->
       <div class="lg:col-span-3 bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 space-y-4">
+        <!-- Tab Info Banner -->
+        <div v-if="activeTab === 'Cuti Tim'" class="p-3 bg-blue-50/70 border border-blue-200/80 rounded-xl flex items-center justify-between gap-3 text-xs">
+          <div class="flex items-center gap-2 text-blue-900">
+            <Users class="w-4 h-4 text-blue-600 shrink-0" />
+            <span v-if="pendingLeavesCount > 0">
+              Terdapat <strong>{{ pendingLeavesCount }} permohonan cuti staf</strong> yang menunggu persetujuan supervisor/manager.
+            </span>
+            <span v-else>
+              Tidak ada permohonan cuti staf yang menunggu persetujuan. Menampilkan jadwal cuti tim.
+            </span>
+          </div>
+          <button 
+            type="button"
+            class="text-[11px] text-blue-600 font-bold hover:underline cursor-pointer shrink-0" 
+            @click="activeTab = 'Semua Cuti'"
+          >
+            Lihat Semua Riwayat &rarr;
+          </button>
+        </div>
+
+        <div v-else-if="activeTab === 'Cuti Saya'" class="p-3 bg-indigo-50/70 border border-indigo-200/80 rounded-xl flex items-center justify-between gap-3 text-xs text-indigo-900">
+          <div class="flex items-center gap-2">
+            <User class="w-4 h-4 text-indigo-600 shrink-0" />
+            <span>Riwayat permohonan cuti untuk akun Anda: <strong>{{ authStore.fullName || authStore.user?.firstName }}</strong></span>
+          </div>
+          <button
+            type="button"
+            @click="openRequestLeave"
+            class="text-[11px] text-indigo-600 font-bold hover:underline cursor-pointer shrink-0"
+          >
+            + Ajukan Permohonan Cuti
+          </button>
+        </div>
+
         <!-- Filters -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <input
             v-model="search"
             type="text"
-            placeholder="Cari Staf / NIK..."
-            class="px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl outline-none"
+            placeholder="Cari Staf / NIK / Alasan..."
+            class="px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-blue-600"
           />
-          <select v-model="filterType" class="px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl outline-none">
+          <select v-model="filterType" class="px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-blue-600">
             <option value="">Semua Tipe Cuti</option>
             <option value="Cuti Tahunan">Cuti Tahunan</option>
             <option value="Cuti Sakit">Cuti Sakit</option>
             <option value="Cuti Alasan Penting">Cuti Alasan Penting</option>
           </select>
-          <select v-model="filterStatus" class="px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl outline-none">
+          <select v-model="filterStatus" class="px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-blue-600">
             <option value="">Semua Status</option>
             <option value="Menunggu">Menunggu</option>
             <option value="Disetujui">Disetujui</option>
@@ -80,6 +144,10 @@
                   <div>
                     <div>{{ leave.name }}</div>
                     <div class="text-[10px] text-slate-400 font-normal font-mono">{{ leave.nik || '-' }}</div>
+                    <div class="font-bold text-slate-900">{{ leave.name }}</div>
+                    <div class="text-[10px] text-slate-400 font-normal font-mono">
+                      {{ leave.nik || '-' }} <span v-if="leave.position">• {{ leave.position }}</span>
+                    </div>
                   </div>
                 </td>
                 <td class="py-3 px-3">{{ leave.type }}</td>
@@ -87,6 +155,7 @@
                 <td class="py-3 px-3 text-slate-500 font-mono">{{ leave.to }}</td>
                 <td class="py-3 px-3 text-center font-bold">{{ leave.days }} Hari</td>
                 <td class="py-3 px-3 text-slate-600 truncate max-w-xs">{{ leave.reason }}</td>
+                <td class="py-3 px-3 text-slate-600 truncate max-w-xs" :title="leave.reason">{{ leave.reason }}</td>
                 <td class="py-3 px-3 text-center">
                   <span
                     class="px-2.5 py-0.5 rounded-full text-[10px] font-bold"
@@ -111,13 +180,47 @@
                     >
                       Tolak
                     </button>
+                    <template v-if="canApprove">
+                      <button
+                        @click="updateStatus(leave, 'approved')"
+                        :disabled="actionLoading"
+                        class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-lg text-[11px] font-bold transition-colors cursor-pointer disabled:opacity-60 shadow-xs"
+                      >
+                        Setujui
+                      </button>
+                      <button
+                        @click="updateStatus(leave, 'rejected')"
+                        :disabled="actionLoading"
+                        class="px-2.5 py-1 border border-rose-300 text-rose-600 hover:bg-rose-50 active:bg-rose-100 rounded-lg text-[11px] font-bold transition-colors cursor-pointer disabled:opacity-60"
+                      >
+                        Tolak
+                      </button>
+                    </template>
+                    <span v-else class="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-[10px] font-bold border border-amber-200 flex items-center gap-1">
+                      <Clock class="w-3 h-3 text-amber-500" />
+                      Menunggu Review
+                    </span>
                   </div>
+                  <span v-else-if="leave.status === 'Disetujui'" class="text-[11px] text-emerald-600 font-bold inline-flex items-center gap-1">
+                    <CheckCircle2 class="w-3.5 h-3.5 text-emerald-600" /> Disetujui
+                  </span>
+                  <span v-else-if="leave.status === 'Ditolak'" class="text-[11px] text-rose-600 font-bold inline-flex items-center gap-1">
+                    <XCircle class="w-3.5 h-3.5 text-rose-600" /> Ditolak
+                  </span>
                   <span v-else class="text-[11px] text-slate-400 italic">Selesai</span>
                 </td>
               </tr>
               <tr v-if="filteredLeaves.length === 0">
-                <td colspan="8" class="py-8 text-center text-slate-400 text-xs">
-                  Tidak ada data permohonan cuti ditemukan.
+                <td colspan="8" class="py-10 text-center text-slate-400 text-xs">
+                  <div class="flex flex-col items-center justify-center gap-1.5">
+                    <span class="font-bold text-slate-600">Tidak ada permohonan cuti ditemukan</span>
+                    <span v-if="activeTab === 'Cuti Tim' && pendingLeavesCount === 0" class="text-slate-400 text-[11px]">
+                      Tidak ada permohonan cuti tim yang menunggu persetujuan saat ini. Buka tab <strong>"Semua Cuti"</strong> untuk melihat riwayat lengkap.
+                    </span>
+                    <span v-else class="text-slate-400 text-[11px]">
+                      Sesuaikan kata kunci pencarian atau filter status untuk melihat data lainnya.
+                    </span>
+                  </div>
                 </td>
               </tr>
             </tbody>
@@ -226,10 +329,13 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
-import { X } from 'lucide-vue-next'
+import { X, CheckCircle2, XCircle, Clock, Users, User } from 'lucide-vue-next'
 import { useNotificationStore } from '@/stores/notification.store'
+import { useAuthStore } from '@/stores/auth.store'
 
+const authStore = useAuthStore()
 const notifyStore = useNotificationStore()
+
 const activeTab = ref('Cuti Tim')
 const search = ref('')
 const filterType = ref('')
@@ -250,6 +356,33 @@ const leaveForm = ref({
   reason: ''
 })
 
+const canApprove = computed(() => {
+  const r = authStore.currentRole?.toLowerCase()
+  return r === 'super admin' || r === 'manager' || r === 'hr admin' || r === 'owner' || authStore.hasPermission('hris', 'approve')
+})
+
+const currentEmployee = computed(() => {
+  if (!authStore.user) return null
+  return activeEmployees.value.find(e => 
+    (e.user_id && e.user_id === authStore.user?.id) ||
+    (e.email && authStore.user?.email && e.email.toLowerCase() === authStore.user?.email.toLowerCase())
+  ) || null
+})
+
+const myLeaves = computed(() => {
+  if (!authStore.user) return []
+  return leaves.value.filter(l => {
+    if (l.userId && l.userId === authStore.user?.id) return true
+    if (currentEmployee.value && l.employeeId === currentEmployee.value.id) return true
+    if (currentEmployee.value && l.nik && l.nik === currentEmployee.value.nik) return true
+    return false
+  })
+})
+
+const pendingLeavesCount = computed(() => {
+  return leaves.value.filter(l => l.status === 'Menunggu').length
+})
+
 const fetchLeaves = async () => {
   loading.value = true
   try {
@@ -257,6 +390,7 @@ const fetchLeaves = async () => {
     if (res.data?.data) {
       leaves.value = res.data.data.map((l: any) => ({
         id: l.id,
+        employeeId: l.employee_id,
         nik: l.nik,
         name: l.name,
         type: l.leave_type,
@@ -264,7 +398,13 @@ const fetchLeaves = async () => {
         to: l.end_date,
         days: l.total_days,
         reason: l.reason,
-        status: l.status === 'approved' ? 'Disetujui' : (l.status === 'rejected' ? 'Ditolak' : 'Menunggu')
+        status: l.status === 'approved' ? 'Disetujui' : (l.status === 'rejected' ? 'Ditolak' : 'Menunggu'),
+        approvedByName: l.approved_by_name,
+        createdAt: l.created_at,
+        userId: l.user_id,
+        branchId: l.branch_id,
+        department: l.department,
+        position: l.position
       }))
     }
   } catch (err: any) {
@@ -280,7 +420,11 @@ const fetchEmployees = async () => {
     const res = await axios.get('/api/v1/hris/employees')
     activeEmployees.value = (res.data?.data || []).filter((e: any) => e.status?.toLowerCase() === 'active')
     if (activeEmployees.value.length > 0 && !leaveForm.value.employee_id) {
-      leaveForm.value.employee_id = activeEmployees.value[0].id
+      if (currentEmployee.value) {
+        leaveForm.value.employee_id = currentEmployee.value.id
+      } else {
+        leaveForm.value.employee_id = activeEmployees.value[0].id
+      }
     }
   } catch (err) {
     console.error('Failed to load employees:', err)
@@ -294,10 +438,34 @@ onMounted(() => {
 
 const filteredLeaves = computed(() => {
   return leaves.value.filter(l => {
-    const matchSearch = !search.value || l.name.toLowerCase().includes(search.value.toLowerCase()) || (l.nik && l.nik.toLowerCase().includes(search.value.toLowerCase()))
+    // 1. Tab-based filtering
+    if (activeTab.value === 'Cuti Tim') {
+      // Prioritize pending approvals; or if filterStatus is set, follow it
+      if (filterStatus.value) {
+        if (l.status !== filterStatus.value) return false
+      } else {
+        if (l.status !== 'Menunggu') return false
+      }
+    } else if (activeTab.value === 'Cuti Saya') {
+      const isMine = (l.userId && l.userId === authStore.user?.id) ||
+                     (currentEmployee.value && l.employeeId === currentEmployee.value.id) ||
+                     (l.nik && currentEmployee.value?.nik && l.nik === currentEmployee.value.nik)
+      if (!isMine) return false
+      if (filterStatus.value && l.status !== filterStatus.value) return false
+    } else if (activeTab.value === 'Semua Cuti') {
+      if (filterStatus.value && l.status !== filterStatus.value) return false
+    }
+
+    // 2. Search filtering
+    const matchSearch = !search.value ||
+      (l.name && l.name.toLowerCase().includes(search.value.toLowerCase())) ||
+      (l.nik && l.nik.toLowerCase().includes(search.value.toLowerCase())) ||
+      (l.reason && l.reason.toLowerCase().includes(search.value.toLowerCase()))
+
+    // 3. Type filtering
     const matchType = !filterType.value || l.type === filterType.value
-    const matchStatus = !filterStatus.value || l.status === filterStatus.value
-    return matchSearch && matchType && matchStatus
+
+    return matchSearch && matchType
   })
 })
 
@@ -339,6 +507,9 @@ const updateStatus = async (leave: any, targetStatus: 'approved' | 'rejected') =
 }
 
 const openRequestLeave = () => {
+  if (currentEmployee.value) {
+    leaveForm.value.employee_id = currentEmployee.value.id
+  }
   showLeaveModal.value = true
 }
 

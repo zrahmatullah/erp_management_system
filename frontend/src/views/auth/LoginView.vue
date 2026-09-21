@@ -129,7 +129,7 @@
           <span class="text-[10px] text-slate-400">Klik untuk isi otomatis</span>
         </div>
 
-        <div class="grid grid-cols-2 gap-2">
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
           <button
             type="button"
             @click="quickLogin('admin@cafe-erp.com', 'Admin@123')"
@@ -146,7 +146,7 @@
 
           <button
             type="button"
-            @click="quickLogin('manager@cafe-erp.com', 'Manager@123')"
+            @click="quickLogin('manager@cafe-erp.com', 'Password@123')"
             class="flex items-center gap-2 p-2 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-indigo-50 hover:border-indigo-200 text-left transition-all cursor-pointer group"
           >
             <div class="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
@@ -154,35 +154,49 @@
             </div>
             <div class="min-w-0">
               <div class="text-xs font-bold text-slate-800 group-hover:text-indigo-600 truncate">Store Manager</div>
-              <div class="text-[10px] text-slate-400 truncate">Persetujuan & HR</div>
+              <div class="text-[10px] text-indigo-600 font-semibold truncate">Approval Cuti/Shift</div>
             </div>
           </button>
 
           <button
             type="button"
-            @click="quickLogin('kasir@cafe-erp.com', 'Kasir@123')"
+            @click="quickLogin('kasir@cafe-erp.com', 'Password@123')"
             class="flex items-center gap-2 p-2 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-emerald-50 hover:border-emerald-200 text-left transition-all cursor-pointer group"
           >
             <div class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
               <ShoppingBag class="w-3.5 h-3.5" />
             </div>
             <div class="min-w-0">
-              <div class="text-xs font-bold text-slate-800 group-hover:text-emerald-600 truncate">Kasir Outlet</div>
-              <div class="text-[10px] text-slate-400 truncate">POS & Transaksi</div>
+              <div class="text-xs font-bold text-slate-800 group-hover:text-emerald-600 truncate">Kasir POS</div>
+              <div class="text-[10px] text-slate-400 truncate">Transaksi & Struk</div>
             </div>
           </button>
 
           <button
             type="button"
-            @click="quickLogin('gudang@cafe-erp.com', 'Gudang@123')"
+            @click="quickLogin('inventory@cafe-erp.com', 'Password@123')"
             class="flex items-center gap-2 p-2 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-amber-50 hover:border-amber-200 text-left transition-all cursor-pointer group"
           >
             <div class="w-7 h-7 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center shrink-0 group-hover:bg-amber-600 group-hover:text-white transition-colors">
               <Package class="w-3.5 h-3.5" />
             </div>
             <div class="min-w-0">
-              <div class="text-xs font-bold text-slate-800 group-hover:text-amber-600 truncate">Staf Gudang</div>
-              <div class="text-[10px] text-slate-400 truncate">GRN & Stok</div>
+              <div class="text-xs font-bold text-slate-800 group-hover:text-amber-600 truncate">Staf Inventory</div>
+              <div class="text-[10px] text-slate-400 truncate">Stok & P2P Gudang</div>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            @click="quickLogin('finance@cafe-erp.com', 'Password@123')"
+            class="flex items-center gap-2 p-2 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-purple-50 hover:border-purple-200 text-left transition-all cursor-pointer group"
+          >
+            <div class="w-7 h-7 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center shrink-0 group-hover:bg-purple-600 group-hover:text-white transition-colors">
+              <DollarSign class="w-3.5 h-3.5" />
+            </div>
+            <div class="min-w-0">
+              <div class="text-xs font-bold text-slate-800 group-hover:text-purple-600 truncate">Finance</div>
+              <div class="text-[10px] text-slate-400 truncate">Jurnal & Akuntansi</div>
             </div>
           </button>
         </div>
@@ -205,7 +219,8 @@ import {
   Shield,
   UserCheck,
   ShoppingBag,
-  Package
+  Package,
+  DollarSign
 } from 'lucide-vue-next'
 import { useAuthStore } from '@/stores/auth.store'
 import { useNotificationStore } from '@/stores/notification.store'

@@ -588,9 +588,15 @@ func (h *HRISHandler) GetLeaves(w http.ResponseWriter, r *http.Request) {
 		SELECT 
 			l.id, e.id as emp_id, e.nik, concat(e.first_name, ' ', e.last_name) as emp_name,
 			l.leave_type, l.start_date, l.end_date, l.total_days, l.reason, l.status,
-			COALESCE(u.username, '') as approved_by_name, l.created_at
+			COALESCE(u.username, '') as approved_by_name, l.created_at,
+			COALESCE(e.user_id::text, '') as user_id,
+			COALESCE(e.branch_id::text, '') as branch_id,
+			COALESCE(d.name, '') as department_name,
+			COALESCE(p.title, '') as position_name
 		FROM leaves l
 		JOIN employees e ON l.employee_id = e.id
+		LEFT JOIN departments d ON e.department_id = d.id
+		LEFT JOIN positions p ON e.position_id = p.id
 		LEFT JOIN users u ON l.approved_by = u.id
 		WHERE l.deleted_at IS NULL
 		ORDER BY l.created_at DESC`
@@ -604,11 +610,11 @@ func (h *HRISHandler) GetLeaves(w http.ResponseWriter, r *http.Request) {
 
 	var list []map[string]interface{}
 	for rows.Next() {
-		var id, empID, nik, name, lType, reason, status, approver string
+		var id, empID, nik, name, lType, reason, status, approver, userID, branchID, deptName, posName string
 		var start, end, createdAt time.Time
 		var days int
 
-		if err := rows.Scan(&id, &empID, &nik, &name, &lType, &start, &end, &days, &reason, &status, &approver, &createdAt); err == nil {
+		if err := rows.Scan(&id, &empID, &nik, &name, &lType, &start, &end, &days, &reason, &status, &approver, &createdAt, &userID, &branchID, &deptName, &posName); err == nil {
 			list = append(list, map[string]interface{}{
 				"id":               id,
 				"employee_id":      empID,
@@ -622,6 +628,10 @@ func (h *HRISHandler) GetLeaves(w http.ResponseWriter, r *http.Request) {
 				"status":           status,
 				"approved_by_name": approver,
 				"created_at":       createdAt.Format("2006-01-02 15:04"),
+				"user_id":          userID,
+				"branch_id":        branchID,
+				"department":       deptName,
+				"position":         posName,
 			})
 		}
 	}
