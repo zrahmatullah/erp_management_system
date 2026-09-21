@@ -142,8 +142,6 @@
                     {{ (leave.name || 'K').charAt(0) }}
                   </div>
                   <div>
-                    <div>{{ leave.name }}</div>
-                    <div class="text-[10px] text-slate-400 font-normal font-mono">{{ leave.nik || '-' }}</div>
                     <div class="font-bold text-slate-900">{{ leave.name }}</div>
                     <div class="text-[10px] text-slate-400 font-normal font-mono">
                       {{ leave.nik || '-' }} <span v-if="leave.position">• {{ leave.position }}</span>
@@ -154,7 +152,6 @@
                 <td class="py-3 px-3 text-slate-500 font-mono">{{ leave.from }}</td>
                 <td class="py-3 px-3 text-slate-500 font-mono">{{ leave.to }}</td>
                 <td class="py-3 px-3 text-center font-bold">{{ leave.days }} Hari</td>
-                <td class="py-3 px-3 text-slate-600 truncate max-w-xs">{{ leave.reason }}</td>
                 <td class="py-3 px-3 text-slate-600 truncate max-w-xs" :title="leave.reason">{{ leave.reason }}</td>
                 <td class="py-3 px-3 text-center">
                   <span
@@ -166,20 +163,6 @@
                 </td>
                 <td class="py-3 px-3 text-right">
                   <div v-if="leave.status === 'Menunggu'" class="inline-flex items-center gap-1.5">
-                    <button
-                      @click="updateStatus(leave, 'approved')"
-                      :disabled="actionLoading"
-                      class="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[11px] font-bold transition-colors cursor-pointer disabled:opacity-60"
-                    >
-                      Setujui
-                    </button>
-                    <button
-                      @click="updateStatus(leave, 'rejected')"
-                      :disabled="actionLoading"
-                      class="px-2.5 py-1 border border-rose-300 text-rose-600 hover:bg-rose-50 rounded-lg text-[11px] font-bold transition-colors cursor-pointer disabled:opacity-60"
-                    >
-                      Tolak
-                    </button>
                     <template v-if="canApprove">
                       <button
                         @click="updateStatus(leave, 'approved')"
