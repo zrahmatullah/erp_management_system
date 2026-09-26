@@ -65,7 +65,7 @@ type ProductSaleItem struct {
 
 // RecipeIngredient represents a raw material required for a product.
 type RecipeIngredient struct {
-	InventoryItemID string
+	InventoryItemID  string
 	QuantityRequired float64 // Quantity of raw material per 1 unit of product
 	UOM              string
 }

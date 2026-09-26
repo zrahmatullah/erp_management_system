@@ -79,9 +79,9 @@ var validPOTransitions = map[string][]string{
 	POStatusPartiallyReceived: {POStatusReceived, POStatusCancelled},
 	POStatusReceived:          {POStatusInvoiced},
 	POStatusInvoiced:          {POStatusPaid},
-	POStatusPaid:              {}, // Terminal
+	POStatusPaid:              {},              // Terminal
 	POStatusRejected:          {POStatusDraft}, // Can revise
-	POStatusCancelled:         {}, // Terminal
+	POStatusCancelled:         {},              // Terminal
 }
 
 // ValidatePOTransition validates if a PO status transition is legal.

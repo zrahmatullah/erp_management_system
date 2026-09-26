@@ -9,12 +9,12 @@ import (
 // TestPOS_LineItemCalculation tests item-level computations, discounts, and validations.
 func TestPOS_LineItemCalculation(t *testing.T) {
 	tests := []struct {
-		name        string
-		input       poscalc.OrderItemInput
-		wantGross   float64
-		wantDisc    float64
-		wantNet     float64
-		wantErr     error
+		name      string
+		input     poscalc.OrderItemInput
+		wantGross float64
+		wantDisc  float64
+		wantNet   float64
+		wantErr   error
 	}{
 		{
 			name: "Standard Item Without Discount",
@@ -294,11 +294,11 @@ func TestPOS_OrderCalculation_Scenarios(t *testing.T) {
 // TestPOS_ChangeCalculation tests payment reconciliation, exact change, and underpayment prevention.
 func TestPOS_ChangeCalculation(t *testing.T) {
 	tests := []struct {
-		name        string
-		totalDue    float64
-		amountPaid  float64
-		wantChange  float64
-		wantErr     error
+		name       string
+		totalDue   float64
+		amountPaid float64
+		wantChange float64
+		wantErr    error
 	}{
 		{
 			name:       "Exact Cash Payment",

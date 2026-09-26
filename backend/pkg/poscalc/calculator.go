@@ -24,12 +24,12 @@ const (
 
 // OrderItemInput defines the line item payload for POS calculations.
 type OrderItemInput struct {
-	ProductID        string
-	Name             string
-	Quantity         int
-	UnitPrice        float64
-	DiscountType     DiscountType
-	DiscountValue    float64
+	ProductID     string
+	Name          string
+	Quantity      int
+	UnitPrice     float64
+	DiscountType  DiscountType
+	DiscountValue float64
 }
 
 // PromotionInput defines store-wide or voucher-based promotions.
@@ -42,16 +42,16 @@ type PromotionInput struct {
 
 // TaxConfig defines tax and service charges (PB1 / PPN / Service).
 type TaxConfig struct {
-	TaxRate            float64 // e.g. 0.10 for 10% PB1
-	ServiceChargeRate  float64 // e.g. 0.05 for 5% Service Charge
+	TaxRate             float64 // e.g. 0.10 for 10% PB1
+	ServiceChargeRate   float64 // e.g. 0.05 for 5% Service Charge
 	TaxAppliedAfterDisc bool    // true if tax applies to net amount after discounts
 }
 
 // DefaultTaxConfig provides standard Indonesian Restaurant Tax (PB1 10%).
 func DefaultTaxConfig() TaxConfig {
 	return TaxConfig{
-		TaxRate:            0.10,
-		ServiceChargeRate:  0.0,
+		TaxRate:             0.10,
+		ServiceChargeRate:   0.0,
 		TaxAppliedAfterDisc: true,
 	}
 }
