@@ -530,7 +530,8 @@ const saveNewTable = async () => {
     await axios.post('/api/v1/master/tables', {
       table_number: newTable.value.number,
       capacity: newTable.value.capacity,
-      status: newTable.value.status
+      status: newTable.value.status,
+      zone: newTable.value.zone
     })
     notifyStore.success(`Meja ${newTable.value.number} berhasil ditambahkan ke database!`, 'Meja Ditambahkan')
     showAddModal.value = false

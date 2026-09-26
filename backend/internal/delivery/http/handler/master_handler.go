@@ -404,6 +404,66 @@ func (h *MasterHandler) UpdateRolePermissions(w http.ResponseWriter, r *http.Req
 	writeJSON(w, http.StatusOK, map[string]string{"message": "Role permissions updated successfully"})
 }
 
+func (h *MasterHandler) CreateRole(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		Name        string `json:"name"`
+		Description string `json:"description"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, "Invalid JSON body")
+		return
+	}
+	if strings.TrimSpace(body.Name) == "" {
+		writeError(w, http.StatusBadRequest, "Nama peran (role) wajib diisi")
+		return
+	}
+	newID := uuid.New()
+	_, err := h.db.Exec(r.Context(), `
+		INSERT INTO roles (id, name, description, created_at, updated_at)
+		VALUES ($1, $2, $3, NOW(), NOW())`,
+		newID, strings.TrimSpace(body.Name), body.Description)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusCreated, map[string]interface{}{"id": newID, "message": "Role created successfully"})
+}
+
+func (h *MasterHandler) UpdateRole(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	var body struct {
+		Name        string `json:"name"`
+		Description string `json:"description"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, "Invalid JSON body")
+		return
+	}
+	if strings.TrimSpace(body.Name) == "" {
+		writeError(w, http.StatusBadRequest, "Nama peran (role) wajib diisi")
+		return
+	}
+	_, err := h.db.Exec(r.Context(), `
+		UPDATE roles SET name=$1, description=$2, updated_at=NOW()
+		WHERE id=$3 AND deleted_at IS NULL`,
+		strings.TrimSpace(body.Name), body.Description, id)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"message": "Role updated successfully"})
+}
+
+func (h *MasterHandler) DeleteRole(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	_, err := h.db.Exec(r.Context(), `UPDATE roles SET deleted_at=NOW() WHERE id=$1`, id)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"message": "Role deleted successfully"})
+}
+
 // -----------------------------------------------------------------------------
 // 4. KATEGORI MENU (MENU CATEGORIES)
 // -----------------------------------------------------------------------------
@@ -626,11 +686,31 @@ func (h *MasterHandler) CreateProduct(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "Invalid body")
 		return
 	}
+	if strings.TrimSpace(body.Name) == "" {
+		writeError(w, http.StatusBadRequest, "Nama menu wajib diisi")
+		return
+	}
+	if strings.TrimSpace(body.TargetStation) == "" {
+		body.TargetStation = "barista"
+	}
+	if strings.TrimSpace(body.SKU) == "" {
+		body.SKU = "PRD-" + strings.ToUpper(uuid.New().String()[:6])
+	}
+
+	var catID uuid.UUID
+	var err error
+	if strings.TrimSpace(body.CategoryID) != "" {
+		catID, _ = uuid.Parse(body.CategoryID)
+	}
+	if catID == uuid.Nil {
+		_ = h.db.QueryRow(r.Context(), `SELECT id FROM menu_categories WHERE is_active=true AND deleted_at IS NULL ORDER BY sort_order ASC LIMIT 1`).Scan(&catID)
+	}
+
 	newID := uuid.New()
-	_, err := h.db.Exec(r.Context(), `
+	_, err = h.db.Exec(r.Context(), `
 		INSERT INTO products (id, category_id, name, sku, description, base_price, target_station, image_url, is_active, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())`,
-		newID, body.CategoryID, body.Name, body.SKU, body.Description, body.BasePrice, body.TargetStation, body.ImageURL, body.IsActive)
+		newID, catID, body.Name, body.SKU, body.Description, body.BasePrice, body.TargetStation, body.ImageURL, body.IsActive)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -654,10 +734,17 @@ func (h *MasterHandler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "Invalid body")
 		return
 	}
+	var catID uuid.UUID
+	if strings.TrimSpace(body.CategoryID) != "" {
+		catID, _ = uuid.Parse(body.CategoryID)
+	}
+	if catID == uuid.Nil {
+		_ = h.db.QueryRow(r.Context(), `SELECT category_id FROM products WHERE id=$1`, id).Scan(&catID)
+	}
 	_, err := h.db.Exec(r.Context(), `
 		UPDATE products SET category_id=$1, name=$2, sku=$3, description=$4, base_price=$5, target_station=$6, image_url=$7, is_active=$8, updated_at=NOW()
 		WHERE id=$9 AND deleted_at IS NULL`,
-		body.CategoryID, body.Name, body.SKU, body.Description, body.BasePrice, body.TargetStation, body.ImageURL, body.IsActive, id)
+		catID, body.Name, body.SKU, body.Description, body.BasePrice, body.TargetStation, body.ImageURL, body.IsActive, id)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -1049,10 +1136,46 @@ func (h *MasterHandler) DeleteInventoryItem(w http.ResponseWriter, r *http.Reque
 // -----------------------------------------------------------------------------
 // 7. MEJA & ZONASI (TABLES & ZONES)
 // -----------------------------------------------------------------------------
+func (h *MasterHandler) ListTableZones(w http.ResponseWriter, r *http.Request) {
+	rows, err := h.db.Query(r.Context(), `
+		SELECT z.id, z.branch_id, COALESCE(b.name, 'All Branches') as branch_name, z.name, COALESCE(z.description,'')
+		FROM table_zones z
+		LEFT JOIN branches b ON z.branch_id = b.id
+		WHERE z.deleted_at IS NULL
+		ORDER BY z.name ASC`)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	defer rows.Close()
+
+	var list []map[string]interface{}
+	for rows.Next() {
+		var id, bID, bName, name, desc string
+		if err := rows.Scan(&id, &bID, &bName, &name, &desc); err == nil {
+			list = append(list, map[string]interface{}{
+				"id": id, "branch_id": bID, "branch_name": bName, "name": name, "description": desc,
+			})
+		}
+	}
+	if list == nil {
+		list = []map[string]interface{}{}
+	}
+	writeJSON(w, http.StatusOK, list)
+}
+
 func (h *MasterHandler) ListTables(w http.ResponseWriter, r *http.Request) {
 	query := `
-		SELECT t.id, t.branch_id, b.name as branch_name, t.zone_id, COALESCE(z.name, 'No Zone') as zone_name,
-		       t.table_number, t.capacity, t.status, t.pos_x, t.pos_y
+		SELECT t.id, 
+		       COALESCE(t.branch_id::text, ''), 
+		       COALESCE(b.name, 'All Branches'), 
+		       COALESCE(t.zone_id::text, ''), 
+		       COALESCE(z.name, 'No Zone'),
+		       t.table_number, 
+		       COALESCE(t.capacity, 4), 
+		       COALESCE(t.status, 'available'), 
+		       COALESCE(t.pos_x, 0), 
+		       COALESCE(t.pos_y, 0)
 		FROM cafe_tables t
 		LEFT JOIN branches b ON t.branch_id = b.id
 		LEFT JOIN table_zones z ON t.zone_id = z.id
@@ -1086,6 +1209,7 @@ func (h *MasterHandler) CreateTable(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		BranchID    string `json:"branch_id"`
 		ZoneID      string `json:"zone_id"`
+		Zone        string `json:"zone"`
 		TableNumber string `json:"table_number"`
 		Capacity    int    `json:"capacity"`
 		Status      string `json:"status"`
@@ -1094,19 +1218,60 @@ func (h *MasterHandler) CreateTable(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "Invalid body")
 		return
 	}
+	if strings.TrimSpace(body.TableNumber) == "" {
+		writeError(w, http.StatusBadRequest, "Nomor meja wajib diisi")
+		return
+	}
+	if body.Capacity <= 0 {
+		body.Capacity = 4
+	}
 	if body.Status == "" {
 		body.Status = "available"
 	}
+
+	// Validate / Fallback BranchID
+	var branchUUID *uuid.UUID
+	if bID, err := uuid.Parse(body.BranchID); err == nil {
+		branchUUID = &bID
+	} else {
+		var defaultBranchID uuid.UUID
+		err := h.db.QueryRow(r.Context(), `SELECT id FROM branches WHERE is_active = true AND deleted_at IS NULL ORDER BY created_at ASC LIMIT 1`).Scan(&defaultBranchID)
+		if err != nil {
+			_ = h.db.QueryRow(r.Context(), `SELECT id FROM branches WHERE deleted_at IS NULL ORDER BY created_at ASC LIMIT 1`).Scan(&defaultBranchID)
+		}
+		if defaultBranchID != uuid.Nil {
+			branchUUID = &defaultBranchID
+		}
+	}
+	if branchUUID == nil {
+		writeError(w, http.StatusBadRequest, "Cabang tidak valid dan belum ada cabang aktif")
+		return
+	}
+
+	// Validate / Fallback ZoneID
+	var zoneUUID *uuid.UUID
+	if zID, err := uuid.Parse(body.ZoneID); err == nil {
+		zoneUUID = &zID
+	} else if body.Zone != "" {
+		var foundZoneID uuid.UUID
+		err := h.db.QueryRow(r.Context(), `SELECT id FROM table_zones WHERE name ILIKE '%' || $1 || '%' AND deleted_at IS NULL LIMIT 1`, body.Zone).Scan(&foundZoneID)
+		if err == nil {
+			zoneUUID = &foundZoneID
+		}
+	}
+
 	newID := uuid.New()
 	_, err := h.db.Exec(r.Context(), `
 		INSERT INTO cafe_tables (id, branch_id, zone_id, table_number, capacity, status, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())`,
-		newID, body.BranchID, body.ZoneID, body.TableNumber, body.Capacity, body.Status)
+		VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
+		ON CONFLICT (branch_id, table_number) DO UPDATE
+		SET capacity = EXCLUDED.capacity, status = EXCLUDED.status, zone_id = EXCLUDED.zone_id, deleted_at = NULL, updated_at = NOW()`,
+		newID, *branchUUID, zoneUUID, body.TableNumber, body.Capacity, body.Status)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	writeJSON(w, http.StatusCreated, map[string]interface{}{"id": newID, "message": "Table created"})
+	writeJSON(w, http.StatusCreated, map[string]interface{}{"id": newID, "message": "Table created successfully"})
 }
 
 func (h *MasterHandler) UpdateTable(w http.ResponseWriter, r *http.Request) {
@@ -1114,6 +1279,7 @@ func (h *MasterHandler) UpdateTable(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		BranchID    string `json:"branch_id"`
 		ZoneID      string `json:"zone_id"`
+		Zone        string `json:"zone"`
 		TableNumber string `json:"table_number"`
 		Capacity    int    `json:"capacity"`
 		Status      string `json:"status"`
@@ -1122,15 +1288,48 @@ func (h *MasterHandler) UpdateTable(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "Invalid body")
 		return
 	}
+	if strings.TrimSpace(body.TableNumber) == "" {
+		writeError(w, http.StatusBadRequest, "Nomor meja wajib diisi")
+		return
+	}
+	if body.Capacity <= 0 {
+		body.Capacity = 4
+	}
+	if body.Status == "" {
+		body.Status = "available"
+	}
+
+	var branchUUID *uuid.UUID
+	if bID, err := uuid.Parse(body.BranchID); err == nil {
+		branchUUID = &bID
+	} else {
+		var curBranchID uuid.UUID
+		_ = h.db.QueryRow(r.Context(), `SELECT branch_id FROM cafe_tables WHERE id = $1`, id).Scan(&curBranchID)
+		if curBranchID != uuid.Nil {
+			branchUUID = &curBranchID
+		}
+	}
+
+	var zoneUUID *uuid.UUID
+	if zID, err := uuid.Parse(body.ZoneID); err == nil {
+		zoneUUID = &zID
+	} else if body.Zone != "" {
+		var foundZoneID uuid.UUID
+		err := h.db.QueryRow(r.Context(), `SELECT id FROM table_zones WHERE name ILIKE '%' || $1 || '%' AND deleted_at IS NULL LIMIT 1`, body.Zone).Scan(&foundZoneID)
+		if err == nil {
+			zoneUUID = &foundZoneID
+		}
+	}
+
 	_, err := h.db.Exec(r.Context(), `
-		UPDATE cafe_tables SET branch_id=$1, zone_id=$2, table_number=$3, capacity=$4, status=$5, updated_at=NOW()
+		UPDATE cafe_tables SET branch_id=COALESCE($1, branch_id), zone_id=$2, table_number=$3, capacity=$4, status=$5, updated_at=NOW()
 		WHERE id=$6 AND deleted_at IS NULL`,
-		body.BranchID, body.ZoneID, body.TableNumber, body.Capacity, body.Status, id)
+		branchUUID, zoneUUID, body.TableNumber, body.Capacity, body.Status, id)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]string{"message": "Table updated"})
+	writeJSON(w, http.StatusOK, map[string]string{"message": "Table updated successfully"})
 }
 
 func (h *MasterHandler) DeleteTable(w http.ResponseWriter, r *http.Request) {
@@ -1140,7 +1339,7 @@ func (h *MasterHandler) DeleteTable(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]string{"message": "Table deleted"})
+	writeJSON(w, http.StatusOK, map[string]string{"message": "Table deleted successfully"})
 }
 
 // -----------------------------------------------------------------------------
@@ -1319,4 +1518,371 @@ func (h *MasterHandler) ListPositions(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	writeJSON(w, http.StatusOK, list)
+}
+
+// -----------------------------------------------------------------------------
+// 10. CRUD FOR SUPPLIERS, WAREHOUSES, SHIFTS, DEPARTMENTS, POSITIONS
+// -----------------------------------------------------------------------------
+func (h *MasterHandler) CreateSupplier(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		Code          string `json:"code"`
+		Name          string `json:"name"`
+		ContactPerson string `json:"contact_person"`
+		Phone         string `json:"phone"`
+		Email         string `json:"email"`
+		Address       string `json:"address"`
+		IsActive      bool   `json:"is_active"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, "Invalid JSON body")
+		return
+	}
+	if strings.TrimSpace(body.Name) == "" {
+		writeError(w, http.StatusBadRequest, "Nama supplier wajib diisi")
+		return
+	}
+	if strings.TrimSpace(body.Code) == "" {
+		body.Code = "SUP-" + strings.ToUpper(uuid.New().String()[:6])
+	}
+	newID := uuid.New()
+	_, err := h.db.Exec(r.Context(), `
+		INSERT INTO suppliers (id, code, name, contact_person, phone, email, address, is_active, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())`,
+		newID, body.Code, body.Name, body.ContactPerson, body.Phone, body.Email, body.Address, body.IsActive)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusCreated, map[string]interface{}{"id": newID, "message": "Supplier created successfully"})
+}
+
+func (h *MasterHandler) UpdateSupplier(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	var body struct {
+		Code          string `json:"code"`
+		Name          string `json:"name"`
+		ContactPerson string `json:"contact_person"`
+		Phone         string `json:"phone"`
+		Email         string `json:"email"`
+		Address       string `json:"address"`
+		IsActive      bool   `json:"is_active"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, "Invalid JSON body")
+		return
+	}
+	_, err := h.db.Exec(r.Context(), `
+		UPDATE suppliers SET code=$1, name=$2, contact_person=$3, phone=$4, email=$5, address=$6, is_active=$7, updated_at=NOW()
+		WHERE id=$8 AND deleted_at IS NULL`,
+		body.Code, body.Name, body.ContactPerson, body.Phone, body.Email, body.Address, body.IsActive, id)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"message": "Supplier updated successfully"})
+}
+
+func (h *MasterHandler) DeleteSupplier(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	_, err := h.db.Exec(r.Context(), `UPDATE suppliers SET deleted_at=NOW() WHERE id=$1`, id)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"message": "Supplier deleted successfully"})
+}
+
+func (h *MasterHandler) CreateWarehouse(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		BranchID string `json:"branch_id"`
+		Name     string `json:"name"`
+		Type     string `json:"type"`
+		Address  string `json:"address"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, "Invalid JSON body")
+		return
+	}
+	if strings.TrimSpace(body.Name) == "" {
+		writeError(w, http.StatusBadRequest, "Nama gudang wajib diisi")
+		return
+	}
+	var branchUUID uuid.UUID
+	if bID, err := uuid.Parse(body.BranchID); err == nil {
+		branchUUID = bID
+	} else {
+		_ = h.db.QueryRow(r.Context(), `SELECT id FROM branches WHERE is_active=true AND deleted_at IS NULL ORDER BY created_at ASC LIMIT 1`).Scan(&branchUUID)
+	}
+	if branchUUID == uuid.Nil {
+		writeError(w, http.StatusBadRequest, "Cabang tidak valid")
+		return
+	}
+	if body.Type == "" {
+		body.Type = "main"
+	}
+	newID := uuid.New()
+	_, err := h.db.Exec(r.Context(), `
+		INSERT INTO warehouses (id, branch_id, name, type, address, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, NOW(), NOW())`,
+		newID, branchUUID, body.Name, body.Type, body.Address)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusCreated, map[string]interface{}{"id": newID, "message": "Warehouse created successfully"})
+}
+
+func (h *MasterHandler) UpdateWarehouse(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	var body struct {
+		BranchID string `json:"branch_id"`
+		Name     string `json:"name"`
+		Type     string `json:"type"`
+		Address  string `json:"address"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, "Invalid JSON body")
+		return
+	}
+	var branchUUID *uuid.UUID
+	if bID, err := uuid.Parse(body.BranchID); err == nil {
+		branchUUID = &bID
+	}
+	_, err := h.db.Exec(r.Context(), `
+		UPDATE warehouses SET branch_id=COALESCE($1, branch_id), name=$2, type=$3, address=$4, updated_at=NOW()
+		WHERE id=$5 AND deleted_at IS NULL`,
+		branchUUID, body.Name, body.Type, body.Address, id)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"message": "Warehouse updated successfully"})
+}
+
+func (h *MasterHandler) DeleteWarehouse(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	_, err := h.db.Exec(r.Context(), `UPDATE warehouses SET deleted_at=NOW() WHERE id=$1`, id)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"message": "Warehouse deleted successfully"})
+}
+
+func (h *MasterHandler) CreateShift(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		BranchID  string `json:"branch_id"`
+		Name      string `json:"name"`
+		StartTime string `json:"start_time"`
+		EndTime   string `json:"end_time"`
+		Color     string `json:"color"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, "Invalid JSON body")
+		return
+	}
+	if strings.TrimSpace(body.Name) == "" {
+		writeError(w, http.StatusBadRequest, "Nama shift wajib diisi")
+		return
+	}
+	var branchUUID uuid.UUID
+	if bID, err := uuid.Parse(body.BranchID); err == nil {
+		branchUUID = bID
+	} else {
+		_ = h.db.QueryRow(r.Context(), `SELECT id FROM branches WHERE is_active=true AND deleted_at IS NULL ORDER BY created_at ASC LIMIT 1`).Scan(&branchUUID)
+	}
+	if branchUUID == uuid.Nil {
+		writeError(w, http.StatusBadRequest, "Cabang tidak valid")
+		return
+	}
+	if body.StartTime == "" {
+		body.StartTime = "08:00:00"
+	}
+	if body.EndTime == "" {
+		body.EndTime = "17:00:00"
+	}
+	if body.Color == "" {
+		body.Color = "#2563eb"
+	}
+	newID := uuid.New()
+	_, err := h.db.Exec(r.Context(), `
+		INSERT INTO work_shifts (id, branch_id, name, start_time, end_time, color, created_at, updated_at)
+		VALUES ($1, $2, $3, $4::time, $5::time, $6, NOW(), NOW())`,
+		newID, branchUUID, body.Name, body.StartTime, body.EndTime, body.Color)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusCreated, map[string]interface{}{"id": newID, "message": "Shift created successfully"})
+}
+
+func (h *MasterHandler) UpdateShift(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	var body struct {
+		BranchID  string `json:"branch_id"`
+		Name      string `json:"name"`
+		StartTime string `json:"start_time"`
+		EndTime   string `json:"end_time"`
+		Color     string `json:"color"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, "Invalid JSON body")
+		return
+	}
+	var branchUUID *uuid.UUID
+	if bID, err := uuid.Parse(body.BranchID); err == nil {
+		branchUUID = &bID
+	}
+	_, err := h.db.Exec(r.Context(), `
+		UPDATE work_shifts SET branch_id=COALESCE($1, branch_id), name=$2, start_time=$3::time, end_time=$4::time, color=$5, updated_at=NOW()
+		WHERE id=$6 AND deleted_at IS NULL`,
+		branchUUID, body.Name, body.StartTime, body.EndTime, body.Color, id)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"message": "Shift updated successfully"})
+}
+
+func (h *MasterHandler) DeleteShift(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	_, err := h.db.Exec(r.Context(), `UPDATE work_shifts SET deleted_at=NOW() WHERE id=$1`, id)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"message": "Shift deleted successfully"})
+}
+
+func (h *MasterHandler) CreateDepartment(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		Name        string `json:"name"`
+		Description string `json:"description"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, "Invalid JSON body")
+		return
+	}
+	if strings.TrimSpace(body.Name) == "" {
+		writeError(w, http.StatusBadRequest, "Nama departemen wajib diisi")
+		return
+	}
+	newID := uuid.New()
+	_, err := h.db.Exec(r.Context(), `
+		INSERT INTO departments (id, name, description, created_at, updated_at)
+		VALUES ($1, $2, $3, NOW(), NOW())`,
+		newID, strings.TrimSpace(body.Name), body.Description)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusCreated, map[string]interface{}{"id": newID, "message": "Department created successfully"})
+}
+
+func (h *MasterHandler) UpdateDepartment(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	var body struct {
+		Name        string `json:"name"`
+		Description string `json:"description"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, "Invalid JSON body")
+		return
+	}
+	_, err := h.db.Exec(r.Context(), `
+		UPDATE departments SET name=$1, description=$2, updated_at=NOW()
+		WHERE id=$3 AND deleted_at IS NULL`,
+		strings.TrimSpace(body.Name), body.Description, id)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"message": "Department updated successfully"})
+}
+
+func (h *MasterHandler) DeleteDepartment(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	_, err := h.db.Exec(r.Context(), `UPDATE departments SET deleted_at=NOW() WHERE id=$1`, id)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"message": "Department deleted successfully"})
+}
+
+func (h *MasterHandler) CreatePosition(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		DepartmentID string  `json:"department_id"`
+		Title        string  `json:"title"`
+		Level        int     `json:"level"`
+		BaseSalary   float64 `json:"base_salary"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, "Invalid JSON body")
+		return
+	}
+	if strings.TrimSpace(body.Title) == "" {
+		writeError(w, http.StatusBadRequest, "Nama posisi/jabatan wajib diisi")
+		return
+	}
+	var deptUUID uuid.UUID
+	if dID, err := uuid.Parse(body.DepartmentID); err == nil {
+		deptUUID = dID
+	} else {
+		_ = h.db.QueryRow(r.Context(), `SELECT id FROM departments WHERE deleted_at IS NULL ORDER BY created_at ASC LIMIT 1`).Scan(&deptUUID)
+	}
+	if deptUUID == uuid.Nil {
+		writeError(w, http.StatusBadRequest, "Departemen tidak valid")
+		return
+	}
+	if body.Level <= 0 {
+		body.Level = 1
+	}
+	newID := uuid.New()
+	_, err := h.db.Exec(r.Context(), `
+		INSERT INTO positions (id, department_id, title, level, base_salary, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, NOW(), NOW())`,
+		newID, deptUUID, body.Title, body.Level, body.BaseSalary)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusCreated, map[string]interface{}{"id": newID, "message": "Position created successfully"})
+}
+
+func (h *MasterHandler) UpdatePosition(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	var body struct {
+		DepartmentID string  `json:"department_id"`
+		Title        string  `json:"title"`
+		Level        int     `json:"level"`
+		BaseSalary   float64 `json:"base_salary"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, "Invalid JSON body")
+		return
+	}
+	var deptUUID *uuid.UUID
+	if dID, err := uuid.Parse(body.DepartmentID); err == nil {
+		deptUUID = &dID
+	}
+	_, err := h.db.Exec(r.Context(), `
+		UPDATE positions SET department_id=COALESCE($1, department_id), title=$2, level=$3, base_salary=$4, updated_at=NOW()
+		WHERE id=$5 AND deleted_at IS NULL`,
+		deptUUID, body.Title, body.Level, body.BaseSalary, id)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"message": "Position updated successfully"})
+}
+
+func (h *MasterHandler) DeletePosition(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	_, err := h.db.Exec(r.Context(), `UPDATE positions SET deleted_at=NOW() WHERE id=$1`, id)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"message": "Position deleted successfully"})
 }

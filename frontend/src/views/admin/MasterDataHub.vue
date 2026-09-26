@@ -275,20 +275,29 @@ const branchOptions = ref<{label: string, value: string}[]>([])
 const categoryOptions = ref<{label: string, value: string}[]>([])
 const roleOptions = ref<{label: string, value: string}[]>([])
 const employeeOptions = ref<{label: string, value: string}[]>([])
+const zoneOptions = ref<{label: string, value: string}[]>([])
+const departmentOptions = ref<{label: string, value: string}[]>([])
 
 const rawEmployees = ref<any[]>([])
 
 const loadDropdownMasters = async () => {
   try {
-    const [bRes, cRes, rRes, eRes] = await Promise.all([
+    const [bRes, cRes, rRes, eRes, zRes, dRes] = await Promise.all([
       axios.get('/api/v1/master/branches'),
       axios.get('/api/v1/master/categories'),
       axios.get('/api/v1/master/roles'),
-      axios.get('/api/v1/hris/employees')
+      axios.get('/api/v1/hris/employees'),
+      axios.get('/api/v1/master/zones'),
+      axios.get('/api/v1/master/departments')
     ])
     branchOptions.value = (Array.isArray(bRes.data) ? bRes.data : (bRes.data?.data || [])).map((b: any) => ({ label: b.name, value: b.id }))
     categoryOptions.value = (Array.isArray(cRes.data) ? cRes.data : (cRes.data?.data || [])).map((c: any) => ({ label: c.name, value: c.id }))
     roleOptions.value = (Array.isArray(rRes.data) ? rRes.data : (rRes.data?.data || [])).map((r: any) => ({ label: r.name, value: r.id }))
+    zoneOptions.value = [
+      { label: '-- Tanpa Zonasi Meja --', value: '' },
+      ...(Array.isArray(zRes.data) ? zRes.data : (zRes.data?.data || [])).map((z: any) => ({ label: `${z.name} (${z.branch_name || 'All'})`, value: z.id }))
+    ]
+    departmentOptions.value = (Array.isArray(dRes.data) ? dRes.data : (dRes.data?.data || [])).map((d: any) => ({ label: d.name, value: d.id }))
     rawEmployees.value = eRes.data?.data || []
     employeeOptions.value = [
       { label: '-- Tanpa Tautan Staf --', value: '' },
@@ -437,6 +446,10 @@ const formFieldsConfig = computed<Record<string, any[]>>(() => ({
     { label: 'PIN Kasir (4-6 Digit)', key: 'pin_code', placeholder: '1234' },
     { label: 'Status', key: 'is_active', type: 'checkbox', checkboxLabel: 'Pengguna Aktif' }
   ],
+  roles: [
+    { label: 'Nama Peran (Role)', key: 'name', placeholder: 'e.g. Kasir, Barista, Kitchen, Manager' },
+    { label: 'Deskripsi Wewenang', key: 'description', placeholder: 'Akses operasional POS dan pesanan kasir' }
+  ],
   categories: [
     { label: 'Nama Kategori', key: 'name', placeholder: 'e.g. Coffee, Pastry, Beverages' },
     { label: 'Slug / URL Code', key: 'slug', placeholder: 'e.g. coffee, pastry' },
@@ -444,6 +457,7 @@ const formFieldsConfig = computed<Record<string, any[]>>(() => ({
     { label: 'Status', key: 'is_active', type: 'checkbox', checkboxLabel: 'Kategori Ditampilkan di POS' }
   ],
   products: [
+    { label: 'Kategori Menu', key: 'category_id', type: 'select', options: categoryOptions.value },
     { label: 'SKU Produk', key: 'sku', placeholder: 'PRD-LATTE-01' },
     { label: 'Nama Menu', key: 'name', placeholder: 'Iced Caramel Macchiato' },
     { label: 'Harga Dasar (Rp)', key: 'base_price', type: 'number', placeholder: '35000' },
@@ -477,12 +491,57 @@ const formFieldsConfig = computed<Record<string, any[]>>(() => ({
     { label: 'Status', key: 'is_active', type: 'checkbox', checkboxLabel: 'Bahan Aktif Digunakan' }
   ],
   tables: [
+    { label: 'Cabang Penempatan', key: 'branch_id', type: 'select', options: branchOptions.value },
+    { label: 'Zonasi Meja', key: 'zone_id', type: 'select', options: zoneOptions.value },
     { label: 'Nomor Meja', key: 'table_number', placeholder: 'T-01, VIP-1' },
     { label: 'Kapasitas Kursi', key: 'capacity', type: 'number', placeholder: '4' },
     { label: 'Status Meja', key: 'status', type: 'select', options: [
       { label: 'Tersedia (Available)', value: 'available' },
       { label: 'Terisi (Occupied)', value: 'occupied' },
       { label: 'Reservasi (Reserved)', value: 'reserved' }
+    ]}
+  ],
+  warehouses: [
+    { label: 'Cabang Penempatan', key: 'branch_id', type: 'select', options: branchOptions.value },
+    { label: 'Nama Gudang / Pos Stok', key: 'name', placeholder: 'e.g. Gudang Utama, Bar Counter Stock' },
+    { label: 'Tipe Gudang', key: 'type', type: 'select', options: [
+      { label: 'Gudang Utama (Main Storage)', value: 'main' },
+      { label: 'Barista Counter', value: 'bar' },
+      { label: 'Kitchen Pantry', value: 'kitchen' },
+      { label: 'Transit Storage', value: 'storage' }
+    ]},
+    { label: 'Alamat / Lokasi Detail', key: 'address', placeholder: 'Lantai 1 Belakang Bar' }
+  ],
+  suppliers: [
+    { label: 'Kode Supplier', key: 'code', placeholder: 'e.g. SUP-COFFEE-01' },
+    { label: 'Nama Supplier / Vendor', key: 'name', placeholder: 'e.g. PT Kopi Nusantara Makmur' },
+    { label: 'Kontak Person (PIC)', key: 'contact_person', placeholder: 'Bpk. Hendra' },
+    { label: 'Nomor Telepon / WA', key: 'phone', placeholder: '081298765432' },
+    { label: 'Email', key: 'email', placeholder: 'sales@kopinusantara.id' },
+    { label: 'Alamat Lengkap', key: 'address', placeholder: 'Jl. Industri Kopi No. 12, Bandung' },
+    { label: 'Status', key: 'is_active', type: 'checkbox', checkboxLabel: 'Supplier Aktif Digunakan' }
+  ],
+  departments: [
+    { label: 'Nama Departemen', key: 'name', placeholder: 'e.g. Operational, Bar & Kitchen, Finance, HR' },
+    { label: 'Deskripsi Departemen', key: 'description', placeholder: 'Divisi operasional cafe harian' }
+  ],
+  positions: [
+    { label: 'Departemen', key: 'department_id', type: 'select', options: departmentOptions.value },
+    { label: 'Nama Jabatan / Posisi', key: 'title', placeholder: 'e.g. Head Barista, Cashier, Cook' },
+    { label: 'Level Posisi (1 - 5)', key: 'level', type: 'number', placeholder: '1' },
+    { label: 'Gaji Pokok Acuan (Rp)', key: 'base_salary', type: 'number', placeholder: '4500000' }
+  ],
+  shifts: [
+    { label: 'Cabang Penempatan', key: 'branch_id', type: 'select', options: branchOptions.value },
+    { label: 'Nama Shift Kerja', key: 'name', placeholder: 'e.g. Morning Shift, Middle, Closing' },
+    { label: 'Jam Masuk (HH:MM)', key: 'start_time', placeholder: '07:00' },
+    { label: 'Jam Pulang (HH:MM)', key: 'end_time', placeholder: '15:30' },
+    { label: 'Warna Tag Penanda', key: 'color', type: 'select', options: [
+      { label: 'Biru (Default)', value: '#2563eb' },
+      { label: 'Hijau (Pagi)', value: '#16a34a' },
+      { label: 'Oranye (Siang)', value: '#ea580c' },
+      { label: 'Ungu (Malam)', value: '#9333ea' },
+      { label: 'Merah (Overtime/Special)', value: '#dc2626' }
     ]}
   ],
   accounts: [

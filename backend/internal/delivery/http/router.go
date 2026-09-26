@@ -151,6 +151,9 @@ func SetupRouter(
 
 			// Roles & Permissions
 			r.Get("/roles", masterHandler.ListRoles)
+			r.Post("/roles", masterHandler.CreateRole)
+			r.Put("/roles/{id}", masterHandler.UpdateRole)
+			r.Delete("/roles/{id}", masterHandler.DeleteRole)
 			r.Get("/roles/{id}/permissions", masterHandler.GetRolePermissions)
 			r.Put("/roles/{id}/permissions", masterHandler.UpdateRolePermissions)
 
@@ -175,11 +178,12 @@ func SetupRouter(
 			r.Put("/inventory-items/{id}", masterHandler.UpdateInventoryItem)
 			r.Delete("/inventory-items/{id}", masterHandler.DeleteInventoryItem)
 
-			// Tables
+			// Tables & Zones
 			r.Get("/tables", masterHandler.ListTables)
 			r.Post("/tables", masterHandler.CreateTable)
 			r.Put("/tables/{id}", masterHandler.UpdateTable)
 			r.Delete("/tables/{id}", masterHandler.DeleteTable)
+			r.Get("/zones", masterHandler.ListTableZones)
 
 			// Chart of Accounts
 			r.Get("/accounts", masterHandler.ListAccounts)
@@ -187,12 +191,35 @@ func SetupRouter(
 			r.Put("/accounts/{id}", masterHandler.UpdateAccount)
 			r.Delete("/accounts/{id}", masterHandler.DeleteAccount)
 
-			// Other Masters
+			// Suppliers
 			r.Get("/suppliers", masterHandler.ListSuppliers)
+			r.Post("/suppliers", masterHandler.CreateSupplier)
+			r.Put("/suppliers/{id}", masterHandler.UpdateSupplier)
+			r.Delete("/suppliers/{id}", masterHandler.DeleteSupplier)
+
+			// Warehouses
 			r.Get("/warehouses", masterHandler.ListWarehouses)
+			r.Post("/warehouses", masterHandler.CreateWarehouse)
+			r.Put("/warehouses/{id}", masterHandler.UpdateWarehouse)
+			r.Delete("/warehouses/{id}", masterHandler.DeleteWarehouse)
+
+			// Shifts
 			r.Get("/shifts", masterHandler.ListShifts)
+			r.Post("/shifts", masterHandler.CreateShift)
+			r.Put("/shifts/{id}", masterHandler.UpdateShift)
+			r.Delete("/shifts/{id}", masterHandler.DeleteShift)
+
+			// Departments
 			r.Get("/departments", masterHandler.ListDepartments)
+			r.Post("/departments", masterHandler.CreateDepartment)
+			r.Put("/departments/{id}", masterHandler.UpdateDepartment)
+			r.Delete("/departments/{id}", masterHandler.DeleteDepartment)
+
+			// Positions
 			r.Get("/positions", masterHandler.ListPositions)
+			r.Post("/positions", masterHandler.CreatePosition)
+			r.Put("/positions/{id}", masterHandler.UpdatePosition)
+			r.Delete("/positions/{id}", masterHandler.DeletePosition)
 
 			// Company Profile
 			r.Get("/company-profile", p2pHandler.GetCompanyProfile)
