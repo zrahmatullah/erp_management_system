@@ -117,45 +117,96 @@
 
       <!-- Theme Switcher Segmented Control (Light / Dark) -->
       <div v-if="!isCollapsed" class="bg-slate-200/70 dark:bg-slate-950/80 p-1 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center text-xs font-semibold gap-1">
+      <!-- Theme Switcher Segmented Control (Light / Dark / System) -->
+      <div 
+        v-if="!isCollapsed" 
+        role="radiogroup" 
+        aria-label="Pilih tema tampilan antarmuka"
+        class="bg-slate-200/70 dark:bg-slate-950/80 p-1 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center text-xs font-semibold gap-1"
+      >
+        <!-- Light (Matahari) -->
         <button
           type="button"
+          role="radio"
+          :aria-checked="appStore.themeMode === 'light'"
+          aria-label="Mode Terang (Matahari)"
           @click="appStore.setTheme('light')"
           class="flex-1 py-1.5 px-2.5 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer"
           :class="appStore.theme === 'light' 
+          class="flex-1 py-1.5 px-2 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          :class="appStore.themeMode === 'light' 
             ? 'bg-white bg-keep-white text-blue-600 shadow-xs border border-blue-200/60 font-black' 
             : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
           title="Mode Terang (Matahari: Putih & Biru)"
         >
           <Sun class="w-3.5 h-3.5 text-amber-500" />
           <span>Light</span>
+          <Sun class="w-3.5 h-3.5 text-amber-500 shrink-0" />
+          <span class="text-[11px]">Light</span>
         </button>
+
+        <!-- Dark (Bulan) -->
         <button
           type="button"
+          role="radio"
+          :aria-checked="appStore.themeMode === 'dark'"
+          aria-label="Mode Gelap (Bulan)"
           @click="appStore.setTheme('dark')"
           class="flex-1 py-1.5 px-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer"
           :class="appStore.theme === 'dark' 
+          class="flex-1 py-1.5 px-2 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          :class="appStore.themeMode === 'dark' 
             ? 'bg-slate-800 text-blue-400 shadow-xs border border-slate-700 font-black' 
             : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
           title="Mode Gelap (Bulan: Hitam & Biru)"
         >
           <Moon class="w-3.5 h-3.5 text-blue-400" />
           <span>Dark</span>
+          <Moon class="w-3.5 h-3.5 text-blue-400 shrink-0" />
+          <span class="text-[11px]">Dark</span>
+        </button>
+
+        <!-- System (Sistem) -->
+        <button
+          type="button"
+          role="radio"
+          :aria-checked="appStore.themeMode === 'system'"
+          aria-label="Ikuti Tema Sistem OS"
+          @click="appStore.setTheme('system')"
+          class="flex-1 py-1.5 px-2 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          :class="appStore.themeMode === 'system' 
+            ? 'bg-blue-600 text-white shadow-xs font-black' 
+            : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
+          title="Otomatis mengikuti preferensi OS Sistem"
+        >
+          <Monitor class="w-3.5 h-3.5 shrink-0" :class="appStore.themeMode === 'system' ? 'text-white' : 'text-slate-400'" />
+          <span class="text-[11px]">Auto</span>
         </button>
       </div>
 
       <!-- Theme Switcher for Collapsed Sidebar -->
+      <!-- Theme Switcher for Collapsed Sidebar (Cycles Light -> Dark -> System) -->
       <div v-else class="flex justify-center">
         <button
           type="button"
           @click="appStore.toggleTheme"
           class="w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer border"
           :class="appStore.theme === 'dark' 
+          role="button"
+          :aria-label="`Tema saat ini: ${appStore.themeMode}. Klik untuk ganti tema.`"
+          @click="cycleTheme"
+          class="w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer border focus-visible:ring-2 focus-visible:ring-blue-500"
+          :class="appStore.resolvedTheme === 'dark' 
             ? 'bg-slate-800 text-blue-400 border-slate-700 hover:bg-slate-700 shadow-sm' 
             : 'bg-white text-blue-600 border-slate-200 hover:bg-slate-100 shadow-sm'"
           :title="appStore.theme === 'dark' ? 'Mode Gelap (Bulan) - Klik untuk beralih ke Mode Terang (Matahari)' : 'Mode Terang (Matahari) - Klik untuk beralih ke Mode Gelap (Bulan)'"
+          :title="collapsedTooltip"
         >
           <Moon v-if="appStore.theme === 'dark'" class="w-4.5 h-4.5 text-blue-400" />
           <Sun v-else class="w-4.5 h-4.5 text-amber-500" />
+          <Sun v-if="appStore.themeMode === 'light'" class="w-4.5 h-4.5 text-amber-500" />
+          <Moon v-else-if="appStore.themeMode === 'dark'" class="w-4.5 h-4.5 text-blue-400" />
+          <Monitor v-else class="w-4.5 h-4.5 text-blue-500" />
         </button>
       </div>
 
@@ -202,6 +253,8 @@ import {
   Columns2,
   Sun,
   Moon
+  Moon,
+  Monitor
 } from 'lucide-vue-next'
 import { useAuthStore } from '@/stores/auth.store'
 import { useAppStore } from '@/stores/app.store'
@@ -229,6 +282,23 @@ const authStore = useAuthStore()
 const appStore = useAppStore()
 
 const isCollapsed = ref(false)
+
+const cycleTheme = () => {
+  if (appStore.themeMode === 'light') {
+    appStore.setTheme('dark')
+  } else if (appStore.themeMode === 'dark') {
+    appStore.setTheme('system')
+  } else {
+    appStore.setTheme('light')
+  }
+}
+
+const collapsedTooltip = computed(() => {
+  if (appStore.themeMode === 'light') return 'Mode Terang (Matahari) - Klik untuk beralih ke Mode Gelap'
+  if (appStore.themeMode === 'dark') return 'Mode Gelap (Bulan) - Klik untuk beralih ke Mode Sistem'
+  return `Mode Sistem Auto (${appStore.resolvedTheme === 'dark' ? 'Gelap' : 'Terang'}) - Klik untuk beralih ke Mode Terang`
+})
+
 const currentTheme = computed<'light' | 'dark'>({
   get: () => appStore.theme,
   set: (val) => appStore.setTheme(val)

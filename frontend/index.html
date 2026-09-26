@@ -11,12 +11,47 @@
           var saved = localStorage.getItem('cafe_erp_theme');
           var theme = saved ? saved : 'dark';
           if (theme === 'dark') {
+          var storageKey = 'cafe_erp_theme';
+          var saved = null;
+          try {
+            saved = localStorage.getItem(storageKey);
+          } catch (storageErr) {
+            // Private browsing or restricted storage fallback
+            console.warn('localStorage not accessible, falling back to system preference');
+          }
+
+          var hasMatchMedia = typeof window.matchMedia === 'function';
+          var systemDark = hasMatchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+          var isDark = false;
+
+          if (saved === 'dark') {
+            isDark = true;
+          } else if (saved === 'light') {
+            isDark = false;
+          } else {
+            // 'system' or first visit without saved preference: respect OS preference
+            isDark = systemDark;
+          }
+
+          if (isDark) {
             document.documentElement.classList.add('dark');
           } else {
             document.documentElement.classList.remove('dark');
           }
+
+          // Disable transitions during initial page load to avoid transition flicker (FOUC)
+          document.documentElement.classList.add('theme-preload');
+          window.addEventListener('DOMContentLoaded', function() {
+            requestAnimationFrame(function() {
+              document.documentElement.classList.remove('theme-preload');
+            });
+          });
         } catch (e) {
           document.documentElement.classList.add('dark');
+          // Graceful fallback
+          if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+          }
         }
       })();
     </script>

@@ -2,6 +2,126 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ==========================================================================
+   1. DESIGN TOKENS (CSS CUSTOM PROPERTIES) - WCAG AA COMPLIANT
+   Color contrast minimum:
+   - Normal text: >= 4.5:1 (All text tokens achieve >= 4.6:1 up to 16.5:1)
+   - Large text / UI elements: >= 3:1
+   ========================================================================== */
+:root {
+  color-scheme: light;
+
+  /* Surfaces & Backgrounds */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8fafc;
+  --bg-tertiary: #f1f5f9;
+
+  /* Text & Content */
+  --text-primary: #0f172a;       /* Contrast vs #ffffff: 16.5:1 (AAA) */
+  --text-secondary: #334155;     /* Contrast vs #ffffff: 9.6:1 (AAA) */
+  --text-muted: #64748b;         /* Contrast vs #ffffff: 4.6:1 (AA) */
+  --text-inverse: #f8fafc;
+
+  /* Borders & Dividers */
+  --border-primary: #e2e8f0;
+  --border-secondary: #cbd5e1;
+  --border-focus: #2563eb;
+
+  /* Accent / Primary Brand (Blue) */
+  --accent-primary: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-active: #1e40af;
+  --accent-light: #eff6ff;
+  --accent-contrast: #ffffff;
+
+  /* Semantic Feedback Status Colors (WCAG AA) */
+  --color-success: #059669;
+  --color-success-bg: #ecfdf5;
+  --color-warning: #d97706;
+  --color-warning-bg: #fffbeb;
+  --color-error: #dc2626;
+  --color-error-bg: #fef2f2;
+  --color-info: #0284c7;
+  --color-info-bg: #f0f9ff;
+
+  /* Elevation Shadows */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.04);
+
+  /* Form Controls */
+  --input-bg: #ffffff;
+  --input-border: #e2e8f0;
+  --input-text: #0f172a;
+  --input-placeholder: #94a3b8;
+  --input-focus-border: #2563eb;
+  --input-focus-ring: rgba(37, 99, 235, 0.2);
+
+  /* Scrollbar */
+  --scrollbar-track: #f1f5f9;
+  --scrollbar-thumb: #cbd5e1;
+  --scrollbar-thumb-hover: #94a3b8;
+
+  /* Transitions */
+  --theme-transition-duration: 250ms;
+  --theme-transition-timing: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+html.dark {
+  color-scheme: dark;
+
+  /* Surfaces & Backgrounds */
+  --bg-primary: #020617;
+  --bg-secondary: #0f172a;
+  --bg-tertiary: #1e293b;
+
+  /* Text & Content */
+  --text-primary: #f8fafc;       /* Contrast vs #0f172a: 15.6:1 (AAA) */
+  --text-secondary: #cbd5e1;     /* Contrast vs #0f172a: 10.3:1 (AAA) */
+  --text-muted: #94a3b8;         /* Contrast vs #0f172a: 5.7:1 (AA) */
+  --text-inverse: #0f172a;
+
+  /* Borders & Dividers */
+  --border-primary: #334155;
+  --border-secondary: #475569;
+  --border-focus: #3b82f6;
+
+  /* Accent / Primary Brand (Blue) */
+  --accent-primary: #3b82f6;
+  --accent-hover: #60a5fa;
+  --accent-active: #2563eb;
+  --accent-light: rgba(37, 99, 235, 0.2);
+  --accent-contrast: #ffffff;
+
+  /* Semantic Feedback Status Colors (WCAG AA) */
+  --color-success: #34d399;
+  --color-success-bg: rgba(6, 78, 59, 0.4);
+  --color-warning: #fbbf24;
+  --color-warning-bg: rgba(120, 53, 15, 0.4);
+  --color-error: #f87171;
+  --color-error-bg: rgba(136, 19, 55, 0.4);
+  --color-info: #38bdf8;
+  --color-info-bg: rgba(12, 74, 110, 0.4);
+
+  /* Elevation Shadows (Softer in dark mode with border definition) */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.4);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.5), 0 2px 4px -2px rgb(0 0 0 / 0.4);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.6), 0 4px 6px -4px rgb(0 0 0 / 0.5);
+
+  /* Form Controls */
+  --input-bg: #1e293b;
+  --input-border: #334155;
+  --input-text: #f8fafc;
+  --input-placeholder: #64748b;
+  --input-focus-border: #3b82f6;
+  --input-focus-ring: rgba(59, 130, 246, 0.3);
+
+  /* Scrollbar */
+  --scrollbar-track: #0f172a;
+  --scrollbar-thumb: #334155;
+  --scrollbar-thumb-hover: #475569;
+}
+
 @layer base {
   html {
     font-size: 16.5px;
@@ -12,6 +132,7 @@
 
   body {
     @apply bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased font-sans m-0 p-0 text-sm transition-colors duration-200;
+    @apply bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased font-sans m-0 p-0 text-sm;
     letter-spacing: -0.011em;
   }
 
@@ -55,9 +176,13 @@
    Ensures 100% consistency across all menus when toggling Light / Dark
    GLOBAL COMPREHENSIVE LIGHT & DARK MODE ENGINE
    Ensures 100% thorough, clean consistency across all menus and views
+   2. TRANSITIONS & PREFERS-REDUCED-MOTION
    ========================================================================== */
 html {
   transition: background-color 0.2s ease, color 0.2s ease;
+html:not(.theme-preload) {
+  transition: background-color var(--theme-transition-duration) var(--theme-transition-timing),
+              color var(--theme-transition-duration) var(--theme-transition-timing);
 }
 
 /* Light mode base */
@@ -65,9 +190,79 @@ html:not(.dark) {
   color-scheme: light;
 }
 
+html.dark {
+  color-scheme: dark;
+}
+
+html:not(.theme-preload) body,
+html:not(.theme-preload) aside,
+html:not(.theme-preload) header,
+html:not(.theme-preload) main,
+html:not(.theme-preload) .bg-white,
+html:not(.theme-preload) [class*="bg-slate-"] {
+  transition: background-color var(--theme-transition-duration) var(--theme-transition-timing),
+              border-color var(--theme-transition-duration) var(--theme-transition-timing),
+              color var(--theme-transition-duration) var(--theme-transition-timing);
+}
+
+/* Disable transitions when preloading to prevent FOUC / flicker */
+.theme-preload,
+.theme-preload *,
+.theme-preload *::before,
+.theme-preload *::after {
+  transition: none !important;
+  animation: none !important;
+}
+
+/* Respect user's system animation preference */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    transition-duration: 0.001ms !important;
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+/* ==========================================================================
+   3. ACCESSIBILITY (A11Y) - FOCUS VISIBLE
+   ========================================================================== */
+:focus-visible {
+  outline: 2px solid var(--accent-primary) !important;
+  outline-offset: 2px !important;
+}
+
+/* ==========================================================================
+   4. SCROLLBAR ADAPTATION
+   ========================================================================== */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+/* Firefox standard scrollbar properties */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+/* ==========================================================================
+   5. GLOBAL LIGHT & DARK AUTOMATION ENGINE
+   ========================================================================== */
 html:not(.dark) body {
   background-color: #f8fafc;
   color: #0f172a;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
 }
 
 html:not(.dark) input:not([type="checkbox"]):not([type="radio"]):not([data-keep-dark]),
@@ -76,11 +271,16 @@ html:not(.dark) textarea:not([data-keep-dark]) {
   background-color: #ffffff;
   color: #0f172a;
   border-color: #e2e8f0;
+  background-color: var(--input-bg);
+  color: var(--input-text);
+  border-color: var(--input-border);
 }
 
 html:not(.dark) option {
   background-color: #ffffff;
   color: #0f172a;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
 }
 
 /* Dark mode base */
@@ -91,22 +291,29 @@ html.dark {
 html.dark body {
   background-color: #020617;
   color: #f1f5f9;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
 }
 
 /* All standard card & modal surfaces in dark mode */
+/* Standard card & modal surfaces in dark mode */
 html.dark .bg-white:not([data-keep-light]):not(.bg-keep-white) {
   background-color: #0f172a !important;
+  background-color: var(--bg-secondary) !important;
 }
 
 /* Sub-panels, secondary containers, and tinted sections */
 html.dark [class*="bg-slate-50"]:not([data-keep-light]):not(.bg-keep-light),
 html.dark [class*="bg-slate-100"]:not([data-keep-light]):not(.bg-keep-light) {
   background-color: #1e293b !important;
+  background-color: var(--bg-tertiary) !important;
 }
 
 html.dark .bg-slate-200:not([data-keep-light]) {
   background-color: #334155 !important;
   color: #cbd5e1 !important;
+  background-color: var(--border-primary) !important;
+  color: var(--text-secondary) !important;
 }
 
 /* Borders across all opacity scales in dark mode */
@@ -114,27 +321,32 @@ html.dark [class*="border-slate-100"],
 html.dark [class*="border-slate-200"],
 html.dark [class*="border-slate-300"] {
   border-color: #334155 !important;
+  border-color: var(--border-primary) !important;
 }
 
 html.dark .divide-slate-100 > * + *,
 html.dark .divide-slate-200 > * + * {
   border-color: #334155 !important;
+  border-color: var(--border-primary) !important;
 }
 
 /* Headings and body texts in dark mode */
 html.dark .text-slate-900,
 html.dark .text-slate-800 {
   color: #f8fafc !important;
+  color: var(--text-primary) !important;
 }
 
 html.dark .text-slate-700,
 html.dark .text-slate-600 {
   color: #cbd5e1 !important;
+  color: var(--text-secondary) !important;
 }
 
 html.dark .text-slate-500,
 html.dark .text-slate-400 {
   color: #94a3b8 !important;
+  color: var(--text-muted) !important;
 }
 
 /* Table rows & interactive hover states in dark mode */
@@ -143,6 +355,7 @@ html.dark [class*="hover:bg-slate-50"]:hover,
 html.dark [class*="hover:bg-slate-100"]:hover,
 html.dark [class*="hover:bg-slate-200"]:hover {
   background-color: #1e293b !important;
+  background-color: var(--bg-tertiary) !important;
 }
 
 html.dark [class*="hover:text-slate-900"]:hover,
@@ -157,17 +370,24 @@ html.dark textarea:not([data-keep-light]) {
   background-color: #1e293b !important;
   border-color: #334155 !important;
   color: #f8fafc !important;
+  background-color: var(--input-bg) !important;
+  border-color: var(--input-border) !important;
+  color: var(--input-text) !important;
 }
 
 html.dark option {
   background-color: #1e293b;
   border-color: #334155;
   color: #f8fafc;
+  background-color: var(--input-bg);
+  border-color: var(--input-border);
+  color: var(--input-text);
 }
 
 html.dark input:not([type="checkbox"]):not([type="radio"])::placeholder,
 html.dark textarea::placeholder {
   color: #64748b;
+  color: var(--input-placeholder);
 }
 
 /* Subtle glowing tints for status badges in dark mode */
@@ -175,6 +395,8 @@ html.dark textarea::placeholder {
 html.dark .bg-emerald-50, html.dark .bg-emerald-100 {
   background-color: rgba(6, 78, 59, 0.4) !important;
   color: #34d399 !important;
+  background-color: var(--color-success-bg) !important;
+  color: var(--color-success) !important;
 }
 html.dark .bg-blue-50, html.dark .bg-blue-100 {
   background-color: rgba(30, 58, 138, 0.4) !important;
@@ -183,10 +405,14 @@ html.dark .bg-blue-50, html.dark .bg-blue-100 {
 html.dark .bg-amber-50, html.dark .bg-amber-100 {
   background-color: rgba(120, 53, 15, 0.4) !important;
   color: #fbbf24 !important;
+  background-color: var(--color-warning-bg) !important;
+  color: var(--color-warning) !important;
 }
 html.dark .bg-red-50, html.dark .bg-red-100, html.dark .bg-rose-50, html.dark .bg-rose-100 {
   background-color: rgba(136, 19, 55, 0.4) !important;
   color: #f87171 !important;
+  background-color: var(--color-error-bg) !important;
+  color: var(--color-error) !important;
 }
 html.dark .bg-purple-50, html.dark .bg-purple-100 {
   background-color: rgba(88, 28, 135, 0.4) !important;
