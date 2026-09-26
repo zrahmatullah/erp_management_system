@@ -19,15 +19,6 @@
         />
       </div>
 
-      <!-- Theme Switcher (Light / Dark) -->
-      <button 
-        @click="appStore.toggleTheme" 
-        class="w-8 h-8 rounded-full flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-        :title="appStore.theme === 'dark' ? 'Ganti ke Mode Terang (Light Mode)' : 'Ganti ke Mode Gelap (Dark Mode)'"
-      >
-        <Sun v-if="appStore.theme === 'dark'" class="w-4 h-4 text-amber-400 hover:rotate-45 transition-transform" />
-        <Moon v-else class="w-4 h-4 text-slate-600 hover:-rotate-12 transition-transform" />
-      </button>
 
       <!-- Help Button -->
       <button class="w-8 h-8 rounded-full flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer" title="Bantuan & Dukungan">
@@ -97,9 +88,7 @@ import {
   User,
   Database,
   Settings,
-  LogOut,
-  Sun,
-  Moon
+  LogOut
 } from 'lucide-vue-next'
 
 const authStore = useAuthStore()

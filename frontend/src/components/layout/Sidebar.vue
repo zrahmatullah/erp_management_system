@@ -115,27 +115,47 @@
         <span v-if="!isCollapsed" class="truncate">Collapse menu</span>
       </button>
 
-      <!-- Theme Switcher Segmented Capsule (Light / Dark) -->
-      <div class="bg-slate-200/60 dark:bg-slate-800 p-1 rounded-2xl flex items-center text-xs font-medium gap-1">
+      <!-- Theme Switcher Segmented Control (Light / Dark) -->
+      <div v-if="!isCollapsed" class="bg-slate-200/70 dark:bg-slate-950/80 p-1 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center text-xs font-semibold gap-1">
         <button
           type="button"
           @click="appStore.setTheme('light')"
-          class="flex-1 py-1.5 px-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-          :class="appStore.theme === 'light' ? 'bg-white bg-keep-white text-slate-900 shadow-xs font-bold' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'"
-          title="Mode Terang (Light Mode)"
+          class="flex-1 py-1.5 px-2.5 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+          :class="appStore.theme === 'light' 
+            ? 'bg-white bg-keep-white text-blue-600 shadow-xs border border-blue-200/60 font-black' 
+            : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
+          title="Mode Terang (Matahari: Putih & Biru)"
         >
-          <Sun class="w-3.5 h-3.5" :class="appStore.theme === 'light' ? 'text-amber-500' : 'text-slate-400 dark:text-slate-500'" />
-          <span v-if="!isCollapsed">Light</span>
+          <Sun class="w-3.5 h-3.5 text-amber-500" />
+          <span>Light</span>
         </button>
         <button
           type="button"
           @click="appStore.setTheme('dark')"
           class="flex-1 py-1.5 px-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-          :class="appStore.theme === 'dark' ? 'bg-slate-900 dark:bg-slate-700 text-white shadow-xs font-bold' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'"
-          title="Mode Gelap (Dark Mode)"
+          :class="appStore.theme === 'dark' 
+            ? 'bg-slate-800 text-blue-400 shadow-xs border border-slate-700 font-black' 
+            : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
+          title="Mode Gelap (Bulan: Hitam & Biru)"
         >
-          <Moon class="w-3.5 h-3.5" :class="appStore.theme === 'dark' ? 'text-indigo-400' : 'text-slate-400 dark:text-slate-500'" />
-          <span v-if="!isCollapsed">Dark</span>
+          <Moon class="w-3.5 h-3.5 text-blue-400" />
+          <span>Dark</span>
+        </button>
+      </div>
+
+      <!-- Theme Switcher for Collapsed Sidebar -->
+      <div v-else class="flex justify-center">
+        <button
+          type="button"
+          @click="appStore.toggleTheme"
+          class="w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer border"
+          :class="appStore.theme === 'dark' 
+            ? 'bg-slate-800 text-blue-400 border-slate-700 hover:bg-slate-700 shadow-sm' 
+            : 'bg-white text-blue-600 border-slate-200 hover:bg-slate-100 shadow-sm'"
+          :title="appStore.theme === 'dark' ? 'Mode Gelap (Bulan) - Klik untuk beralih ke Mode Terang (Matahari)' : 'Mode Terang (Matahari) - Klik untuk beralih ke Mode Gelap (Bulan)'"
+        >
+          <Moon v-if="appStore.theme === 'dark'" class="w-4.5 h-4.5 text-blue-400" />
+          <Sun v-else class="w-4.5 h-4.5 text-amber-500" />
         </button>
       </div>
 
