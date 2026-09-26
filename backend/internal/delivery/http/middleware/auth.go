@@ -30,9 +30,22 @@ type Claims struct {
 var jwtSecret = []byte("super-secret-cafe-erp-jwt-key-2026")
 
 func InitAuth(cfg *config.Config) {
-	if cfg != nil && cfg.JWT.Secret != "" {
+	if cfg == nil {
+		return
+	}
+	if cfg.Server.Env == "production" {
+		if cfg.JWT.Secret == "" || cfg.JWT.Secret == "super-secret-cafe-erp-jwt-key-2026" || len(cfg.JWT.Secret) < 32 {
+			panic("CRITICAL SECURITY MISCONFIGURATION: JWT_SECRET must be explicitly set, must not use default fallback, and must be at least 32 characters in production!")
+		}
+	}
+	if cfg.JWT.Secret != "" {
 		jwtSecret = []byte(cfg.JWT.Secret)
 	}
+}
+
+// SetJWTSecretForTesting configures the secret during automated unit/integration testing.
+func SetJWTSecretForTesting(secret string) {
+	jwtSecret = []byte(secret)
 }
 
 func GenerateTokenPair(userID uuid.UUID, email, role string, branchID *uuid.UUID, permissions []string) (string, string, error) {

@@ -79,3 +79,4 @@ Dokumen ini menyajikan hasil pengujian komprehensif (*end-to-end quality assuran
    - Ganti dropdown pilihan tanggal statis dengan kalender dua tanggal interaktif pada Laporan dan Jurnal.
 2. **Upload Dokumen Karyawan**:
    - Tambahkan media attachment untuk file PDF kontrak kerja pada profil karyawan.
+
