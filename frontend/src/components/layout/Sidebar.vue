@@ -1,20 +1,20 @@
 <template>
   <aside 
-    class="bg-white text-slate-700 flex flex-col h-screen select-none border-r border-slate-200/80 shrink-0 transition-all duration-300 relative z-30"
+    class="bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 flex flex-col h-screen select-none border-r border-slate-200/80 dark:border-slate-800 shrink-0 transition-all duration-300 relative z-30"
     :class="isCollapsed ? 'w-20' : 'w-64'"
   >
     <!-- Brand Header -->
-    <div class="h-16 flex items-center px-4.5 gap-3 border-b border-slate-100 shrink-0">
+    <div class="h-16 flex items-center px-4.5 gap-3 border-b border-slate-100 dark:border-slate-800 shrink-0">
       <!-- Circular Logo matching Gridlines UI -->
       <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-600 via-blue-500 to-indigo-500 flex items-center justify-center text-white shadow-md shadow-blue-500/25 shrink-0">
         <Coffee class="w-4.5 h-4.5" />
       </div>
       <div v-if="!isCollapsed" class="min-w-0 transition-opacity duration-200">
-        <h1 class="text-slate-900 font-black text-[15px] tracking-tight leading-none flex items-center gap-1.5">
+        <h1 class="text-slate-900 dark:text-white font-black text-[15px] tracking-tight leading-none flex items-center gap-1.5">
           Cafe ERP
-          <span class="text-[9px] font-bold uppercase tracking-wider bg-blue-50 text-blue-600 border border-blue-200/60 px-1.5 py-0.5 rounded-full">Pro</span>
+          <span class="text-[9px] font-bold uppercase tracking-wider bg-blue-50 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400 border border-blue-200/60 dark:border-blue-800/60 px-1.5 py-0.5 rounded-full">Pro</span>
         </h1>
-        <p class="text-[11px] text-slate-400 font-medium truncate mt-1">Management System</p>
+        <p class="text-[11px] text-slate-400 dark:text-slate-500 font-medium truncate mt-1">Management System</p>
       </div>
     </div>
 
@@ -24,7 +24,7 @@
         <!-- Category Section Header -->
         <div 
           v-if="!isCollapsed" 
-          class="px-3 pt-1 pb-1 text-[11px] font-semibold text-slate-400 tracking-wide"
+          class="px-3 pt-1 pb-1 text-[11px] font-semibold text-slate-400 dark:text-slate-500 tracking-wide"
         >
           {{ section.title }}
         </div>
@@ -38,14 +38,14 @@
               :to="item.path!"
               class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-150 relative"
               :class="isRouteActive(item.path!) 
-                ? 'bg-blue-50/90 text-blue-600 font-bold border border-blue-200/50 shadow-xs' 
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'"
+                ? 'bg-blue-50/90 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold border border-blue-200/50 dark:border-blue-800/50 shadow-xs' 
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/70 dark:hover:bg-slate-800/70'"
               :title="isCollapsed ? item.label : undefined"
             >
               <component 
                 :is="item.icon" 
                 class="w-4.5 h-4.5 shrink-0 transition-colors" 
-                :class="isRouteActive(item.path!) ? 'text-blue-600' : 'text-slate-400 group-hover:text-slate-700'"
+                :class="isRouteActive(item.path!) ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-700 dark:group-hover:text-slate-200'"
               />
               <span v-if="!isCollapsed" class="truncate">{{ item.label }}</span>
             </router-link>
@@ -57,29 +57,29 @@
                 @click="toggleGroup(item.label)"
                 class="w-full group flex items-center justify-between px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-150 cursor-pointer"
                 :class="isGroupActive(item) 
-                  ? 'text-blue-600 font-bold bg-blue-50/40' 
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'"
+                  ? 'text-blue-600 dark:text-blue-400 font-bold bg-blue-50/40 dark:bg-blue-900/20' 
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/70 dark:hover:bg-slate-800/70'"
                 :title="isCollapsed ? item.label : undefined"
               >
                 <div class="flex items-center gap-3 min-w-0">
                   <component 
                     :is="item.icon" 
                     class="w-4.5 h-4.5 shrink-0 transition-colors" 
-                    :class="isGroupActive(item) ? 'text-blue-600' : 'text-slate-400 group-hover:text-slate-700'"
+                    :class="isGroupActive(item) ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-700 dark:group-hover:text-slate-200'"
                   />
                   <span v-if="!isCollapsed" class="truncate">{{ item.label }}</span>
                 </div>
                 <ChevronDown 
                   v-if="!isCollapsed"
-                  class="w-4 h-4 text-slate-400 transition-transform duration-200 shrink-0" 
-                  :class="openGroups[item.label] ? 'rotate-180 text-slate-600' : ''" 
+                  class="w-4 h-4 text-slate-400 dark:text-slate-500 transition-transform duration-200 shrink-0" 
+                  :class="openGroups[item.label] ? 'rotate-180 text-slate-600 dark:text-slate-300' : ''" 
                 />
               </button>
 
               <!-- Submenu Items (Indented with Guideline) -->
               <div 
                 v-if="!isCollapsed && (openGroups[item.label] || isGroupActive(item))" 
-                class="pl-4 pr-1 space-y-1 border-l border-slate-200/80 ml-5 py-1 transition-all"
+                class="pl-4 pr-1 space-y-1 border-l border-slate-200/80 dark:border-slate-800 ml-5 py-1 transition-all"
               >
                 <router-link
                   v-for="sub in item.children"
@@ -87,11 +87,11 @@
                   :to="sub.path"
                   class="flex items-center justify-between px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
                   :class="isRouteActive(sub.path)
-                    ? 'bg-blue-50 text-blue-600 font-bold'
-                    : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100/60'"
+                    ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/60 dark:hover:bg-slate-800/60'"
                 >
                   <span class="truncate">{{ sub.label }}</span>
-                  <span v-if="sub.badge" class="px-1.5 py-0.5 rounded text-[10px] bg-blue-100/80 text-blue-700 font-bold shrink-0">
+                  <span v-if="sub.badge" class="px-1.5 py-0.5 rounded text-[10px] bg-blue-100/80 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 font-bold shrink-0">
                     {{ sub.badge }}
                   </span>
                 </router-link>
@@ -103,51 +103,51 @@
     </div>
 
     <!-- Bottom Actions Section (Collapse + Theme Switcher + User Profile) -->
-    <div class="p-3 border-t border-slate-100 bg-slate-50/50 space-y-2.5 shrink-0">
+    <div class="p-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/90 space-y-2.5 shrink-0">
       <!-- Collapse Menu Toggle -->
       <button
         type="button"
         @click="isCollapsed = !isCollapsed"
-        class="w-full flex items-center gap-3 px-3 py-2 text-xs font-semibold text-slate-500 hover:text-slate-900 hover:bg-slate-100/80 rounded-xl transition-all cursor-pointer"
+        class="w-full flex items-center gap-3 px-3 py-2 text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-800/80 rounded-xl transition-all cursor-pointer"
         :title="isCollapsed ? 'Perluas Sidebar' : 'Ciutkan Sidebar'"
       >
-        <Columns2 class="w-4 h-4 text-slate-400 shrink-0" />
+        <Columns2 class="w-4 h-4 text-slate-400 dark:text-slate-500 shrink-0" />
         <span v-if="!isCollapsed" class="truncate">Collapse menu</span>
       </button>
 
       <!-- Theme Switcher Segmented Capsule (Light / Dark) -->
-      <div class="bg-slate-200/60 p-1 rounded-2xl flex items-center text-xs font-medium gap-1">
+      <div class="bg-slate-200/60 dark:bg-slate-800 p-1 rounded-2xl flex items-center text-xs font-medium gap-1">
         <button
           type="button"
           @click="currentTheme = 'light'"
           class="flex-1 py-1.5 px-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-          :class="currentTheme === 'light' ? 'bg-white text-slate-900 shadow-xs font-bold' : 'text-slate-400 hover:text-slate-600'"
+          :class="currentTheme === 'light' ? 'bg-white text-slate-900 shadow-xs font-bold' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'"
           title="Light Mode"
         >
-          <Sun class="w-3.5 h-3.5" :class="currentTheme === 'light' ? 'text-amber-500' : 'text-slate-400'" />
+          <Sun class="w-3.5 h-3.5" :class="currentTheme === 'light' ? 'text-amber-500' : 'text-slate-400 dark:text-slate-500'" />
           <span v-if="!isCollapsed">Light</span>
         </button>
         <button
           type="button"
           @click="currentTheme = 'dark'"
           class="flex-1 py-1.5 px-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-          :class="currentTheme === 'dark' ? 'bg-slate-900 text-white shadow-xs font-bold' : 'text-slate-400 hover:text-slate-600'"
+          :class="currentTheme === 'dark' ? 'bg-slate-900 dark:bg-slate-700 text-white shadow-xs font-bold' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'"
           title="Dark Mode"
         >
-          <Moon class="w-3.5 h-3.5" />
+          <Moon class="w-3.5 h-3.5" :class="currentTheme === 'dark' ? 'text-indigo-400' : 'text-slate-400 dark:text-slate-500'" />
           <span v-if="!isCollapsed">Dark</span>
         </button>
       </div>
 
       <!-- User Card & Logout -->
-      <div class="pt-2 border-t border-slate-200/60 flex items-center justify-between gap-2 px-1">
+      <div class="pt-2 border-t border-slate-200/60 dark:border-slate-800 flex items-center justify-between gap-2 px-1">
         <div class="flex items-center gap-2.5 min-w-0">
-          <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-700 border border-blue-200 flex items-center justify-center text-xs font-black shrink-0 shadow-2xs">
+          <div class="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 flex items-center justify-center text-xs font-black shrink-0 shadow-2xs">
             {{ avatarInitials }}
           </div>
           <div v-if="!isCollapsed" class="min-w-0">
-            <div class="text-xs font-bold text-slate-800 truncate leading-tight">{{ userName }}</div>
-            <div class="text-[10px] text-slate-400 font-medium truncate flex items-center gap-1 mt-0.5">
+            <div class="text-xs font-bold text-slate-800 dark:text-slate-200 truncate leading-tight">{{ userName }}</div>
+            <div class="text-[10px] text-slate-400 dark:text-slate-500 font-medium truncate flex items-center gap-1 mt-0.5">
               <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
               {{ userRoleBadge }}
             </div>
@@ -156,7 +156,7 @@
         <button 
           @click="handleLogout" 
           title="Keluar dari Sistem" 
-          class="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer shrink-0"
+          class="p-1.5 rounded-lg text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer shrink-0"
         >
           <LogOut class="w-4 h-4" />
         </button>
@@ -184,6 +184,7 @@ import {
   Moon
 } from 'lucide-vue-next'
 import { useAuthStore } from '@/stores/auth.store'
+import { useAppStore } from '@/stores/app.store'
 
 interface MenuItem {
   label: string
@@ -205,9 +206,13 @@ interface MenuSection {
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
+const appStore = useAppStore()
 
 const isCollapsed = ref(false)
-const currentTheme = ref<'light' | 'dark'>('light')
+const currentTheme = computed<'light' | 'dark'>({
+  get: () => appStore.theme,
+  set: (val) => appStore.setTheme(val)
+})
 
 const userName = computed(() => {
   return authStore.fullName || authStore.user?.firstName || 'Pengguna'

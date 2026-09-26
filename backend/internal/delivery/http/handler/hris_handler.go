@@ -63,7 +63,6 @@ func (h *HRISHandler) GetEmployees(w http.ResponseWriter, r *http.Request) {
 			COALESCE(e.bank_account, '-') as bank_account,
 			COALESCE(e.bank_account_name, concat(e.first_name, ' ', e.last_name)) as bank_account_name,
 			COALESCE(e.photo_url, '') as photo_url,
-			COALESCE(e.remaining_leave, 12) as remaining_leave
 			COALESCE(e.remaining_leave, 12) as remaining_leave,
 			COALESCE(e.branch_id::text, '') as branch_id,
 			COALESCE(e.user_id::text, '') as user_id

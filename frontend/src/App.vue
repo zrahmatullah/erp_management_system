@@ -1,5 +1,5 @@
 <template>
-  <n-config-provider :theme-overrides="themeOverrides">
+  <n-config-provider :theme="appStore.theme === 'dark' ? darkTheme : null" :theme-overrides="themeOverrides">
     <n-notification-provider>
       <n-message-provider>
         <n-dialog-provider>
@@ -13,9 +13,12 @@
 </template>
 
 <script setup lang="ts">
-import { NConfigProvider, NNotificationProvider, NMessageProvider, NDialogProvider, type GlobalThemeOverrides } from 'naive-ui'
+import { NConfigProvider, NNotificationProvider, NMessageProvider, NDialogProvider, darkTheme, type GlobalThemeOverrides } from 'naive-ui'
 import ToastContainer from '@/components/common/ToastContainer.vue'
 import GlobalDialogContainer from '@/components/common/GlobalDialogContainer.vue'
+import { useAppStore } from '@/stores/app.store'
+
+const appStore = useAppStore()
 
 const themeOverrides: GlobalThemeOverrides = {
   common: {

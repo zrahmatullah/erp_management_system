@@ -1,207 +1,288 @@
 <template>
-  <div class="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 p-4 relative overflow-hidden select-none">
-    <!-- Ambient glowing backgrounds -->
-    <div class="absolute -top-40 -left-40 w-96 h-96 bg-blue-600/20 rounded-full blur-3xl pointer-events-none"></div>
-    <div class="absolute -bottom-40 -right-40 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none"></div>
-    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-500/5 rounded-full blur-3xl pointer-events-none"></div>
+  <div class="min-h-screen w-full flex items-center justify-center bg-slate-100/90 dark:bg-slate-950 p-4 sm:p-6 lg:p-8 transition-colors duration-200 relative select-none">
+    <!-- Ambient subtle background glow for dark mode -->
+    <div class="absolute -top-40 -left-40 w-96 h-96 bg-indigo-500/10 dark:bg-indigo-500/15 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute -bottom-40 -right-40 w-96 h-96 bg-purple-500/10 dark:bg-purple-500/15 rounded-full blur-3xl pointer-events-none"></div>
 
-    <!-- Decorative Coffee Line Art on right -->
-    <div class="hidden lg:block absolute right-12 bottom-0 opacity-15 pointer-events-none max-w-lg select-none">
-      <svg viewBox="0 0 400 400" fill="none" stroke="white" stroke-width="1.5" class="w-full h-auto">
-        <path d="M120 280 C120 330, 260 330, 260 280 L250 210 L130 210 Z" />
-        <path d="M250 230 C280 230, 290 260, 260 270" />
-        <path d="M160 180 C160 150, 180 150, 180 120" stroke-dasharray="3 3" />
-        <path d="M200 180 C200 150, 220 150, 220 120" stroke-dasharray="3 3" />
-        <ellipse cx="190" cy="210" rx="60" ry="12" />
-        <ellipse cx="190" cy="330" rx="90" ry="16" />
-        <ellipse cx="90" cy="300" rx="18" ry="12" transform="rotate(-30 90 300)" />
-        <path d="M82 292 Q90 300 98 308" />
-        <ellipse cx="290" cy="310" rx="20" ry="14" transform="rotate(25 290 310)" />
-        <path d="M280 305 Q290 310 300 315" />
-      </svg>
+    <!-- Floating Theme Switcher Button (Top Right) -->
+    <div class="absolute top-4 right-4 sm:top-6 sm:right-6 z-30">
+      <button 
+        @click="appStore.toggleTheme"
+        class="flex items-center gap-2 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xs text-xs font-bold text-slate-700 dark:text-slate-200 hover:border-indigo-500/50 shadow-xs transition-all cursor-pointer"
+        :title="appStore.theme === 'dark' ? 'Ganti ke Mode Terang' : 'Ganti ke Mode Gelap'"
+      >
+        <Sun v-if="appStore.theme === 'dark'" class="w-4 h-4 text-amber-400" />
+        <Moon v-else class="w-4 h-4 text-indigo-600" />
+        <span class="text-[11px] hidden sm:inline">{{ appStore.theme === 'dark' ? 'Light' : 'Dark' }}</span>
+      </button>
     </div>
 
-    <!-- Centered Glass Card -->
-    <div class="w-full max-w-[420px] bg-white rounded-3xl shadow-2xl p-7 sm:p-9 border border-slate-100/90 relative z-10 transition-all duration-300">
+    <!-- Main Split Login Container Card -->
+    <div class="w-full max-w-4xl bg-white dark:bg-slate-900 rounded-3xl sm:rounded-[2.25rem] shadow-2xl shadow-indigo-950/10 dark:shadow-slate-950/70 border border-slate-200/80 dark:border-slate-800 grid grid-cols-1 md:grid-cols-2 overflow-hidden transition-all duration-300 z-10">
       
-      <!-- Top Brand -->
-      <div class="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-2xl bg-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-500/25">
-            <Coffee class="w-5 h-5" />
-          </div>
-          <div>
-            <h2 class="text-lg font-black tracking-tight text-slate-900 leading-tight">Cafe ERP</h2>
-            <p class="text-[10px] font-bold text-blue-600 uppercase tracking-wider">Enterprise Suite</p>
-          </div>
+      <!-- Left Column: Vector Illustration (Matching Mockup) -->
+      <div class="bg-gradient-to-br from-slate-50 via-indigo-50/30 to-purple-50/20 dark:from-slate-900 dark:via-slate-850 dark:to-indigo-950/30 p-8 sm:p-10 flex flex-col items-center justify-center relative border-b md:border-b-0 md:border-r border-slate-100 dark:border-slate-800/80">
+        
+        <!-- Illustration SVG Graphic -->
+        <div class="w-full max-w-[320px] aspect-square relative flex items-center justify-center">
+          <svg viewBox="0 0 400 400" class="w-full h-full drop-shadow-sm select-none" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="phoneGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#334155" />
+                <stop offset="100%" stop-color="#0F172A" />
+              </linearGradient>
+              <linearGradient id="cardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#FBBF24" />
+                <stop offset="100%" stop-color="#F59E0B" />
+              </linearGradient>
+              <linearGradient id="badgeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#FB7185" />
+                <stop offset="100%" stop-color="#F43F5E" />
+              </linearGradient>
+              <linearGradient id="leafGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#E879F9" />
+                <stop offset="100%" stop-color="#C084FC" />
+              </linearGradient>
+              <linearGradient id="charShirt" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#818CF8" />
+                <stop offset="100%" stop-color="#6366F1" />
+              </linearGradient>
+            </defs>
+
+            <!-- Decorative gear background in top center -->
+            <g opacity="0.45" stroke="#CBD5E1" stroke-width="3" fill="none">
+              <circle cx="210" cy="110" r="32" stroke-dasharray="8 6" />
+              <circle cx="210" cy="110" r="14" />
+            </g>
+
+            <!-- Floating Padlock Badge (Upper Left) -->
+            <g filter="drop-shadow(0 6px 12px rgba(244,63,94,0.25))">
+              <circle cx="110" cy="130" r="32" fill="url(#badgeGrad)" />
+              <!-- Lock Icon -->
+              <rect x="99" y="126" width="22" height="18" rx="4" fill="white" />
+              <path d="M104 126 V119 C104 114.5 107.5 111 112 111 C116.5 111 120 114.5 120 119 V126" stroke="white" stroke-width="3" stroke-linecap="round" fill="none" />
+              <circle cx="110" cy="134" r="2" fill="#F43F5E" />
+            </g>
+
+            <!-- Background Decorative Leaf (Right) -->
+            <path d="M260 280 C290 240, 320 170, 270 120 C270 170, 320 220, 290 280 Z" fill="url(#leafGrad)" opacity="0.75" />
+            <path d="M280 320 C320 280, 340 210, 310 160 C300 210, 330 260, 300 320 Z" fill="#F472B6" opacity="0.6" />
+
+            <!-- Giant Smartphone Frame (Tilted slightly) -->
+            <g transform="rotate(4 230 240)">
+              <!-- Phone body -->
+              <rect x="160" y="90" width="145" height="235" rx="22" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="4" filter="drop-shadow(0 15px 25px rgba(0,0,0,0.08))" />
+              <!-- Screen area -->
+              <rect x="168" y="100" width="129" height="215" rx="16" fill="#F8FAFC" />
+              <!-- Camera notch -->
+              <rect x="215" y="105" width="35" height="5" rx="2.5" fill="#CBD5E1" />
+
+              <!-- Yellow/Amber Card Overlay on screen -->
+              <g transform="translate(-10, 20)">
+                <rect x="168" y="115" width="130" height="155" rx="14" fill="url(#cardGrad)" filter="drop-shadow(0 10px 18px rgba(245,158,11,0.3))" />
+                
+                <!-- User Avatar Circle on Card -->
+                <circle cx="233" cy="155" r="18" fill="white" />
+                <circle cx="233" cy="151" r="7" fill="#F59E0B" />
+                <path d="M222 167 C222 161, 227 159, 233 159 C239 159, 244 161, 244 167" fill="#F59E0B" />
+
+                <!-- Input bar 1 -->
+                <rect x="183" y="185" width="100" height="14" rx="4" fill="white" />
+                <!-- Input bar 2 -->
+                <rect x="183" y="206" width="100" height="14" rx="4" fill="white" />
+                <!-- Submit mini bar -->
+                <rect x="198" y="232" width="70" height="16" rx="5" fill="#D97706" opacity="0.75" />
+              </g>
+            </g>
+
+            <!-- Character Standing on Left (Matching Mockup) -->
+            <!-- Head -->
+            <circle cx="108" cy="205" r="11" fill="#FBBF24" />
+            <!-- Hair -->
+            <path d="M102 201 C102 195, 114 195, 116 198 C118 202, 116 205, 116 205" stroke="#1E293B" stroke-width="4" stroke-linecap="round" fill="none" />
+            <!-- Body / Purple Shirt -->
+            <path d="M96 220 C96 216, 120 216, 120 220 L124 268 L92 268 Z" fill="url(#charShirt)" />
+            <!-- Left Arm bent to hip -->
+            <path d="M96 222 L82 242 L94 250" stroke="url(#charShirt)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+            <!-- Right Arm extended towards phone -->
+            <path d="M120 222 L138 238 L146 235" stroke="url(#charShirt)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+            <!-- Belt -->
+            <rect x="92" y="266" width="32" height="5" fill="#1E1B4B" />
+            <!-- Trousers / Legs -->
+            <path d="M94 271 L92 340 L104 340 L107 288 L111 288 L114 340 L126 340 L122 271 Z" fill="#312E81" />
+            <!-- Shoes -->
+            <ellipse cx="96" cy="342" rx="10" ry="3.5" fill="#0F172A" />
+            <ellipse cx="122" cy="342" rx="10" ry="3.5" fill="#0F172A" />
+
+            <!-- Subtle ground shadow -->
+            <ellipse cx="200" cy="360" rx="120" ry="10" fill="#E2E8F0" opacity="0.5" />
+          </svg>
         </div>
-        <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200/60">
-          Online
-        </span>
+
+        <!-- Tagline under illustration -->
+        <div class="mt-4 text-center">
+          <div class="flex items-center justify-center gap-2 mb-1">
+            <span class="w-6 h-0.5 rounded-full bg-indigo-500"></span>
+            <span class="text-xs font-bold text-slate-800 dark:text-slate-200">Sistem ERP & POS Cafe</span>
+            <span class="w-6 h-0.5 rounded-full bg-indigo-500"></span>
+          </div>
+          <p class="text-[11px] text-slate-400 dark:text-slate-500 max-w-xs leading-relaxed">
+            Kelola pesanan kasir, inventori stok gudang, dan staf terintegrasi dalam satu platform.
+          </p>
+        </div>
       </div>
 
-      <!-- Heading -->
-      <div class="mb-5">
-        <h1 class="text-2xl font-black text-slate-900 tracking-tight">Selamat Datang</h1>
-        <p class="text-xs text-slate-500 mt-1 font-medium">Masuk ke akun operasional restoran & cafe Anda</p>
-      </div>
-
-      <!-- Login Form -->
-      <form @submit.prevent="handleLogin" class="space-y-4">
-        <!-- Email Field -->
-        <div>
-          <label class="block text-xs font-bold text-slate-700 mb-1.5">Alamat Email / Akun</label>
-          <div class="relative">
-            <Mail class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-            <input
-              v-model="email"
-              type="email"
-              required
-              placeholder="nama@cafe-erp.com"
-              class="w-full pl-10 pr-4 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-600 focus:ring-3 focus:ring-blue-100 outline-hidden transition-all text-slate-800 font-medium placeholder:text-slate-400"
-            />
-          </div>
+      <!-- Right Column: Login Form (Matching Mockup) -->
+      <div class="p-7 sm:p-10 lg:p-11 flex flex-col justify-center bg-white dark:bg-slate-900">
+        <!-- Greetings -->
+        <div class="mb-5">
+          <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Welcome to</span>
+          <h1 class="text-2xl sm:text-3xl font-black text-[#5B50E5] dark:text-indigo-400 tracking-tight mt-0.5">
+            Cafe ERP
+          </h1>
         </div>
 
-        <!-- Password Field -->
-        <div>
-          <label class="block text-xs font-bold text-slate-700 mb-1.5">Kata Sandi (Password)</label>
-          <div class="relative">
-            <Lock class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-            <input
-              v-model="password"
-              :type="showPassword ? 'text' : 'password'"
-              required
-              placeholder="Masukkan kata sandi"
-              class="w-full pl-10 pr-10 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-600 focus:ring-3 focus:ring-blue-100 outline-hidden transition-all text-slate-800 font-medium placeholder:text-slate-400"
-            />
+        <!-- Quick Demo Profiles (Matching Social Login Pill Style) -->
+        <div class="space-y-2 mb-4">
+          <!-- Google Style Pill -> Super Admin -->
+          <button
+            type="button"
+            @click="quickLogin('admin@cafe-erp.com', 'Admin@123')"
+            class="w-full py-2.5 px-4 rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-850 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all shadow-2xs flex items-center justify-center gap-2.5 cursor-pointer group"
+          >
+            <div class="w-5 h-5 rounded-full bg-red-50 dark:bg-red-950/60 text-red-500 flex items-center justify-center font-bold text-[11px] shrink-0">
+              G
+            </div>
+            <span>Masuk sebagai Super Admin</span>
+          </button>
+
+          <!-- Facebook Style Pill -> Kasir POS -->
+          <button
+            type="button"
+            @click="quickLogin('kasir@cafe-erp.com', 'Password@123')"
+            class="w-full py-2.5 px-4 rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-850 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all shadow-2xs flex items-center justify-center gap-2.5 cursor-pointer group"
+          >
+            <div class="w-5 h-5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-600 flex items-center justify-center font-bold text-[11px] shrink-0">
+              f
+            </div>
+            <span>Masuk sebagai Kasir POS</span>
+          </button>
+
+          <!-- Toggle Other Roles Pill (Manager & Finance) -->
+          <div class="grid grid-cols-2 gap-2 pt-0.5">
             <button
               type="button"
-              @click="showPassword = !showPassword"
-              class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 cursor-pointer transition-colors"
-              tabindex="-1"
+              @click="quickLogin('manager@cafe-erp.com', 'Password@123')"
+              class="py-1.5 px-2.5 rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-slate-600 dark:text-slate-300 text-[10.5px] font-semibold transition-all cursor-pointer truncate"
             >
-              <EyeOff v-if="showPassword" class="w-4 h-4" />
-              <Eye v-else class="w-4 h-4" />
+              Demo: Store Manager
+            </button>
+            <button
+              type="button"
+              @click="quickLogin('finance@cafe-erp.com', 'Password@123')"
+              class="py-1.5 px-2.5 rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 hover:bg-purple-50 dark:hover:bg-purple-950/40 text-slate-600 dark:text-slate-300 text-[10.5px] font-semibold transition-all cursor-pointer truncate"
+            >
+              Demo: Finance Staff
             </button>
           </div>
         </div>
 
-        <!-- Remember me & Forgot Password -->
-        <div class="flex items-center justify-between text-xs pt-0.5">
-          <label class="flex items-center gap-2 cursor-pointer text-slate-600 select-none">
-            <input 
-              v-model="rememberMe" 
-              type="checkbox" 
-              class="w-3.5 h-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer" 
-            />
-            <span class="font-medium text-[11px]">Ingat saya</span>
-          </label>
-          <a href="#" @click.prevent="handleForgotPassword" class="text-blue-600 font-bold hover:underline text-[11px]">
-            Lupa Password?
+        <!-- OR Divider (Matching Mockup) -->
+        <div class="relative my-3 text-center">
+          <div class="absolute inset-0 flex items-center">
+            <div class="w-full border-t border-slate-200 dark:border-slate-800"></div>
+          </div>
+          <span class="relative px-3 bg-white dark:bg-slate-900 text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+            Or
+          </span>
+        </div>
+
+        <!-- Main Form (Matching Mockup Inputs) -->
+        <form @submit.prevent="handleLogin" class="space-y-3.5">
+          <!-- Email Field with envelope icon inside shaded pill container -->
+          <div>
+            <div class="bg-slate-100/90 dark:bg-slate-800 rounded-xl px-3.5 py-2.5 flex items-center gap-3 border border-transparent focus-within:border-[#5B50E5] focus-within:bg-white dark:focus-within:bg-slate-850 transition-all">
+              <Mail class="w-4 h-4 text-slate-400 shrink-0" />
+              <div class="flex-1 min-w-0">
+                <span class="block text-[9.5px] font-semibold text-slate-400 dark:text-slate-500 leading-none mb-0.5">Email</span>
+                <input
+                  v-model="email"
+                  type="email"
+                  required
+                  placeholder="example@gmail.com"
+                  class="w-full bg-transparent p-0 text-xs text-slate-800 dark:text-slate-100 font-medium outline-none placeholder:text-slate-400 border-none ring-0 focus:ring-0"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Password Field with key icon inside shaded pill container -->
+          <div>
+            <div class="bg-slate-100/90 dark:bg-slate-800 rounded-xl px-3.5 py-2.5 flex items-center gap-3 border border-transparent focus-within:border-[#5B50E5] focus-within:bg-white dark:focus-within:bg-slate-850 transition-all">
+              <Key class="w-4 h-4 text-slate-400 shrink-0" />
+              <div class="flex-1 min-w-0">
+                <span class="block text-[9.5px] font-semibold text-slate-400 dark:text-slate-500 leading-none mb-0.5">Password</span>
+                <input
+                  v-model="password"
+                  :type="showPassword ? 'text' : 'password'"
+                  required
+                  placeholder="••••••••••••"
+                  class="w-full bg-transparent p-0 text-xs text-slate-800 dark:text-slate-100 font-medium outline-none placeholder:text-slate-400 border-none ring-0 focus:ring-0"
+                />
+              </div>
+              <button
+                type="button"
+                @click="showPassword = !showPassword"
+                class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-0.5 cursor-pointer shrink-0 transition-colors"
+                tabindex="-1"
+              >
+                <EyeOff v-if="showPassword" class="w-4 h-4" />
+                <Eye v-else class="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          <!-- Remember me & Forgot Password -->
+          <div class="flex items-center justify-between text-xs pt-0.5">
+            <label class="flex items-center gap-2 cursor-pointer text-slate-500 dark:text-slate-400 select-none">
+              <input 
+                v-model="rememberMe" 
+                type="checkbox" 
+                class="w-3.5 h-3.5 rounded border-slate-300 dark:border-slate-700 text-[#5B50E5] focus:ring-[#5B50E5] cursor-pointer" 
+              />
+              <span class="text-[11px] font-medium">Remember me</span>
+            </label>
+            <a href="#" @click.prevent="handleForgotPassword" class="text-[#5B50E5] dark:text-indigo-400 font-semibold hover:underline text-[11px]">
+              Forgot Password?
+            </a>
+          </div>
+
+          <!-- Error Alert -->
+          <div v-if="errorMessage" class="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 rounded-xl text-red-600 dark:text-red-400 text-xs font-medium flex items-center gap-2">
+            <span class="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0"></span>
+            <span>{{ errorMessage }}</span>
+          </div>
+
+          <!-- Submit Button (Vibrant Purple Matching Mockup) -->
+          <button
+            type="submit"
+            :disabled="loading"
+            class="w-full py-3 bg-[#5B50E5] hover:bg-[#4C40D4] active:bg-[#3F33C4] text-white font-bold rounded-xl shadow-lg shadow-indigo-600/30 transition-all flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer text-xs sm:text-sm tracking-wide mt-3"
+          >
+            <span v-if="loading" class="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span>
+            <span>{{ loading ? 'Signing in...' : 'Login' }}</span>
+          </button>
+        </form>
+
+        <!-- Footer Register Link (Matching Mockup) -->
+        <div class="mt-5 text-center text-xs text-slate-500 dark:text-slate-400">
+          Don't have an account? 
+          <a href="#" @click.prevent="handleRegisterClick" class="text-[#5B50E5] dark:text-indigo-400 font-bold hover:underline ml-0.5">
+            Register
           </a>
         </div>
 
-        <!-- Error Alert -->
-        <div v-if="errorMessage" class="p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-xs font-medium flex items-center gap-2">
-          <span class="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0"></span>
-          <span>{{ errorMessage }}</span>
-        </div>
-
-        <!-- Sign In Button -->
-        <button
-          type="submit"
-          :disabled="loading"
-          class="w-full py-2.5 sm:py-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold rounded-xl shadow-md shadow-blue-600/30 transition-all flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer text-xs sm:text-sm tracking-wide mt-2"
-        >
-          <span v-if="loading" class="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span>
-          <span>{{ loading ? 'Memverifikasi...' : 'Masuk ke Sistem' }}</span>
-        </button>
-      </form>
-
-      <!-- Quick Demo Login Switcher -->
-      <div class="mt-6 pt-5 border-t border-slate-100">
-        <div class="flex items-center justify-between mb-3">
-          <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-            <Sparkles class="w-3.5 h-3.5 text-blue-500" />
-            Pilih Peran Demo Akun:
-          </span>
-          <span class="text-[10px] text-slate-400">Klik untuk isi otomatis</span>
-        </div>
-
-        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          <button
-            type="button"
-            @click="quickLogin('admin@cafe-erp.com', 'Admin@123')"
-            class="flex items-center gap-2 p-2 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-blue-50 hover:border-blue-200 text-left transition-all cursor-pointer group"
-          >
-            <div class="w-7 h-7 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-              <Shield class="w-3.5 h-3.5" />
-            </div>
-            <div class="min-w-0">
-              <div class="text-xs font-bold text-slate-800 group-hover:text-blue-600 truncate">Super Admin</div>
-              <div class="text-[10px] text-slate-400 truncate">Akses Penuh ERP</div>
-            </div>
-          </button>
-
-          <button
-            type="button"
-            @click="quickLogin('manager@cafe-erp.com', 'Password@123')"
-            class="flex items-center gap-2 p-2 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-indigo-50 hover:border-indigo-200 text-left transition-all cursor-pointer group"
-          >
-            <div class="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
-              <UserCheck class="w-3.5 h-3.5" />
-            </div>
-            <div class="min-w-0">
-              <div class="text-xs font-bold text-slate-800 group-hover:text-indigo-600 truncate">Store Manager</div>
-              <div class="text-[10px] text-indigo-600 font-semibold truncate">Approval Cuti/Shift</div>
-            </div>
-          </button>
-
-          <button
-            type="button"
-            @click="quickLogin('kasir@cafe-erp.com', 'Password@123')"
-            class="flex items-center gap-2 p-2 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-emerald-50 hover:border-emerald-200 text-left transition-all cursor-pointer group"
-          >
-            <div class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
-              <ShoppingBag class="w-3.5 h-3.5" />
-            </div>
-            <div class="min-w-0">
-              <div class="text-xs font-bold text-slate-800 group-hover:text-emerald-600 truncate">Kasir POS</div>
-              <div class="text-[10px] text-slate-400 truncate">Transaksi & Struk</div>
-            </div>
-          </button>
-
-          <button
-            type="button"
-            @click="quickLogin('inventory@cafe-erp.com', 'Password@123')"
-            class="flex items-center gap-2 p-2 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-amber-50 hover:border-amber-200 text-left transition-all cursor-pointer group"
-          >
-            <div class="w-7 h-7 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center shrink-0 group-hover:bg-amber-600 group-hover:text-white transition-colors">
-              <Package class="w-3.5 h-3.5" />
-            </div>
-            <div class="min-w-0">
-              <div class="text-xs font-bold text-slate-800 group-hover:text-amber-600 truncate">Staf Inventory</div>
-              <div class="text-[10px] text-slate-400 truncate">Stok & P2P Gudang</div>
-            </div>
-          </button>
-
-          <button
-            type="button"
-            @click="quickLogin('finance@cafe-erp.com', 'Password@123')"
-            class="flex items-center gap-2 p-2 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-purple-50 hover:border-purple-200 text-left transition-all cursor-pointer group"
-          >
-            <div class="w-7 h-7 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center shrink-0 group-hover:bg-purple-600 group-hover:text-white transition-colors">
-              <DollarSign class="w-3.5 h-3.5" />
-            </div>
-            <div class="min-w-0">
-              <div class="text-xs font-bold text-slate-800 group-hover:text-purple-600 truncate">Finance</div>
-              <div class="text-[10px] text-slate-400 truncate">Jurnal & Akuntansi</div>
-            </div>
-          </button>
-        </div>
       </div>
-
     </div>
   </div>
 </template>
@@ -210,24 +291,21 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import {
-  Coffee,
   Mail,
-  Lock,
+  Key,
   Eye,
   EyeOff,
-  Sparkles,
-  Shield,
-  UserCheck,
-  ShoppingBag,
-  Package,
-  DollarSign
+  Sun,
+  Moon
 } from 'lucide-vue-next'
 import { useAuthStore } from '@/stores/auth.store'
+import { useAppStore } from '@/stores/app.store'
 import { useNotificationStore } from '@/stores/notification.store'
 import axios from 'axios'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const appStore = useAppStore()
 const notifyStore = useNotificationStore()
 
 const email = ref('')
@@ -291,5 +369,9 @@ const quickLogin = (e: string, p: string) => {
 
 const handleForgotPassword = () => {
   notifyStore.info('Silakan hubungi administrator IT untuk mereset kata sandi akun Anda.', 'Bantuan Akun')
+}
+
+const handleRegisterClick = () => {
+  notifyStore.info('Registrasi akun pengguna baru dikelola langsung oleh Super Admin melalui menu Master Data > Pengguna.', 'Pendaftaran Pengguna')
 }
 </script>

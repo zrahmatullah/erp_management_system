@@ -137,8 +137,16 @@ const routes: Array<RouteRecordRaw> = [
     ]
   },
   {
+    path: '/404',
+    name: 'NotFound',
+    component: () => import('@/views/error/NotFoundView.vue'),
+    meta: { requiresAuth: false }
+  },
+  {
     path: '/:pathMatch(.*)*',
-    redirect: '/dashboard'
+    name: 'CatchAll',
+    component: () => import('@/views/error/NotFoundView.vue'),
+    meta: { requiresAuth: false }
   }
 ]
 

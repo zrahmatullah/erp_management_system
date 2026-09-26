@@ -1,32 +1,42 @@
 <template>
-  <header class="h-16 bg-white border-b border-slate-200/80 flex items-center justify-between px-6 z-10">
+  <header class="h-16 bg-white dark:bg-slate-900 border-b border-slate-200/80 dark:border-slate-800 flex items-center justify-between px-6 z-10 transition-colors">
     <!-- Left: Breadcrumb / Page context -->
     <div class="flex items-center gap-3">
       <Breadcrumb />
     </div>
 
-    <!-- Right: Search, Notifications, User Profile -->
-    <div class="flex items-center gap-4">
+    <!-- Right: Search, Notifications, Theme Toggle, User Profile -->
+    <div class="flex items-center gap-3 sm:gap-4">
       <!-- Search input -->
-      <div class="relative hidden sm:block w-72">
+      <div class="relative hidden sm:block w-64 lg:w-72">
         <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
           <Search class="w-4 h-4" />
         </span>
         <input
           type="text"
-          placeholder="Search orders, reports..."
-          class="w-full pl-9 pr-4 py-1.5 text-xs bg-slate-100/80 hover:bg-slate-100 focus:bg-white text-slate-700 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+          placeholder="Cari transaksi, laporan..."
+          class="w-full pl-9 pr-4 py-1.5 text-xs bg-slate-100/80 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700/80 focus:bg-white dark:focus:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-lg border border-slate-200 dark:border-slate-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
         />
       </div>
 
+      <!-- Theme Switcher (Light / Dark) -->
+      <button 
+        @click="appStore.toggleTheme" 
+        class="w-8 h-8 rounded-full flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+        :title="appStore.theme === 'dark' ? 'Ganti ke Mode Terang (Light Mode)' : 'Ganti ke Mode Gelap (Dark Mode)'"
+      >
+        <Sun v-if="appStore.theme === 'dark'" class="w-4 h-4 text-amber-400 hover:rotate-45 transition-transform" />
+        <Moon v-else class="w-4 h-4 text-slate-600 hover:-rotate-12 transition-transform" />
+      </button>
+
       <!-- Help Button -->
-      <button class="w-8 h-8 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-100 transition-colors" title="Help & Support">
+      <button class="w-8 h-8 rounded-full flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer" title="Bantuan & Dukungan">
         <HelpCircle class="w-4 h-4" />
       </button>
 
       <!-- Notification Bell -->
       <div class="relative cursor-pointer">
-        <div class="w-8 h-8 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-100 transition-colors">
+        <div class="w-8 h-8 rounded-full flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
           <Bell class="w-4 h-4" />
         </div>
         <span class="absolute top-0 right-0 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-sm">
@@ -34,17 +44,17 @@
         </span>
       </div>
 
-      <div class="h-6 w-px bg-slate-200 mx-1"></div>
+      <div class="h-6 w-px bg-slate-200 dark:bg-slate-800 mx-1"></div>
 
       <!-- User Profile Dropdown -->
       <n-dropdown :options="userOptions" @select="handleUserMenu">
-        <div class="flex items-center gap-2.5 cursor-pointer py-1 px-2 rounded-lg hover:bg-slate-50 transition-colors">
+        <div class="flex items-center gap-2.5 cursor-pointer py-1 px-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors">
           <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-semibold flex items-center justify-center shadow-sm text-xs">
-            SA
+            {{ userInitials }}
           </div>
           <div class="text-left hidden md:block">
-            <div class="text-xs font-semibold text-slate-800 leading-tight">Super Administrator</div>
-            <div class="text-[10px] text-slate-500 font-medium">Headquarters</div>
+            <div class="text-xs font-semibold text-slate-800 dark:text-slate-200 leading-tight">{{ userDisplayName }}</div>
+            <div class="text-[10px] text-slate-500 dark:text-slate-400 font-medium capitalize">{{ userRoleName }}</div>
           </div>
           <ChevronDown class="w-3.5 h-3.5 text-slate-400 ml-1" />
         </div>
@@ -72,10 +82,11 @@
 </template>
 
 <script setup lang="ts">
-import { h, ref } from 'vue'
+import { h, ref, computed } from 'vue'
 import { NDropdown } from 'naive-ui'
 import Breadcrumb from './Breadcrumb.vue'
 import { useAuthStore } from '@/stores/auth.store'
+import { useAppStore } from '@/stores/app.store'
 import { useNotificationStore } from '@/stores/notification.store'
 import { useRouter } from 'vue-router'
 import {
@@ -86,13 +97,25 @@ import {
   User,
   Database,
   Settings,
-  LogOut
+  LogOut,
+  Sun,
+  Moon
 } from 'lucide-vue-next'
 
 const authStore = useAuthStore()
+const appStore = useAppStore()
 const notifyStore = useNotificationStore()
 const router = useRouter()
 const isLoggingOut = ref(false)
+
+const userDisplayName = computed(() => authStore.fullName?.trim() || authStore.user?.firstName || 'Super Administrator')
+const userRoleName = computed(() => authStore.currentRole || 'Administrator')
+const userInitials = computed(() => {
+  const name = userDisplayName.value.trim()
+  const parts = name.split(' ')
+  if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase()
+  return name.slice(0, 2).toUpperCase() || 'SA'
+})
 
 const renderIcon = (icon: any) => {
   return () => h(icon, { class: 'w-4 h-4' })
