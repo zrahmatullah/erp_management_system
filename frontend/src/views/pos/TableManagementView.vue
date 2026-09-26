@@ -484,15 +484,15 @@ const countBilling = computed(() => tables.value.filter(t => t.status === 'billi
 const getTableClass = (status: string) => {
   switch (status) {
     case 'available':
-      return 'border-emerald-500 bg-white text-emerald-800'
+      return 'border-emerald-500 bg-white text-emerald-800 dark:bg-slate-900 dark:text-emerald-400'
     case 'occupied':
       return 'border-red-600 bg-red-500 text-white shadow-sm'
     case 'reserved':
-      return 'border-amber-400 bg-amber-100 text-amber-900'
+      return 'border-amber-400 bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-600'
     case 'billing':
-      return 'border-blue-500 bg-blue-50 text-blue-800'
+      return 'border-blue-500 bg-blue-50 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-600'
     default:
-      return 'border-slate-300 bg-white'
+      return 'border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-900'
   }
 }
 

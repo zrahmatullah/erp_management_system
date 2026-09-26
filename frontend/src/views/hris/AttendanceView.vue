@@ -9,7 +9,7 @@
       <div class="flex items-center gap-2">
         <button
           @click="openManualAttendanceModal"
-          class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
+          class="px-4 py-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-600/30 transition-all cursor-pointer flex items-center gap-1.5"
         >
           <span>+</span> Catat Presensi Staf
         </button>

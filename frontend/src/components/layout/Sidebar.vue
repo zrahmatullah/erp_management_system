@@ -119,22 +119,22 @@
       <div class="bg-slate-200/60 dark:bg-slate-800 p-1 rounded-2xl flex items-center text-xs font-medium gap-1">
         <button
           type="button"
-          @click="currentTheme = 'light'"
+          @click="appStore.setTheme('light')"
           class="flex-1 py-1.5 px-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-          :class="currentTheme === 'light' ? 'bg-white text-slate-900 shadow-xs font-bold' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'"
-          title="Light Mode"
+          :class="appStore.theme === 'light' ? 'bg-white bg-keep-white text-slate-900 shadow-xs font-bold' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'"
+          title="Mode Terang (Light Mode)"
         >
-          <Sun class="w-3.5 h-3.5" :class="currentTheme === 'light' ? 'text-amber-500' : 'text-slate-400 dark:text-slate-500'" />
+          <Sun class="w-3.5 h-3.5" :class="appStore.theme === 'light' ? 'text-amber-500' : 'text-slate-400 dark:text-slate-500'" />
           <span v-if="!isCollapsed">Light</span>
         </button>
         <button
           type="button"
-          @click="currentTheme = 'dark'"
+          @click="appStore.setTheme('dark')"
           class="flex-1 py-1.5 px-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-          :class="currentTheme === 'dark' ? 'bg-slate-900 dark:bg-slate-700 text-white shadow-xs font-bold' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'"
-          title="Dark Mode"
+          :class="appStore.theme === 'dark' ? 'bg-slate-900 dark:bg-slate-700 text-white shadow-xs font-bold' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'"
+          title="Mode Gelap (Dark Mode)"
         >
-          <Moon class="w-3.5 h-3.5" :class="currentTheme === 'dark' ? 'text-indigo-400' : 'text-slate-400 dark:text-slate-500'" />
+          <Moon class="w-3.5 h-3.5" :class="appStore.theme === 'dark' ? 'text-indigo-400' : 'text-slate-400 dark:text-slate-500'" />
           <span v-if="!isCollapsed">Dark</span>
         </button>
       </div>

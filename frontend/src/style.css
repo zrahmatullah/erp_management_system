@@ -53,7 +53,37 @@
 /* ==========================================================================
    GLOBAL DARK MODE AUTOMATION FOR ALL VIEWS & MENUS
    Ensures 100% consistency across all menus when toggling Light / Dark
+   GLOBAL COMPREHENSIVE LIGHT & DARK MODE ENGINE
+   Ensures 100% thorough, clean consistency across all menus and views
    ========================================================================== */
+html {
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Light mode base */
+html:not(.dark) {
+  color-scheme: light;
+}
+
+html:not(.dark) body {
+  background-color: #f8fafc;
+  color: #0f172a;
+}
+
+html:not(.dark) input:not([type="checkbox"]):not([type="radio"]):not([data-keep-dark]),
+html:not(.dark) select:not([data-keep-dark]),
+html:not(.dark) textarea:not([data-keep-dark]) {
+  background-color: #ffffff;
+  color: #0f172a;
+  border-color: #e2e8f0;
+}
+
+html:not(.dark) option {
+  background-color: #ffffff;
+  color: #0f172a;
+}
+
+/* Dark mode base */
 html.dark {
   color-scheme: dark;
 }
@@ -63,29 +93,26 @@ html.dark body {
   color: #f1f5f9;
 }
 
-/* All standard card surfaces in dark mode */
+/* All standard card & modal surfaces in dark mode */
 html.dark .bg-white:not([data-keep-light]):not(.bg-keep-white) {
   background-color: #0f172a !important;
 }
 
-html.dark .bg-slate-50:not([data-keep-light]):not(.bg-keep-light),
-html.dark .bg-slate-50\/50:not([data-keep-light]),
-html.dark .bg-slate-50\/60:not([data-keep-light]),
-html.dark .bg-slate-100:not([data-keep-light]),
-html.dark .bg-slate-100\/60:not([data-keep-light]),
-html.dark .bg-slate-100\/70:not([data-keep-light]),
-html.dark .bg-slate-100\/80:not([data-keep-light]) {
+/* Sub-panels, secondary containers, and tinted sections */
+html.dark [class*="bg-slate-50"]:not([data-keep-light]):not(.bg-keep-light),
+html.dark [class*="bg-slate-100"]:not([data-keep-light]):not(.bg-keep-light) {
   background-color: #1e293b !important;
 }
 
-/* Borders in dark mode */
-html.dark .border-slate-100,
-html.dark .border-slate-200,
-html.dark .border-slate-200\/50,
-html.dark .border-slate-200\/60,
-html.dark .border-slate-200\/80,
-html.dark .border-slate-200\/90,
-html.dark .border-slate-300 {
+html.dark .bg-slate-200:not([data-keep-light]) {
+  background-color: #334155 !important;
+  color: #cbd5e1 !important;
+}
+
+/* Borders across all opacity scales in dark mode */
+html.dark [class*="border-slate-100"],
+html.dark [class*="border-slate-200"],
+html.dark [class*="border-slate-300"] {
   border-color: #334155 !important;
 }
 
@@ -110,10 +137,29 @@ html.dark .text-slate-400 {
   color: #94a3b8 !important;
 }
 
+/* Table rows & interactive hover states in dark mode */
+html.dark tr:hover,
+html.dark [class*="hover:bg-slate-50"]:hover,
+html.dark [class*="hover:bg-slate-100"]:hover,
+html.dark [class*="hover:bg-slate-200"]:hover {
+  background-color: #1e293b !important;
+}
+
+html.dark [class*="hover:text-slate-900"]:hover,
+html.dark [class*="hover:text-slate-800"]:hover {
+  color: #ffffff !important;
+}
+
 /* Inputs, textareas, selects in dark mode */
 html.dark input:not([type="checkbox"]):not([type="radio"]):not([data-keep-light]),
 html.dark select:not([data-keep-light]),
 html.dark textarea:not([data-keep-light]) {
+  background-color: #1e293b !important;
+  border-color: #334155 !important;
+  color: #f8fafc !important;
+}
+
+html.dark option {
   background-color: #1e293b;
   border-color: #334155;
   color: #f8fafc;
@@ -125,6 +171,7 @@ html.dark textarea::placeholder {
 }
 
 /* Subtle glowing tints for status badges in dark mode */
+/* Status badges & glowing accents in dark mode */
 html.dark .bg-emerald-50, html.dark .bg-emerald-100 {
   background-color: rgba(6, 78, 59, 0.4) !important;
   color: #34d399 !important;
@@ -147,6 +194,7 @@ html.dark .bg-purple-50, html.dark .bg-purple-100 {
 }
 
 /* Modals & Floating surfaces in dark mode */
+/* Modals & floating surfaces in dark mode */
 html.dark .bg-white\/95,
 html.dark .bg-white\/90 {
   background-color: rgba(15, 23, 42, 0.95) !important;

@@ -510,7 +510,7 @@ const handleApprove = async () => {
           <button 
             v-else
             @click="currentStep = 5"
-            class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 rounded-xl text-xs font-bold text-white shadow-md transition-all flex items-center gap-2 cursor-pointer"
+            class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 rounded-xl text-xs font-bold text-white shadow-md shadow-blue-600/30 transition-all flex items-center gap-2 cursor-pointer"
           >
             <span>Lihat Ringkasan Jurnal</span>
           </button>
@@ -552,7 +552,7 @@ const handleApprove = async () => {
       <div class="flex justify-center gap-4 pt-2">
         <button 
           @click="currentStep = 4"
-          class="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold cursor-pointer transition-colors"
+          class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-xl font-bold cursor-pointer transition-all shadow-md shadow-blue-600/30"
         >
           Lihat Slip Karyawan
         </button>

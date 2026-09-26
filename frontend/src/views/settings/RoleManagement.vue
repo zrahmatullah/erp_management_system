@@ -16,7 +16,7 @@
         <button
           v-if="activeMainTab === 'matrix'"
           @click="openAddRoleModal"
-          class="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl shadow-md transition-colors cursor-pointer flex items-center gap-1.5"
+          class="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-600/30 transition-all cursor-pointer flex items-center gap-1.5"
         >
           <Plus class="w-4 h-4" />
           <span>Tambah Peran</span>
@@ -534,7 +534,7 @@
           <div class="bg-white rounded-3xl w-full max-w-md shadow-2xl border border-slate-100/90 overflow-hidden my-6">
             <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
               <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-2xl bg-slate-900 text-white flex items-center justify-center font-black shrink-0">
+                <div class="w-10 h-10 rounded-2xl bg-blue-600 text-white flex items-center justify-center font-black shrink-0 shadow-md shadow-blue-600/30">
                   <Shield class="w-5 h-5" />
                 </div>
                 <div>
@@ -583,7 +583,7 @@
                 <button
                   type="submit"
                   :disabled="savingRole"
-                  class="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl shadow-md transition-all cursor-pointer disabled:opacity-60"
+                  class="px-5 py-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold rounded-xl shadow-md shadow-blue-600/30 transition-all cursor-pointer disabled:opacity-60"
                 >
                   {{ savingRole ? 'Menyimpan...' : 'Simpan Peran' }}
                 </button>
