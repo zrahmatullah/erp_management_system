@@ -1,5 +1,4 @@
 import { defineStore } from 'pinia';
-import { ref } from 'vue';
 import { ref, computed } from 'vue';
 
 export type ThemeMode = 'light' | 'dark' | 'system';
@@ -39,16 +38,12 @@ function getSystemTheme(): 'light' | 'dark' {
 export const useAppStore = defineStore('app', () => {
   const sidebarCollapsed = ref(false);
 
-  // Read saved theme from localStorage, default to dark
-  const savedTheme = typeof localStorage !== 'undefined' ? localStorage.getItem('cafe_erp_theme') as 'light' | 'dark' | null : null;
-  const initialTheme: 'light' | 'dark' = savedTheme ? savedTheme : 'dark';
   // Read saved theme from storage, default to 'system'
   const rawSaved = safeGetStorage(STORAGE_KEY);
   const initialMode: ThemeMode = (rawSaved === 'light' || rawSaved === 'dark' || rawSaved === 'system')
     ? rawSaved
     : 'system';
 
-  const theme = ref<'light' | 'dark'>(initialTheme);
   const themeMode = ref<ThemeMode>(initialMode);
   const systemPreference = ref<'light' | 'dark'>(getSystemTheme());
 
@@ -67,32 +62,22 @@ export const useAppStore = defineStore('app', () => {
   });
 
   const locale = ref('id-ID');
-  const breadcrumbs = ref<{label: string, path?: string}[]>([]);
   const breadcrumbs = ref<{ label: string; path?: string }[]>([]);
   const currentBranch = ref<string | null>(null);
 
-  const applyTheme = (targetTheme: 'light' | 'dark') => {
-    theme.value = targetTheme;
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('cafe_erp_theme', targetTheme);
-    }
   // Apply resolved theme class & color-scheme to document root
   const applyDOMTheme = (targetTheme: 'light' | 'dark') => {
     if (typeof document !== 'undefined') {
       const root = document.documentElement;
       if (targetTheme === 'dark') {
-        document.documentElement.classList.add('dark');
         root.classList.add('dark');
       } else {
-        document.documentElement.classList.remove('dark');
         root.classList.remove('dark');
       }
       root.style.colorScheme = targetTheme;
     }
   };
 
-  // Sync initially
-  applyTheme(initialTheme);
   // Set new theme mode ('light', 'dark', or 'system')
   const setTheme = (newMode: ThemeMode) => {
     themeMode.value = newMode;
@@ -100,16 +85,12 @@ export const useAppStore = defineStore('app', () => {
     applyDOMTheme(resolvedTheme.value);
   };
 
-  const toggleSidebar = () => {
-    sidebarCollapsed.value = !sidebarCollapsed.value;
   // Simple toggle between light and dark
   const toggleTheme = () => {
     const nextTheme = resolvedTheme.value === 'dark' ? 'light' : 'dark';
     setTheme(nextTheme);
   };
 
-  const setTheme = (newTheme: 'light' | 'dark') => {
-    applyTheme(newTheme);
   // 3-way cyclic toggle (light -> dark -> system -> light)
   const cycleTheme = () => {
     if (themeMode.value === 'light') {
@@ -121,8 +102,6 @@ export const useAppStore = defineStore('app', () => {
     }
   };
 
-  const toggleTheme = () => {
-    applyTheme(theme.value === 'dark' ? 'light' : 'dark');
   // Real-time listener for OS preference changes
   if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
@@ -148,7 +127,6 @@ export const useAppStore = defineStore('app', () => {
     sidebarCollapsed.value = !sidebarCollapsed.value;
   };
 
-  const setBreadcrumbs = (newBreadcrumbs: {label: string, path?: string}[]) => {
   const setBreadcrumbs = (newBreadcrumbs: { label: string; path?: string }[]) => {
     breadcrumbs.value = newBreadcrumbs;
   };
@@ -158,8 +136,6 @@ export const useAppStore = defineStore('app', () => {
   };
 
   return {
-    sidebarCollapsed, theme, locale, breadcrumbs, currentBranch,
-    toggleSidebar, setTheme, toggleTheme, setBreadcrumbs, setCurrentBranch
     sidebarCollapsed,
     themeMode,
     resolvedTheme,
@@ -175,4 +151,3 @@ export const useAppStore = defineStore('app', () => {
     setCurrentBranch
   };
 });
-
