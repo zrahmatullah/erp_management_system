@@ -1,10 +1,16 @@
 <template>
-  <div class="flex h-screen w-screen overflow-hidden bg-[#F8FAFC] dark:bg-slate-950 text-slate-800 dark:text-slate-100 relative transition-colors duration-200">
+  <div 
+    class="layout-main-wrapper flex h-screen w-screen overflow-hidden relative transition-colors duration-200"
+    style="background-color: var(--bg-content); color: var(--text-primary);"
+  >
     <TopProgressBar />
     <Sidebar />
     <div class="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
       <AppHeader />
-      <main class="flex-1 overflow-y-auto p-6 relative bg-slate-50/60 dark:bg-slate-950 transition-colors">
+      <main 
+        class="content-container flex-1 overflow-y-auto p-6 relative transition-colors"
+        style="background-color: var(--bg-content);"
+      >
         <router-view v-slot="{ Component }">
           <transition name="page-fade" mode="out-in">
             <component :is="Component" :key="$route.fullPath" />

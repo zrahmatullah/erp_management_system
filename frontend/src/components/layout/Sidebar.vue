@@ -1,20 +1,21 @@
 <template>
   <aside 
-    class="bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 flex flex-col h-screen select-none border-r border-slate-200/80 dark:border-slate-800 shrink-0 transition-all duration-300 relative z-30"
+    class="sidebar-container flex flex-col h-screen select-none shrink-0 transition-all duration-300 relative z-30 border-r"
     :class="isCollapsed ? 'w-20' : 'w-64'"
+    style="background-color: var(--bg-sidebar); border-color: var(--border-color); color: var(--text-secondary);"
   >
     <!-- Brand Header -->
-    <div class="h-16 flex items-center px-4.5 gap-3 border-b border-slate-100 dark:border-slate-800 shrink-0">
+    <div class="h-16 flex items-center px-4.5 gap-3 border-b shrink-0" style="border-color: var(--border-color);">
       <!-- Circular Logo matching Gridlines UI -->
       <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-600 via-blue-500 to-indigo-500 flex items-center justify-center text-white shadow-md shadow-blue-500/25 shrink-0">
         <Coffee class="w-4.5 h-4.5" />
       </div>
       <div v-if="!isCollapsed" class="min-w-0 transition-opacity duration-200">
-        <h1 class="text-slate-900 dark:text-white font-black text-[15px] tracking-tight leading-none flex items-center gap-1.5">
+        <h1 class="font-black text-[15px] tracking-tight leading-none flex items-center gap-1.5" style="color: var(--text-primary);">
           Cafe ERP
           <span class="text-[9px] font-bold uppercase tracking-wider bg-blue-50 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400 border border-blue-200/60 dark:border-blue-800/60 px-1.5 py-0.5 rounded-full">Pro</span>
         </h1>
-        <p class="text-[11px] text-slate-400 dark:text-slate-500 font-medium truncate mt-1">Management System</p>
+        <p class="text-[11px] font-medium truncate mt-1" style="color: var(--text-muted);">Management System</p>
       </div>
     </div>
 
@@ -24,7 +25,8 @@
         <!-- Category Section Header -->
         <div 
           v-if="!isCollapsed" 
-          class="px-3 pt-1 pb-1 text-[11px] font-semibold text-slate-400 dark:text-slate-500 tracking-wide"
+          class="px-3 pt-1 pb-1 text-[11px] font-semibold tracking-wide uppercase"
+          style="color: var(--text-muted);"
         >
           {{ section.title }}
         </div>
@@ -37,15 +39,13 @@
               v-if="!item.children"
               :to="item.path!"
               class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-150 relative"
-              :class="isRouteActive(item.path!) 
-                ? 'bg-blue-50/90 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold border border-blue-200/50 dark:border-blue-800/50 shadow-xs' 
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/70 dark:hover:bg-slate-800/70'"
+              :class="isRouteActive(item.path!) ? 'sidebar-item-active font-bold shadow-xs' : 'sidebar-item-inactive'"
               :title="isCollapsed ? item.label : undefined"
             >
               <component 
                 :is="item.icon" 
                 class="w-4.5 h-4.5 shrink-0 transition-colors" 
-                :class="isRouteActive(item.path!) ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-700 dark:group-hover:text-slate-200'"
+                :class="isRouteActive(item.path!) ? 'text-[var(--sidebar-item-active-text)]' : 'text-[var(--text-muted)] group-hover:text-[var(--sidebar-item-hover-text)]'"
               />
               <span v-if="!isCollapsed" class="truncate">{{ item.label }}</span>
             </router-link>
@@ -56,39 +56,36 @@
                 type="button"
                 @click="toggleGroup(item.label)"
                 class="w-full group flex items-center justify-between px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-150 cursor-pointer"
-                :class="isGroupActive(item) 
-                  ? 'text-blue-600 dark:text-blue-400 font-bold bg-blue-50/40 dark:bg-blue-900/20' 
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/70 dark:hover:bg-slate-800/70'"
+                :class="isGroupActive(item) ? 'sidebar-item-active font-bold' : 'sidebar-item-inactive'"
                 :title="isCollapsed ? item.label : undefined"
               >
                 <div class="flex items-center gap-3 min-w-0">
                   <component 
                     :is="item.icon" 
                     class="w-4.5 h-4.5 shrink-0 transition-colors" 
-                    :class="isGroupActive(item) ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-700 dark:group-hover:text-slate-200'"
+                    :class="isGroupActive(item) ? 'text-[var(--sidebar-item-active-text)]' : 'text-[var(--text-muted)] group-hover:text-[var(--sidebar-item-hover-text)]'"
                   />
                   <span v-if="!isCollapsed" class="truncate">{{ item.label }}</span>
                 </div>
                 <ChevronDown 
                   v-if="!isCollapsed"
-                  class="w-4 h-4 text-slate-400 dark:text-slate-500 transition-transform duration-200 shrink-0" 
-                  :class="openGroups[item.label] ? 'rotate-180 text-slate-600 dark:text-slate-300' : ''" 
+                  class="w-4 h-4 transition-transform duration-200 shrink-0" 
+                  :class="openGroups[item.label] ? 'rotate-180 text-[var(--sidebar-item-hover-text)]' : 'text-[var(--text-muted)]'" 
                 />
               </button>
 
               <!-- Submenu Items (Indented with Guideline) -->
               <div 
                 v-if="!isCollapsed && (openGroups[item.label] || isGroupActive(item))" 
-                class="pl-4 pr-1 space-y-1 border-l border-slate-200/80 dark:border-slate-800 ml-5 py-1 transition-all"
+                class="pl-4 pr-1 space-y-1 border-l ml-5 py-1 transition-all"
+                style="border-color: var(--border-color);"
               >
                 <router-link
                   v-for="sub in item.children"
                   :key="sub.path"
                   :to="sub.path"
                   class="flex items-center justify-between px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
-                  :class="isRouteActive(sub.path)
-                    ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/60 dark:hover:bg-slate-800/60'"
+                  :class="isRouteActive(sub.path) ? 'sidebar-subitem-active font-bold' : 'sidebar-subitem-inactive'"
                 >
                   <span class="truncate">{{ sub.label }}</span>
                   <span v-if="sub.badge" class="px-1.5 py-0.5 rounded text-[10px] bg-blue-100/80 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 font-bold shrink-0">
@@ -103,15 +100,18 @@
     </div>
 
     <!-- Bottom Actions Section (Collapse + Theme Switcher + User Profile) -->
-    <div class="p-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/90 space-y-2.5 shrink-0">
+    <div 
+      class="p-3 border-t space-y-2.5 shrink-0"
+      style="background-color: var(--bg-sidebar); border-color: var(--border-color);"
+    >
       <!-- Collapse Menu Toggle -->
       <button
         type="button"
         @click="isCollapsed = !isCollapsed"
-        class="w-full flex items-center gap-3 px-3 py-2 text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-800/80 rounded-xl transition-all cursor-pointer"
+        class="w-full flex items-center gap-3 px-3 py-2 text-xs font-semibold rounded-xl transition-all cursor-pointer sidebar-collapse-btn"
         :title="isCollapsed ? 'Perluas Sidebar' : 'Ciutkan Sidebar'"
       >
-        <Columns2 class="w-4 h-4 text-slate-400 dark:text-slate-500 shrink-0" />
+        <Columns2 class="w-4 h-4 shrink-0 text-[var(--text-muted)]" />
         <span v-if="!isCollapsed" class="truncate">Collapse menu</span>
       </button>
 
@@ -120,7 +120,7 @@
         v-if="!isCollapsed" 
         role="radiogroup" 
         aria-label="Pilih tema tampilan antarmuka"
-        class="bg-slate-200/70 dark:bg-slate-950/80 p-1 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center text-xs font-semibold gap-1"
+        class="p-1 rounded-xl border flex items-center text-xs font-semibold gap-1 theme-switcher-group"
       >
         <!-- Light (Matahari) -->
         <button
@@ -130,9 +130,7 @@
           aria-label="Mode Terang (Matahari)"
           @click="appStore.setTheme('light')"
           class="flex-1 py-1.5 px-2 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none focus-visible:ring-2 focus-visible:ring-blue-500"
-          :class="appStore.themeMode === 'light' 
-            ? 'bg-white bg-keep-white text-blue-600 shadow-xs border border-blue-200/60 font-black' 
-            : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
+          :class="appStore.themeMode === 'light' ? 'theme-pill-active' : 'theme-pill-inactive'"
           title="Mode Terang (Matahari: Putih & Biru)"
         >
           <Sun class="w-3.5 h-3.5 text-amber-500 shrink-0" />
@@ -147,9 +145,7 @@
           aria-label="Mode Gelap (Bulan)"
           @click="appStore.setTheme('dark')"
           class="flex-1 py-1.5 px-2 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none focus-visible:ring-2 focus-visible:ring-blue-500"
-          :class="appStore.themeMode === 'dark' 
-            ? 'bg-slate-800 text-blue-400 shadow-xs border border-slate-700 font-black' 
-            : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
+          :class="appStore.themeMode === 'dark' ? 'theme-pill-active' : 'theme-pill-inactive'"
           title="Mode Gelap (Bulan: Hitam & Biru)"
         >
           <Moon class="w-3.5 h-3.5 text-blue-400 shrink-0" />
@@ -164,12 +160,10 @@
           aria-label="Ikuti Tema Sistem OS"
           @click="appStore.setTheme('system')"
           class="flex-1 py-1.5 px-2 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none focus-visible:ring-2 focus-visible:ring-blue-500"
-          :class="appStore.themeMode === 'system' 
-            ? 'bg-blue-600 text-white shadow-xs font-black' 
-            : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
+          :class="appStore.themeMode === 'system' ? 'theme-pill-active' : 'theme-pill-inactive'"
           title="Otomatis mengikuti preferensi OS Sistem"
         >
-          <Monitor class="w-3.5 h-3.5 shrink-0" :class="appStore.themeMode === 'system' ? 'text-white' : 'text-slate-400'" />
+          <Monitor class="w-3.5 h-3.5 shrink-0" :class="appStore.themeMode === 'system' ? 'text-blue-500 dark:text-blue-400' : 'text-slate-400'" />
           <span class="text-[11px]">Auto</span>
         </button>
       </div>
@@ -182,9 +176,7 @@
           :aria-label="`Tema saat ini: ${appStore.themeMode}. Klik untuk ganti tema.`"
           @click="cycleTheme"
           class="w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer border focus-visible:ring-2 focus-visible:ring-blue-500"
-          :class="appStore.resolvedTheme === 'dark' 
-            ? 'bg-slate-800 text-blue-400 border-slate-700 hover:bg-slate-700 shadow-sm' 
-            : 'bg-white text-blue-600 border-slate-200 hover:bg-slate-100 shadow-sm'"
+          style="background-color: var(--bg-content); border-color: var(--border-color); color: var(--text-primary);"
           :title="collapsedTooltip"
         >
           <Sun v-if="appStore.themeMode === 'light'" class="w-4.5 h-4.5 text-amber-500" />
@@ -194,14 +186,14 @@
       </div>
 
       <!-- User Card & Logout -->
-      <div class="pt-2 border-t border-slate-200/60 dark:border-slate-800 flex items-center justify-between gap-2 px-1">
+      <div class="pt-2 border-t flex items-center justify-between gap-2 px-1" style="border-color: var(--border-color);">
         <div class="flex items-center gap-2.5 min-w-0">
           <div class="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 flex items-center justify-center text-xs font-black shrink-0 shadow-2xs">
             {{ avatarInitials }}
           </div>
           <div v-if="!isCollapsed" class="min-w-0">
-            <div class="text-xs font-bold text-slate-800 dark:text-slate-200 truncate leading-tight">{{ userName }}</div>
-            <div class="text-[10px] text-slate-400 dark:text-slate-500 font-medium truncate flex items-center gap-1 mt-0.5">
+            <div class="text-xs font-bold truncate leading-tight" style="color: var(--text-primary);">{{ userName }}</div>
+            <div class="text-[10px] font-medium truncate flex items-center gap-1 mt-0.5" style="color: var(--text-muted);">
               <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
               {{ userRoleBadge }}
             </div>
@@ -210,7 +202,8 @@
         <button 
           @click="handleLogout" 
           title="Keluar dari Sistem" 
-          class="p-1.5 rounded-lg text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer shrink-0"
+          class="p-1.5 rounded-lg hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer shrink-0"
+          style="color: var(--text-muted);"
         >
           <LogOut class="w-4 h-4" />
         </button>
@@ -480,6 +473,62 @@ const handleLogout = () => {
 </script>
 
 <style scoped>
+/* Sidebar menu items driven by CSS tokens */
+.sidebar-item-active {
+  background-color: var(--sidebar-item-active-bg);
+  color: var(--sidebar-item-active-text);
+  border: 1px solid var(--sidebar-item-active-border);
+}
+
+.sidebar-item-inactive {
+  color: var(--text-secondary);
+}
+.sidebar-item-inactive:hover {
+  background-color: var(--sidebar-item-hover-bg);
+  color: var(--sidebar-item-hover-text);
+}
+
+.sidebar-subitem-active {
+  background-color: var(--sidebar-item-active-bg);
+  color: var(--sidebar-item-active-text);
+}
+
+.sidebar-subitem-inactive {
+  color: var(--text-muted);
+}
+.sidebar-subitem-inactive:hover {
+  background-color: var(--sidebar-item-hover-bg);
+  color: var(--sidebar-item-hover-text);
+}
+
+.sidebar-collapse-btn {
+  color: var(--text-muted);
+}
+.sidebar-collapse-btn:hover {
+  background-color: var(--sidebar-item-hover-bg);
+  color: var(--sidebar-item-hover-text);
+}
+
+.theme-switcher-group {
+  background-color: var(--bg-content);
+  border-color: var(--border-color);
+}
+
+.theme-pill-active {
+  background-color: var(--bg-primary);
+  color: var(--accent-primary);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
+  font-weight: 700;
+}
+
+.theme-pill-inactive {
+  color: var(--text-muted);
+}
+.theme-pill-inactive:hover {
+  color: var(--text-primary);
+}
+
 /* Ultra-sleek, modern scrollbar */
 .sidebar-scroll {
   scrollbar-width: thin;

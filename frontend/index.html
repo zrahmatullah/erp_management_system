@@ -8,9 +8,6 @@
     <script>
       (function() {
         try {
-          var saved = localStorage.getItem('cafe_erp_theme');
-          var theme = saved ? saved : 'dark';
-          if (theme === 'dark') {
           var storageKey = 'cafe_erp_theme';
           var saved = null;
           try {
@@ -30,27 +27,34 @@
             isDark = false;
           } else {
             // 'system' or first visit without saved preference: respect OS preference
-            isDark = systemDark;
+            isDark = Boolean(systemDark);
           }
 
+          var root = document.documentElement;
           if (isDark) {
-            document.documentElement.classList.add('dark');
+            root.classList.add('dark');
           } else {
-            document.documentElement.classList.remove('dark');
+            root.classList.remove('dark');
           }
+          root.setAttribute('data-theme', isDark ? 'dark' : 'light');
+          root.style.colorScheme = isDark ? 'dark' : 'light';
 
           // Disable transitions during initial page load to avoid transition flicker (FOUC)
-          document.documentElement.classList.add('theme-preload');
+          root.classList.add('theme-preload');
           window.addEventListener('DOMContentLoaded', function() {
             requestAnimationFrame(function() {
-              document.documentElement.classList.remove('theme-preload');
+              root.classList.remove('theme-preload');
             });
           });
         } catch (e) {
-          document.documentElement.classList.add('dark');
           // Graceful fallback
-          if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          var isFallbackDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (isFallbackDark) {
             document.documentElement.classList.add('dark');
+            document.documentElement.setAttribute('data-theme', 'dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+            document.documentElement.setAttribute('data-theme', 'light');
           }
         }
       })();

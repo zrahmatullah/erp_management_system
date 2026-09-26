@@ -65,7 +65,7 @@ export const useAppStore = defineStore('app', () => {
   const breadcrumbs = ref<{ label: string; path?: string }[]>([]);
   const currentBranch = ref<string | null>(null);
 
-  // Apply resolved theme class & color-scheme to document root
+  // Apply resolved theme class, data-theme attribute & color-scheme to document root
   const applyDOMTheme = (targetTheme: 'light' | 'dark') => {
     if (typeof document !== 'undefined') {
       const root = document.documentElement;
@@ -74,6 +74,7 @@ export const useAppStore = defineStore('app', () => {
       } else {
         root.classList.remove('dark');
       }
+      root.setAttribute('data-theme', targetTheme);
       root.style.colorScheme = targetTheme;
     }
   };

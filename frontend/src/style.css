@@ -8,10 +8,16 @@
    - Normal text: >= 4.5:1 (All text tokens achieve >= 4.6:1 up to 16.5:1)
    - Large text / UI elements: >= 3:1
    ========================================================================== */
-:root {
+:root,
+html[data-theme="light"],
+html:not(.dark) {
   color-scheme: light;
 
   /* Surfaces & Backgrounds */
+  /* Layout Primary Surfaces */
+  --bg-sidebar: #ffffff;
+  --bg-topbar: #ffffff;
+  --bg-content: #f8fafc;
   --bg-primary: #ffffff;
   --bg-secondary: #f8fafc;
   --bg-tertiary: #f1f5f9;
@@ -23,9 +29,23 @@
   --text-inverse: #f8fafc;
 
   /* Borders & Dividers */
+  --border-color: #e2e8f0;
+  --border-subtle: #f1f5f9;
   --border-primary: #e2e8f0;
   --border-secondary: #cbd5e1;
   --border-focus: #2563eb;
+
+  /* Sidebar Menu Token States */
+  --sidebar-item-active-bg: #eff6ff;
+  --sidebar-item-active-text: #2563eb;
+  --sidebar-item-active-border: #bfdbfe;
+  --sidebar-item-hover-bg: #f1f5f9;
+  --sidebar-item-hover-text: #0f172a;
+
+  /* Topbar States */
+  --topbar-icon-color: #64748b;
+  --topbar-icon-hover-bg: #f1f5f9;
+  --topbar-icon-hover-color: #0f172a;
 
   /* Accent / Primary Brand (Blue) */
   --accent-primary: #2563eb;
@@ -50,7 +70,7 @@
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.04);
 
   /* Form Controls */
-  --input-bg: #ffffff;
+  --input-bg: #f8fafc;
   --input-border: #e2e8f0;
   --input-text: #0f172a;
   --input-placeholder: #94a3b8;
@@ -58,7 +78,7 @@
   --input-focus-ring: rgba(37, 99, 235, 0.2);
 
   /* Scrollbar */
-  --scrollbar-track: #f1f5f9;
+  --scrollbar-track: #f8fafc;
   --scrollbar-thumb: #cbd5e1;
   --scrollbar-thumb-hover: #94a3b8;
 
@@ -67,10 +87,15 @@
   --theme-transition-timing: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-html.dark {
+html.dark,
+html[data-theme="dark"] {
   color-scheme: dark;
 
   /* Surfaces & Backgrounds */
+  /* Layout Primary Surfaces */
+  --bg-sidebar: #0f172a;
+  --bg-topbar: #0f172a;
+  --bg-content: #020617;
   --bg-primary: #020617;
   --bg-secondary: #0f172a;
   --bg-tertiary: #1e293b;
@@ -82,9 +107,23 @@ html.dark {
   --text-inverse: #0f172a;
 
   /* Borders & Dividers */
+  --border-color: #1e293b;
+  --border-subtle: #0f172a;
   --border-primary: #334155;
   --border-secondary: #475569;
   --border-focus: #3b82f6;
+
+  /* Sidebar Menu Token States */
+  --sidebar-item-active-bg: rgba(37, 99, 235, 0.22);
+  --sidebar-item-active-text: #60a5fa;
+  --sidebar-item-active-border: rgba(59, 130, 246, 0.4);
+  --sidebar-item-hover-bg: #1e293b;
+  --sidebar-item-hover-text: #ffffff;
+
+  /* Topbar States */
+  --topbar-icon-color: #94a3b8;
+  --topbar-icon-hover-bg: #1e293b;
+  --topbar-icon-hover-color: #ffffff;
 
   /* Accent / Primary Brand (Blue) */
   --accent-primary: #3b82f6;
@@ -254,29 +293,48 @@ html:not(.theme-preload) [class*="bg-slate-"] {
 }
 
 /* ==========================================================================
-   5. GLOBAL LIGHT & DARK AUTOMATION ENGINE
+   5. STRUCTURAL LAYOUT UNIFICATION (NO MORE MISMATCHED / "BELAH DUA" THEMES)
    ========================================================================== */
 html:not(.dark) body {
-  background-color: #f8fafc;
-  color: #0f172a;
-  background-color: var(--bg-secondary);
+  background-color: var(--bg-content);
   color: var(--text-primary);
 }
 
+aside, .sidebar-container {
+  background-color: var(--bg-sidebar) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-secondary) !important;
+}
+
+header, .topbar-container {
+  background-color: var(--bg-topbar) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-primary) !important;
+}
+
+.layout-main-wrapper, main, .content-container {
+  background-color: var(--bg-content) !important;
+  color: var(--text-primary) !important;
+}
+
+/* ==========================================================================
+   6. GLOBAL LIGHT & DARK AUTOMATION ENGINE
+   ========================================================================== */
+body {
+  background-color: var(--bg-content);
+  color: var(--text-primary);
+}
+
+/* Light Mode Overrides */
 html:not(.dark) input:not([type="checkbox"]):not([type="radio"]):not([data-keep-dark]),
 html:not(.dark) select:not([data-keep-dark]),
 html:not(.dark) textarea:not([data-keep-dark]) {
-  background-color: #ffffff;
-  color: #0f172a;
-  border-color: #e2e8f0;
   background-color: var(--input-bg);
   color: var(--input-text);
   border-color: var(--input-border);
 }
 
 html:not(.dark) option {
-  background-color: #ffffff;
-  color: #0f172a;
   background-color: var(--bg-primary);
   color: var(--text-primary);
 }
@@ -294,6 +352,7 @@ html.dark body {
 }
 
 /* All standard card & modal surfaces in dark mode */
+/* Dark Mode Overrides */
 /* Standard card & modal surfaces in dark mode */
 html.dark .bg-white:not([data-keep-light]):not(.bg-keep-white) {
   background-color: #0f172a !important;
