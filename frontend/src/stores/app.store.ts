@@ -4,9 +4,9 @@ import { ref } from 'vue';
 export const useAppStore = defineStore('app', () => {
   const sidebarCollapsed = ref(false);
 
-  // Read saved theme from localStorage, default to light
+  // Read saved theme from localStorage, default to dark
   const savedTheme = typeof localStorage !== 'undefined' ? localStorage.getItem('cafe_erp_theme') as 'light' | 'dark' | null : null;
-  const initialTheme: 'light' | 'dark' = savedTheme || 'light';
+  const initialTheme: 'light' | 'dark' = savedTheme ? savedTheme : 'dark';
 
   const theme = ref<'light' | 'dark'>(initialTheme);
   const locale = ref('id-ID');
