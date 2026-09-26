@@ -3,7 +3,7 @@
     <!-- Stat Cards 4 Kolom -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
       <!-- Card 1: Revenue -->
-      <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex items-start justify-between">
+      <div class="card-hover-lift bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex items-start justify-between cursor-pointer">
         <div>
           <div class="text-xs font-semibold text-slate-500 mb-1">1. Total Revenue</div>
           <div class="text-2xl font-black text-slate-900 tracking-tight">
@@ -19,7 +19,7 @@
       </div>
 
       <!-- Card 2: Orders Today -->
-      <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex items-start justify-between">
+      <div class="card-hover-lift bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex items-start justify-between cursor-pointer">
         <div>
           <div class="text-xs font-semibold text-slate-500 mb-1">2. Orders Today</div>
           <div class="text-2xl font-black text-slate-900 tracking-tight">
@@ -35,7 +35,7 @@
       </div>
 
       <!-- Card 3: Low Stock Warnings -->
-      <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex items-start justify-between">
+      <div class="card-hover-lift bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex items-start justify-between cursor-pointer">
         <div>
           <div class="text-xs font-semibold text-slate-500 mb-1">3. Low Stock Items</div>
           <div class="text-2xl font-black text-slate-900 tracking-tight">
@@ -51,7 +51,7 @@
       </div>
 
       <!-- Card 4: Active Occupied Tables -->
-      <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex items-start justify-between">
+      <div class="card-hover-lift bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex items-start justify-between cursor-pointer">
         <div>
           <div class="text-xs font-semibold text-slate-500 mb-1">4. Occupied Tables</div>
           <div class="text-2xl font-black text-slate-900 tracking-tight">
@@ -171,7 +171,7 @@
     <!-- Bottom Section: Recent Orders & Table Layout Preview -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <!-- Recent Orders Table (2 cols) -->
-      <div class="lg:col-span-2 bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm">
+      <div class="card-hover-lift lg:col-span-2 bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm">
         <div class="flex items-center justify-between mb-4">
           <div>
             <h3 class="font-bold text-slate-900 text-base">Recent Live Orders</h3>
@@ -182,7 +182,7 @@
           </router-link>
         </div>
 
-        <div class="overflow-x-auto">
+        <div class="table-responsive-container">
           <table class="w-full text-left text-xs">
             <thead>
               <tr class="text-slate-400 border-b border-slate-100 font-semibold">

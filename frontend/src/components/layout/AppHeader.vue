@@ -24,18 +24,18 @@
 
       <!-- Help Button -->
       <button 
-        class="topbar-action-btn w-8 h-8 rounded-full flex items-center justify-center transition-colors cursor-pointer" 
+        class="topbar-action-btn btn-press w-8 h-8 rounded-full flex items-center justify-center transition-colors cursor-pointer" 
         title="Bantuan & Dukungan"
       >
         <HelpCircle class="w-4 h-4" />
       </button>
 
       <!-- Notification Bell -->
-      <div class="relative cursor-pointer">
+      <div class="relative cursor-pointer btn-press">
         <div class="topbar-action-btn w-8 h-8 rounded-full flex items-center justify-center transition-colors">
           <Bell class="w-4 h-4" />
         </div>
-        <span class="absolute top-0 right-0 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-sm">
+        <span class="pulse-badge absolute top-0 right-0 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-sm pointer-events-none">
           5
         </span>
       </div>

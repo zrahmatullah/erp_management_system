@@ -476,10 +476,103 @@ html.dark .bg-purple-50, html.dark .bg-purple-100 {
   color: #c084fc !important;
 }
 
-/* Modals & Floating surfaces in dark mode */
 /* Modals & floating surfaces in dark mode */
 html.dark .bg-white\/95,
 html.dark .bg-white\/90 {
   background-color: rgba(15, 23, 42, 0.95) !important;
+}
+
+/* ==========================================================================
+   7. MICRO-INTERACTIONS & UI STABILIZATION
+   ========================================================================== */
+
+/* Subtle Lift on Hover for Cards & Dashboards */
+.card-hover-lift {
+  transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1), 
+              box-shadow 220ms cubic-bezier(0.16, 1, 0.3, 1), 
+              border-color 220ms ease;
+}
+.card-hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+}
+html.dark .card-hover-lift:hover {
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+  border-color: #334155 !important;
+}
+
+/* Subtle Pulse for Notification Badges */
+@keyframes badge-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.12);
+    opacity: 0.88;
+  }
+}
+.pulse-badge {
+  animation: badge-pulse 2.8s infinite ease-in-out;
+}
+
+/* Button Click Tactile Feedback */
+button:active:not(:disabled),
+.btn-press:active:not(:disabled) {
+  transform: scale(0.98);
+  transition: transform 80ms ease;
+}
+
+/* Shimmer Skeleton Placeholder for Zero CLS (Cumulative Layout Shift) */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+.skeleton-shimmer {
+  background: linear-gradient(90deg, var(--bg-tertiary) 25%, var(--border-subtle) 50%, var(--bg-tertiary) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s infinite linear;
+}
+
+/* Table Horizontal Scroll Containment (Prevents Page-Wide Shift) */
+.table-responsive-container {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+}
+
+/* Form Input Error Shake Animation */
+@keyframes shake-subtle {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-4px); }
+  40%, 80% { transform: translateX(4px); }
+}
+.shake-error {
+  animation: shake-subtle 350ms cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+/* Respect Reduced Motion for Sensitive Users */
+@media (prefers-reduced-motion: reduce) {
+  .card-hover-lift:hover {
+    transform: none !important;
+  }
+  .pulse-badge {
+    animation: none !important;
+  }
+  button:active:not(:disabled),
+  .btn-press:active:not(:disabled) {
+    transform: none !important;
+  }
+  .skeleton-shimmer {
+    animation: none !important;
+  }
+  .shake-error {
+    animation: none !important;
+  }
 }
 
