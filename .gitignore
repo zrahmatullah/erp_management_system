@@ -67,5 +67,7 @@ logs/
 # ==============================================================================
 .scannerwork/
 .sonar/
+**/coverage/
+frontend/.scannerwork/
 backend/coverage.out
 backend/coverage/
