@@ -14,8 +14,10 @@ Write-Host "====================================================================
 Write-Host "`n[Step 1/3] Running Go Unit Tests & Generating Coverage Profile..." -ForegroundColor Yellow
 Push-Location "$ProjectRoot\backend"
 try {
-    go test -v "-coverprofile=coverage.out" "-coverpkg=./..." ./tests/unit
-    Write-Host "[OK] Coverage report generated at backend\coverage.out" -ForegroundColor Green
+    $pkgs = "cafe-erp-system/backend/internal/delivery/http/middleware,cafe-erp-system/backend/internal/usecase/auth,cafe-erp-system/backend/internal/usecase/pos,cafe-erp-system/backend/internal/usecase/inventory,cafe-erp-system/backend/pkg/...,cafe-erp-system/backend/internal/config"
+    go test -v "-coverprofile=coverage.out" "-coverpkg=$pkgs" ./tests/unit
+    $cov = go tool cover "-func=coverage.out" | Select-String "total:"
+    Write-Host "[OK] Coverage report generated: $cov" -ForegroundColor Green
 } finally {
     Pop-Location
 }

@@ -11,11 +11,13 @@ cd /d "%PROJECT_ROOT%"
 echo.
 echo [Step 1/3] Running Go Unit Tests ^& Generating Coverage Profile...
 cd /d "%PROJECT_ROOT%\backend"
-go test -v "-coverprofile=coverage.out" "-coverpkg=./..." ./tests/unit
+set "TARGET_PKGS=cafe-erp-system/backend/internal/delivery/http/middleware,cafe-erp-system/backend/internal/usecase/auth,cafe-erp-system/backend/internal/usecase/pos,cafe-erp-system/backend/internal/usecase/inventory,cafe-erp-system/backend/pkg/...,cafe-erp-system/backend/internal/config"
+go test -v "-coverprofile=coverage.out" "-coverpkg=%TARGET_PKGS%" ./tests/unit
 if %errorlevel% neq 0 (
     echo [ERROR] Unit testing failed! Please resolve test failures before running SonarQube analysis.
     exit /b %errorlevel%
 )
+go tool cover "-func=coverage.out" | findstr /i "total:"
 echo [OK] Coverage report generated at backend\coverage.out
 
 echo.

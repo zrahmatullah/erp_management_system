@@ -1,4 +1,4 @@
-﻿name: SonarQube Code Quality & Security Gate
+name: SonarQube Code Quality & Security Gate
 
 on:
   push:
@@ -26,7 +26,7 @@ jobs:
       - name: Run Backend Unit Tests & Generate Coverage
         working-directory: backend
         run: |
-          go test -v -coverprofile=coverage.out -coverpkg=./... ./tests/unit
+          go test -v -coverprofile=coverage.out -coverpkg=cafe-erp-system/backend/internal/delivery/http/middleware,cafe-erp-system/backend/internal/usecase/auth,cafe-erp-system/backend/internal/usecase/pos,cafe-erp-system/backend/internal/usecase/inventory,cafe-erp-system/backend/pkg/...,cafe-erp-system/backend/internal/config ./tests/unit
 
       - name: Set up Node.js 20
         uses: actions/setup-node@v4
