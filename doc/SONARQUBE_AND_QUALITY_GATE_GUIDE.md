@@ -1,4 +1,4 @@
-﻿# Panduan Komprehensif Setup SonarQube & Strict Quality Gate (> 75% Coverage)
+# Panduan Komprehensif Setup SonarQube & Strict Quality Gate (> 75% Coverage)
 
 Dokumen ini menjelaskan arsitektur, instalasi, konfigurasi monorepo, strategi pencapaian **Coverage > 75%** (saat ini **89.8%**), dan penerapan **Strict Quality Gate** untuk sistem **Cafe ERP Management System** (Go Backend + Vue 3 Frontend).
 

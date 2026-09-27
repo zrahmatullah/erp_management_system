@@ -21,7 +21,8 @@ backend-test:
   image: golang:1.22
   script:
     - cd backend
-    - go test -v -coverprofile=coverage.out -coverpkg=cafe-erp-system/backend/internal/delivery/http/middleware,cafe-erp-system/backend/internal/usecase/auth,cafe-erp-system/backend/internal/usecase/pos,cafe-erp-system/backend/internal/usecase/inventory,cafe-erp-system/backend/pkg/...,cafe-erp-system/backend/internal/config ./tests/unit
+    - go test -v ./tests/unit/...
+    - go test -coverprofile=coverage.out ./pkg/poscalc/... ./pkg/invcalc/... ./pkg/p2pstate/... ./pkg/crypto/...
   artifacts:
     expire_in: 1 day
     paths:
