@@ -132,6 +132,27 @@ func SetupRouter(
 			r.Get("/overview", opHandler.GetFinanceOverview)
 			r.Get("/journals", opHandler.GetJournalEntries)
 			r.Post("/journals", opHandler.CreateJournalEntry)
+			r.Get("/journals/{id}/lines", opHandler.GetJournalEntryLines)
+
+			// Chart of Accounts
+			r.Get("/coa", opHandler.GetChartOfAccounts)
+			r.Post("/coa", opHandler.CreateChartOfAccount)
+
+			// Expenses & Petty Cash
+			r.Get("/expenses", opHandler.GetExpenses)
+			r.Post("/expenses", opHandler.CreateExpense)
+			r.Put("/expenses/{id}/status", opHandler.UpdateExpenseStatus)
+
+			// Tax Management
+			r.Get("/tax/summary", opHandler.GetTaxSummary)
+
+			// Budgets & Cost Control
+			r.Get("/budgets", opHandler.GetBudgets)
+			r.Post("/budgets", opHandler.SetBudget)
+
+			// Bank Reconciliation
+			r.Get("/reconciliation", opHandler.GetBankReconciliation)
+			r.Post("/reconciliation/match", opHandler.MatchBankReconciliation)
 		})
 
 		// Master Data Routes (Super Admin CRUD - OWASP A01 Protected)
