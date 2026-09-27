@@ -1,0 +1,46 @@
+# -----------------------------------------------------------------------------
+# GitLab CI/CD Pipeline: Cafe ERP SonarQube & Quality Gate Check
+# -----------------------------------------------------------------------------
+
+stages:
+  - test
+  - sonarqube
+  - quality-gate
+
+variables:
+  SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar" # Cache directory
+  GIT_DEPTH: "0"                              # Full history for Sonar blame
+
+cache:
+  paths:
+    - .sonar/cache
+
+# 1. Test Stage: Run unit tests and generate coverage artifact
+backend-test:
+  stage: test
+  image: golang:1.22
+  script:
+    - cd backend
+    - go test -v ./tests/unit/...
+    - go test -coverprofile=coverage.out ./pkg/poscalc/... ./pkg/invcalc/... ./pkg/p2pstate/... ./pkg/crypto/...
+  artifacts:
+    expire_in: 1 day
+    paths:
+      - backend/coverage.out
+
+# 2. SonarQube Scanner Stage
+sonar-check:
+  stage: sonarqube
+  image:
+    name: sonarsource/sonar-scanner-cli:latest
+    entrypoint: [""]
+  dependencies:
+    - backend-test
+  script:
+    - sonar-scanner
+      -Dsonar.host.url="${SONAR_HOST_URL}"
+      -Dsonar.token="${SONAR_TOKEN}"
+      -Dsonar.qualitygate.wait=true
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "dev"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
