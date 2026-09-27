@@ -61,3 +61,11 @@ logs/
 .system_generated/
 *.metadata.json
 
+
+# ==============================================================================
+# SonarQube & Scanner
+# ==============================================================================
+.scannerwork/
+.sonar/
+backend/coverage.out
+backend/coverage/

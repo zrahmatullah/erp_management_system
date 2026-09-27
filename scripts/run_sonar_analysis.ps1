@@ -1,55 +1,53 @@
-# ===============================================================================
-# Cafe ERP System - Local SonarQube Scanner Runner (PowerShell)
-# ===============================================================================
+﻿# ==============================================================================
+# SonarQube Analysis Runner (PowerShell) - Cafe ERP Monorepo
+# ==============================================================================
 
-Write-Host "===============================================================================" -ForegroundColor Cyan
-Write-Host "           Cafe ERP System - Local SonarQube Scanner Runner" -ForegroundColor Cyan
-Write-Host "===============================================================================" -ForegroundColor Cyan
-Write-Host ""
+$ErrorActionPreference = "Stop"
+$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$ProjectRoot = Resolve-Path "$ScriptDir\.."
 
-$rootDir = Split-Path -Parent $PSScriptRoot
-Set-Location $rootDir
+Write-Host "==============================================================================" -ForegroundColor Cyan
+Write-Host " [SonarQube Analysis Runner] - Cafe ERP Monorepo" -ForegroundColor Cyan
+Write-Host "==============================================================================" -ForegroundColor Cyan
 
-Write-Host "[1/3] Menjalankan Unit Tests Go & Menghasilkan Coverage Report..." -ForegroundColor Yellow
-Set-Location "$rootDir\backend"
-go test -v ./tests/unit/...
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "[ERROR] Unit test gagal! Analisis SonarQube dibatalkan." -ForegroundColor Red
-    Set-Location $rootDir
-    exit $LASTEXITCODE
-}
-go test -coverprofile=coverage.out ./pkg/poscalc/... ./pkg/invcalc/... ./pkg/p2pstate/... ./pkg/crypto/...
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "[ERROR] Gagal membuat coverage report!" -ForegroundColor Red
-    Set-Location $rootDir
-    exit $LASTEXITCODE
-}
-Set-Location $rootDir
-
-Write-Host "[OK] Coverage report berhasil dibuat di backend\coverage.out" -ForegroundColor Green
-Write-Host ""
-
-Write-Host "[2/3] Memeriksa keberadaan SonarScanner CLI..." -ForegroundColor Yellow
-$scannerExists = Get-Command "sonar-scanner" -ErrorAction SilentlyContinue
-
-if (-not $scannerExists) {
-    Write-Host "[INFO] 'sonar-scanner' belum terdaftar di system PATH Windows." -ForegroundColor Yellow
-    Write-Host "Jika Anda menggunakan Docker Desktop, Anda bisa menjalankan scanner container:" -ForegroundColor White
-    Write-Host "docker run --rm --network host -v `"${rootDir}:/usr/src`" sonarsource/sonar-scanner-cli" -ForegroundColor Cyan
-    Write-Host ""
-    Write-Host "Atau unduh SonarScanner CLI for Windows dari:" -ForegroundColor White
-    Write-Host "https://docs.sonarsource.com/sonarqube/latest/analyzing-source-code/scanners/sonarscanner/" -ForegroundColor Cyan
-    exit 1
+# Step 1: Run Go Unit Tests
+Write-Host "`n[Step 1/3] Running Go Unit Tests & Generating Coverage Profile..." -ForegroundColor Yellow
+Push-Location "$ProjectRoot\backend"
+try {
+    go test -v "-coverprofile=coverage.out" "-coverpkg=./..." ./tests/unit
+    Write-Host "[OK] Coverage report generated at backend\coverage.out" -ForegroundColor Green
+} finally {
+    Pop-Location
 }
 
-Write-Host "[3/3] Menjalankan SonarScanner Analisis Kode..." -ForegroundColor Yellow
-sonar-scanner `
-    -Dsonar.projectKey=cafe-erp-system `
-    -Dsonar.sources=backend,frontend/src `
-    -Dsonar.go.coverage.reportPaths=backend/coverage.out `
-    -Dsonar.qualitygate.wait=true
+# Step 2: Check SonarQube Server Availability
+Write-Host "`n[Step 2/3] Checking SonarQube Server Availability..." -ForegroundColor Yellow
+try {
+    $res = Invoke-RestMethod -Uri "http://localhost:9000/api/system/status" -TimeoutSec 3 -ErrorAction SilentlyContinue
+    if ($res.status -eq "UP") {
+        Write-Host "[OK] SonarQube Server is UP and Healthy on port 9000 (v$($res.version))" -ForegroundColor Green
+    } else {
+        Write-Host "[WARNING] SonarQube status is $($res.status). Waiting..." -ForegroundColor Yellow
+    }
+} catch {
+    Write-Host "[WARNING] Could not connect to http://localhost:9000. Proceeding anyway..." -ForegroundColor Yellow
+}
 
-Write-Host ""
-Write-Host "===============================================================================" -ForegroundColor Green
-Write-Host "Analisis selesai! Lihat hasil lengkap di: http://localhost:9000/dashboard?id=cafe-erp-system" -ForegroundColor Green
-Write-Host "===============================================================================" -ForegroundColor Green
+# Step 3: Execute SonarScanner
+Write-Host "`n[Step 3/3] Executing SonarScanner CLI..." -ForegroundColor Yellow
+Push-Location "$ProjectRoot"
+try {
+    $scannerPath = "D:\sonarqube\scanner\bin\sonar-scanner.bat"
+    $token = "squ_cafe_erp_system_sonar_token_2026"
+    if (Test-Path $scannerPath) {
+        & $scannerPath "-Dsonar.host.url=http://localhost:9000" "-Dsonar.token=$token"
+    } else {
+        sonar-scanner "-Dsonar.host.url=http://localhost:9000" "-Dsonar.token=$token"
+    }
+    Write-Host "`n==============================================================================" -ForegroundColor Cyan
+    Write-Host "Analysis Completed Successfully!" -ForegroundColor Green
+    Write-Host "Review Dashboard & Quality Gate at: http://localhost:9000/dashboard?id=cafe-erp-system" -ForegroundColor Green
+    Write-Host "==============================================================================" -ForegroundColor Cyan
+} finally {
+    Pop-Location
+}

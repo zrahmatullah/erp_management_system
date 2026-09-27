@@ -1,200 +1,135 @@
-# 📊 Panduan Lengkap SonarQube & Quality Gate Setup
-**Sistem**: Cafe ERP Management System (Go Chi Backend + Vue 3 Frontend)  
-**Versi**: 1.0.0 Enterprise  
-**Standar**: SonarQube Community Edition / SonarCloud + Strict Quality Gate  
-**Tanggal**: 27 September 2026  
+﻿# Panduan Komprehensif Setup SonarQube & Strict Quality Gate
+
+Dokumen ini menjelaskan arsitektur, instalasi, konfigurasi monorepo, dan penerapan **Strict Quality Gate** untuk sistem **Cafe ERP Management System** (Go Backend + Vue 3 Frontend).
 
 ---
 
-## 1. Arsitektur & Alur Kerja Analisis Kode
+## 1. Arsitektur & Spesifikasi Lingkungan
 
-SonarQube bertindak sebagai inspektur kualitas kode otomatis (*Static Code Analysis & Security Linter*) yang memverifikasi kepatuhan arsitektur, celah keamanan, dan cakupan tes sebelum kode dapat di-merge ke branch utama.
+| Komponen | Spesifikasi / Lokasi | Keterangan |
+|---|---|---|
+| **SonarQube Server** | Community Edition 26.9.0.129388 (`D:\sonarqube`) | Berjalan di port `9000` |
+| **Java Runtime** | OpenJDK 21 LTS (`D:\sonarqube\jdk-21`) | Wajib Java 21 untuk SonarQube 26+ |
+| **Search Engine** | Embedded Elasticsearch 9.4.3 | Port HTTP: `9002` (resolusi konflik port 9001 dari service eksternal seperti Herd) |
+| **SonarScanner CLI** | SonarScanner 8.1.0.6389 (`D:\sonarqube\scanner`) | Digunakan untuk eksekusi inspeksi lokal |
+| **Monorepo Scope** | Go (`backend/`) + Vue 3 / TypeScript (`frontend/src/`) | Analisis terpadu dalam 1 project dashboard |
+| **Test Coverage** | Go Coverprofile (`backend/coverage.out`) | 28 Unit Test passing, terhubung otomatis ke Sonar |
+
+---
+
+## 2. Definisi Strict Quality Gate
+
+Berdasarkan spesifikasi Prompt 8, Quality Gate diset dengan kriteria ketat berikut:
 
 ```
-       +-----------------------------------------------------------+
-       |                  Developer / Git Commit                   |
-       +-----------------------------------------------------------+
-                                     |
-                                     v
-       +-----------------------------------------------------------+
-       |   Backend Unit Tests (Go)   |   Frontend Build (Vue 3)    |
-       |  `go test -coverprofile`    |      `npm run build`        |
-       +-----------------------------------------------------------+
-                                     |
-                         coverage.out (Laporan Uji)
-                                     |
-                                     v
-       +-----------------------------------------------------------+
-       |       SonarScanner CLI (Monorepo Scanner Engine)          |
-       |             Membaca `sonar-project.properties`            |
-       +-----------------------------------------------------------+
-                                     |
-                     Analisis AST, Rules & Keamanan
-                                     |
-                                     v
-       +-----------------------------------------------------------+
-       |         SonarQube Server (Port :9000 / SonarCloud)        |
-       |         Evaluasi Kriteria "Cafe ERP Strict Gate"          |
-       +-----------------------------------------------------------+
-                        /                         \
-                       /                           \
-         [ Status: PASSED ]                    [ Status: FAILED ]
-                |                                      |
-                v                                      v
-       +------------------+                   +------------------+
-       |  Build Berhasil  |                   |  Build Gagal &   |
-       |    PR Di-merge   |                   |  Block PR / Push |
-       +------------------+                   +------------------+
+[Strict Quality Gate Rules]
+---------------------------------------------------------------------------------
+1. Overall Code Coverage              >= 75.0%
+2. Critical & Blocker Vulnerabilities = 0
+3. Hardcoded Secrets Detected         = 0
+4. Security Hotspots Reviewed         = 100.0%
+5. Technical Debt / Maintainability   = Grade 'A' (Debt ratio <= 5%)
+6. Code Duplication                   <= 3.0%
+---------------------------------------------------------------------------------
+Hasil Evaluasi: Jika salah satu syarat tidak terpenuhi -> BUILD GAGAL (Exit Code 1)
 ```
 
 ---
 
-## 2. Server Lokal: Docker Compose (`docker-compose.sonar.yml`)
+## 3. Konfigurasi Monorepo (`sonar-project.properties`)
 
-File [`docker-compose.sonar.yml`](file:///d:/Project/cafe-erp-system/docker-compose.sonar.yml) telah disiapkan di root proyek untuk menjalankan server SonarQube lokal lengkap dengan database PostgreSQL independen:
-
-### Perintah Menjalankan Server:
-```bash
-# Menjalankan SonarQube + Database di background
-docker compose -f docker-compose.sonar.yml up -d
-
-# Memeriksa status log container
-docker compose -f docker-compose.sonar.yml logs -f sonarqube
-
-# Menghentikan server
-docker compose -f docker-compose.sonar.yml down
-```
-
-### Akses Awal Web Console:
-- **URL**: `http://localhost:9000`
-- **Username Default**: `admin`
-- **Password Default**: `admin` *(Sistem akan mewajibkan penggantian kata sandi pada login pertama)*.
-
----
-
-## 3. Konfigurasi Strict Quality Gate (Kriteria Ketat)
-
-Sesuai spesifikasi proyek, berikut adalah parameter **Quality Gate Ketat** yang dikonfigurasikan di SonarQube:
-
-| Metrik Kualitas | Syarat / Batas Ambang | Kategori | Penjelasan & Tindakan |
-|---|:---:|:---:|---|
-| **Code Coverage** | **>= 75.0%** | Keandalan | Cakupan unit test minimum 75% pada kode baru dan keseluruhan kode. |
-| **Vulnerabilities** | **= 0 (Zero Tolerance)** | Keamanan | 0 celah keamanan tingkat *Blocker*, *Critical*, atau *Major*. |
-| **Hardcoded Secrets** | **= 0** | Keamanan | 0 kunci rahasia (API key, JWT secret, database password) yang tertanam di kode. |
-| **Security Hotspots** | **100% Reviewed** | Keamanan | Seluruh bagian kode sensitif (kriptografi, auth) wajib sudah direviu. |
-| **Maintainability Rating** | **A (Technical Debt < 5%)** | Pemeliharaan | Rasio hutang teknis maksimal 5%. |
-| **Reliability Rating** | **A (0 Bugs Blocker/Critical)** | Keandalan | Bebas dari bug kritis yang dapat merusak alur aplikasi. |
-| **Duplicated Lines** | **< 3.0%** | Kebersihan | Batas toleransi duplikasi kode maksimal 3%. |
-
-### Langkah Pembuatan Quality Gate di SonarQube UI:
-1. Buka `http://localhost:9000` &rarr; Masuk sebagai Administrator.
-2. Navigasi ke menu **Quality Gates** &rarr; Klik tombol **Create**.
-3. Beri nama: `Cafe ERP Strict Gate`.
-4. Tambahkan kondisi sesuai tabel di atas:
-   - Klik **Add Condition** &rarr; Pilih `Coverage` &rarr; Operator: `is less than` &rarr; Value: `75%`.
-   - Klik **Add Condition** &rarr; Pilih `Vulnerabilities` &rarr; Operator: `is greater than` &rarr; Value: `0`.
-   - Klik **Add Condition** &rarr; Pilih `Security Hotspots Reviewed` &rarr; Operator: `is less than` &rarr; Value: `100%`.
-   - Klik **Add Condition** &rarr; Pilih `Duplicated Lines (%)` &rarr; Operator: `is greater than` &rarr; Value: `3%`.
-5. Klik **Set as Default** agar otomatis diterapkan ke proyek `cafe-erp-system`.
-
----
-
-## 4. Konfigurasi Proyek: `sonar-project.properties`
-
-File konfigurasi monorepo [`sonar-project.properties`](file:///d:/Project/cafe-erp-system/sonar-project.properties) di root direktori telah dikonfigurasikan untuk mengenali arsitektur **Go + Vue 3**:
+File konfigurasi root `sonar-project.properties` telah dikonfigurasi khusus untuk Go Backend & Vue 3 Frontend:
 
 ```properties
-# Identifikasi Proyek
+# Project Identification
 sonar.projectKey=cafe-erp-system
 sonar.projectName=Cafe ERP Management System
 sonar.projectVersion=1.0.0
+
+# Server Connection
+sonar.host.url=http://localhost:9000
+sonar.token=squ_cafe_erp_system_sonar_token_2026
 sonar.sourceEncoding=UTF-8
 
-# Sumber Kode Monorepo (Go Backend & Vue 3 Frontend)
+# Source Code Paths (Go backend + Vue 3 frontend)
 sonar.sources=backend,frontend/src
-sonar.tests=backend/tests,backend/pkg
-sonar.test.inclusions=**/*_test.go,**/*.spec.ts,**/*.test.ts
+sonar.tests=backend/tests
 
-# Pengecualian File (Dependensi, Aset, Build, Dokumen)
-sonar.exclusions=\
-  **/node_modules/**,\
-  **/dist/**,\
-  **/vendor/**,\
-  **/doc/**,\
-  **/*.docx,\
-  **/*.png,\
-  **/*.jpg,\
-  **/*.log,\
-  backend/migrations/**
+# Exclusions
+sonar.exclusions=**/node_modules/**,**/dist/**,**/temp/**,**/vendor/**,**/*.min.js,**/*.svg,backend/coverage.out,backend/tests/**
 
-# Laporan Coverage Go
+# Go Coverage Integration
 sonar.go.coverage.reportPaths=backend/coverage.out
 
-# Konfigurasi TypeScript / Frontend
-sonar.typescript.tsconfigPath=frontend/tsconfig.json
-sonar.javascript.lcov.reportPaths=frontend/coverage/lcov.info
-
-# Menunggu evaluasi Quality Gate (otomatis exit non-zero jika gagal)
-sonar.qualitygate.wait=true
+# Frontend Environment
+sonar.javascript.environments=browser,node
+sonar.typescript.tsconfigPaths=frontend/tsconfig.json
 ```
 
 ---
 
-## 5. Integrasi CI/CD Pipeline (Build Break Enforcement)
+## 4. Cara Menjalankan SonarQube Server
 
-### 5.1. GitHub Actions (`.github/workflows/sonar-quality-gate.yml`)
-Workflow telah dibuat di [`.github/workflows/sonar-quality-gate.yml`](file:///d:/Project/cafe-erp-system/.github/workflows/sonar-quality-gate.yml). 
+### Opsi A: Menjalankan Server Native (Sudah Terpasang di Sistem)
+Server SonarQube dan Java 21 sudah terpasang dan siap digunakan:
+```cmd
+scripts\start_sonarqube_server.bat
+```
+Atau akses langsung melalui browser saat service aktif:
+- **URL Dashboard**: [http://localhost:9000](http://localhost:9000)
+- **Kredensial Default**:
+  - Username: `admin`
+  - Password: `admin` *(akan diminta mengganti password saat login pertama kali)*
 
-**Cara Kerja Pipeline:**
-1. Berjalan otomatis setiap ada `push` atau `pull_request` ke branch `dev` dan `main`.
-2. Mengeksekusi unit test Go dan membuat `backend/coverage.out`.
-3. Memeriksa apakah cakupan unit test memenuhi ambang minimum **75%**.
-4. Menjalankan analisis kode SonarQube Scanner.
-5. Memverifikasi status Quality Gate via `SonarSource/sonarqube-quality-gate-action`:
-   - Jika Quality Gate **FAILED**, step ini akan **menggagalkan build GitHub Actions (exit code 1)** dan **memblokir Pull Request** dari penggabungan ke branch `main`.
-
-**Setup Secret di GitHub Repository:**
-- Buka **Settings &rarr; Secrets and variables &rarr; Actions &rarr; New repository secret**.
-- Tambahkan:
-  - `SONAR_TOKEN`: Token otentikasi proyek dari SonarQube (*Security &rarr; Users &rarr; Tokens*).
-  - `SONAR_HOST_URL`: URL server SonarQube Anda (misal `http://sonarqube.yourdomain.com:9000` atau `https://sonarcloud.io`).
-
----
-
-### 5.2. GitLab CI/CD (`.gitlab-ci.yml`)
-Bagi tim yang menggunakan GitLab, pipeline telah disiapkan di [`.gitlab-ci.yml`](file:///d:/Project/cafe-erp-system/.gitlab-ci.yml):
-- Tahap `test`: Menjalankan unit tests Go dan menyimpan artifact `coverage.out`.
-- Tahap `sonarqube`: Menjalankan container `sonarsource/sonar-scanner-cli` dengan flag `-Dsonar.qualitygate.wait=true` sehingga pipeline GitLab langsung ditandai **FAILED** jika ada pelanggaran standar keamanan/coverage.
+### Opsi B: Menggunakan Docker Compose
+Tersedia juga konfigurasi containerisasi dengan PostgreSQL 15:
+```bash
+docker compose -f docker-compose.sonar.yml up -d
+```
 
 ---
 
-## 6. Panduan Menjalankan Analisis Lokal
+## 5. Cara Menjalankan Analisis Kode Monorepo
 
-### Menggunakan Helper Script Otomatis:
+Untuk menjalankan pengujian unit Go, kalkulasi test coverage, dan mengirimkan hasil analisis ke SonarQube:
 
-#### Di Windows (Command Prompt):
+### Menggunakan Batch Script (Windows CMD)
 ```cmd
 scripts\run_sonar_analysis.bat
 ```
 
-#### Di Windows (PowerShell):
+### Menggunakan PowerShell
 ```powershell
 .\scripts\run_sonar_analysis.ps1
 ```
 
-Script ini akan secara otomatis:
-1. Menjalankan unit test Go dan memastikan seluruh 28 test lulus.
-2. Menghasilkan file laporan coverage di `backend/coverage.out`.
-3. Memeriksa SonarScanner CLI dan menjalankan pemindaian menyeluruh.
-4. Menampilkan link langsung ke dashboard hasil analisis: `http://localhost:9000/dashboard?id=cafe-erp-system`.
+Tahapan yang dijalankan otomatis:
+1. Menjalankan seluruh test suite Go (`go test -v -coverprofile=coverage.out -coverpkg=./... ./tests/unit`).
+2. Melakukan health check koneksi SonarQube server (`http://localhost:9000/api/system/status`).
+3. Menjalankan `sonar-scanner` CLI yang memetakan kode Go dan Vue 3 ke SonarQube.
+4. Menghasilkan link dashboard visual hasil scan.
 
 ---
 
-## 7. Alternatif Tanpa Docker: SonarQube Standalone (Lokal Windows)
+## 6. Integrasi CI/CD & Build Breaker
 
-Karena komputer Anda sudah memiliki **Java 17 LTS**, Anda dapat menjalankan SonarQube lokal tanpa Docker:
-1. Unduh **SonarQube Community Edition (ZIP)** dari [downloads.sonarsource.com](https://www.sonarsource.com/products/sonarqube/downloads/).
-2. Ekstrak file zip ke `C:\sonarqube`.
-3. Buka terminal atau jalankan: `C:\sonarqube\bin\windows-x86-64\StartSonar.bat`.
-4. Tunggu pesan `SonarQube is operational`, lalu buka peramban di `http://localhost:9000`.
-5. Unduh **SonarScanner CLI Windows (ZIP)**, ekstrak ke `C:\sonar-scanner`, dan masukkan folder `C:\sonar-scanner\bin` ke dalam System Environment Variables `PATH`.
+### A. GitHub Actions (`.github/workflows/sonar-quality-gate.yml`)
+Workflow otomatis berjalan saat push/PR ke branch `main` atau `dev`:
+- Menjalankan test Go & coverage.
+- Melakukan SonarQube scan.
+- **Memblokir build/merge** jika Quality Gate gagal menggunakan `sonarsource/sonarqube-quality-gate-action`.
+
+### B. GitLab CI (`.gitlab-ci.yml`)
+Pipeline 3 stage (`test` -> `analyze` -> `quality-gate`):
+- Stage `quality-gate` memeriksa endpoint REST API SonarQube (`/api/qualitygates/project_status?projectKey=cafe-erp-system`).
+- Apabila status respon bukan `OK`, pipeline otomatis mengembalikan `exit 1` sehingga deployment dibatalkan.
+
+---
+
+## 7. Catatan Teknis & Resolusi Isu
+
+1. **Persyaratan Java 21**:
+   - SonarQube versi 26.x ke atas membutuhkan runtime Java 21 LTS. Mesin default sebelumnya menggunakan Java 17, sehingga disiapkan Java 21 di `D:\sonarqube\jdk-21` tanpa mengganggu instalasi Java global user.
+2. **Konflik Port Elasticsearch**:
+   - Secara default Elasticsearch internal SonarQube menggunakan port `9001`. Port ini sering dipakai aplikasi lokal lain (seperti Laravel Herd).
+   - Port search diubah ke `9002` melalui parameter `sonar.search.port=9002` pada `D:\sonarqube\conf\sonar.properties` untuk menjamin stabilitas.

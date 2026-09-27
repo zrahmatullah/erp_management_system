@@ -1,4 +1,4 @@
-name: SonarQube & Quality Gate Enforcement
+﻿name: SonarQube Code Quality & Security Gate
 
 on:
   push:
@@ -8,59 +8,58 @@ on:
 
 jobs:
   sonarqube:
-    name: SonarQube Code Analysis & Quality Gate
+    name: SonarQube Analysis & Quality Gate Enforcement
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository with Full History
+      - name: Checkout Source Code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Full history required for Sonar blameline analysis
+          fetch-depth: 0 # Full git history required for accurate blame and changed-line metrics
 
-      - name: Setup Go 1.22
+      - name: Set up Go 1.23
         uses: actions/setup-go@v5
         with:
-          go-version: '1.22'
+          go-version: '1.23'
           cache-dependency-path: backend/go.sum
 
-      - name: Setup Node.js 20
+      - name: Run Backend Unit Tests & Generate Coverage
+        working-directory: backend
+        run: |
+          go test -v -coverprofile=coverage.out -coverpkg=./... ./tests/unit
+
+      - name: Set up Node.js 20
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: '20'
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
 
-      - name: Install Frontend Dependencies
-        working-directory: ./frontend
-        run: npm ci
-
-      - name: Run Backend Unit Tests & Generate Coverage
-        working-directory: ./backend
+      - name: Install Frontend Dependencies & Lint Check
+        working-directory: frontend
         run: |
-          go test -v ./tests/unit/...
-          go test -coverprofile=coverage.out ./pkg/poscalc/... ./pkg/invcalc/... ./pkg/p2pstate/... ./pkg/crypto/...
-          ls -la coverage.out
-
-      - name: Verify Code Coverage Minimum (75% Gate)
-        working-directory: ./backend
-        run: |
-          COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print substr($3, 1, length($3)-1)}')
-          echo "Current Total Unit Test Coverage: $COVERAGE%"
+          npm ci
+          npm run build
 
       - name: SonarQube Scan
-        uses: SonarSource/sonarqube-scan-action@v4
+        uses: sonarsource/sonarqube-scan-action@v4
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         with:
+          projectBaseDir: .
           args: >
             -Dsonar.projectKey=cafe-erp-system
             -Dsonar.go.coverage.reportPaths=backend/coverage.out
 
-      # Fails the build if Quality Gate conditions (Coverage >= 75%, 0 Critical Vuln, 0 Secrets) are not met
+      # Quality Gate Check: Breaks CI/CD build if Quality Gate conditions are not satisfied
+      # Requirements:
+      # - Coverage >= 75%
+      # - Critical Vulnerabilities = 0
+      # - Security Hotspots Reviewed = 100%
+      # - Hardcoded Secrets = 0
       - name: SonarQube Quality Gate Check
-        uses: SonarSource/sonarqube-quality-gate-action@v1
+        uses: sonarsource/sonarqube-quality-gate-action@v1.1.0
         timeout-minutes: 5
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
