@@ -189,7 +189,7 @@ html[data-theme="dark"] {
   }
 
   /* Button ergonomics: Ensure touch/click targets are never cramped */
-  button.cursor-pointer:not(.p-1):not(.p-1\.5):not(.p-0):not(.p-0\.5) {
+  button.cursor-pointer:not(.p-1):not(.p-1\.5):not(.p-0):not(.p-0\.5):not([role="switch"]):not(.modern-switch-btn):not(.switch-btn) {
     min-height: 2.375rem; /* ~39px */
   }
 }

@@ -596,20 +596,62 @@ onMounted(async () => {
         </div>
       </div>
 
-      <!-- Compare Toggle (Sales Tab) -->
-      <div v-if="activeTab === 'sales'" class="flex items-center gap-3">
-        <span class="text-xs font-semibold text-slate-500">Bandingkan:</span>
-        <button 
-          @click="compareToggle = !compareToggle"
-          class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden"
-          :class="compareToggle ? 'bg-blue-600' : 'bg-slate-200'"
+      <!-- Modern Compare Switch Capsule (Sales Tab) -->
+      <div 
+        v-if="activeTab === 'sales'" 
+        @click="compareToggle = !compareToggle"
+        class="inline-flex items-center gap-2.5 px-3 py-1.5 rounded-xl border transition-all duration-200 cursor-pointer select-none"
+        :class="compareToggle 
+          ? 'bg-blue-50/80 dark:bg-blue-950/40 border-blue-200/80 dark:border-blue-800/80 shadow-2xs' 
+          : 'bg-slate-50/80 dark:bg-slate-900/40 border-slate-200/80 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'"
+        title="Klik untuk mengaktifkan / menonaktifkan perbandingan periode"
+      >
+        <span 
+          class="text-xs font-semibold transition-colors"
+          :class="compareToggle ? 'text-blue-700 dark:text-blue-300' : 'text-slate-500 dark:text-slate-400'"
         >
+          Bandingkan:
+        </span>
+
+        <!-- Modern iOS/Catalyst Style Switch -->
+        <button 
+          type="button"
+          role="switch"
+          :aria-checked="compareToggle"
+          aria-label="Bandingkan dengan periode lalu"
+          @click.stop="compareToggle = !compareToggle"
+          class="modern-switch-btn relative inline-flex h-6 w-11 shrink-0 p-0.5 rounded-full transition-colors duration-200 ease-in-out cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none"
+          :class="compareToggle 
+            ? 'bg-gradient-to-r from-blue-600 to-indigo-600 shadow-sm shadow-blue-500/30' 
+            : 'bg-slate-300 dark:bg-slate-700 border border-slate-300 dark:border-slate-600'"
+        >
+          <!-- Sliding Knob -->
           <span 
-            class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out"
+            class="pointer-events-none flex items-center justify-center h-5 w-5 rounded-full bg-white shadow-md shadow-slate-900/20 transform transition-transform duration-200 ease-in-out"
             :class="compareToggle ? 'translate-x-5' : 'translate-x-0'"
-          />
+          >
+            <!-- Micro-dot for tactile polish -->
+            <span 
+              class="w-1.5 h-1.5 rounded-full transition-colors duration-150"
+              :class="compareToggle ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-500'"
+            ></span>
+          </span>
         </button>
-        <span class="text-xs font-medium text-slate-700">vs Periode Lalu</span>
+
+        <span 
+          class="text-xs font-semibold transition-colors"
+          :class="compareToggle ? 'text-blue-900 dark:text-blue-100 font-bold' : 'text-slate-600 dark:text-slate-400'"
+        >
+          vs Periode Lalu
+        </span>
+
+        <!-- Subtle status badge -->
+        <span 
+          v-if="compareToggle" 
+          class="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-blue-600 text-white shadow-2xs"
+        >
+          Aktif
+        </span>
       </div>
     </div>
 
@@ -1473,6 +1515,18 @@ onMounted(async () => {
 </template>
 
 <style scoped>
+.modern-switch-btn {
+  min-height: 24px !important;
+  max-height: 24px !important;
+  height: 24px !important;
+  width: 44px !important;
+  min-width: 44px !important;
+  max-width: 44px !important;
+  padding: 2px !important;
+  box-sizing: border-box !important;
+  border-radius: 9999px !important;
+}
+
 @media print {
   .no-print {
     display: none !important;
