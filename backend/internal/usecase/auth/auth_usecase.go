@@ -7,6 +7,7 @@ import (
 	"cafe-erp-system/backend/internal/delivery/http/middleware"
 	"cafe-erp-system/backend/internal/domain"
 	"cafe-erp-system/backend/pkg/crypto"
+	"github.com/google/uuid"
 )
 
 type AuthUsecaseImpl struct {
@@ -154,3 +155,26 @@ func (u *AuthUsecaseImpl) ResetPassword(ctx context.Context, token, newPassword 
 	user.PasswordHash = hashedPassword
 	return u.userRepo.Update(ctx, user)
 }
+
+func (u *AuthUsecaseImpl) GetProfile(ctx context.Context, userID uuid.UUID) (domain.LoginResponse, error) {
+	user, err := u.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		return domain.LoginResponse{}, err
+	}
+
+	roleName, roleID, permissions, _ := u.userRepo.GetUserRoleAndPermissions(ctx, user.ID)
+	if roleID != nil {
+		user.RoleID = roleID
+		user.RoleName = roleName
+	}
+	if roleName == "" {
+		roleName = "Super Admin"
+	}
+
+	return domain.LoginResponse{
+		User:        *user,
+		Role:        roleName,
+		Permissions: permissions,
+	}, nil
+}
+

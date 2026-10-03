@@ -93,6 +93,7 @@ type AuthUsecase interface {
 	RefreshToken(ctx context.Context, token string) (LoginResponse, error)
 	ForgotPassword(ctx context.Context, email string) error
 	ResetPassword(ctx context.Context, token, newPassword string) error
+	GetProfile(ctx context.Context, userID uuid.UUID) (LoginResponse, error)
 }
 
 type UserUsecase interface {

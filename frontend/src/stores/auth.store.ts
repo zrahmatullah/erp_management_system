@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { User, Permission } from '@/types/auth';
+import api from '@/plugins/axios';
 
 export const useAuthStore = defineStore('auth', () => {
   const savedUser = localStorage.getItem('user');
@@ -45,7 +46,23 @@ export const useAuthStore = defineStore('auth', () => {
   };
 
   const fetchProfile = async () => {
-    // API call placeholder if needed
+    if (!token.value) return;
+    try {
+      const res = await api.get('/auth/profile');
+      const data = res.data?.data;
+      if (data) {
+        if (data.user) {
+          user.value = data.user;
+          localStorage.setItem('user', JSON.stringify(data.user));
+        }
+        if (data.permissions) {
+          permissions.value = data.permissions;
+          localStorage.setItem('permissions', JSON.stringify(data.permissions));
+        }
+      }
+    } catch (err) {
+      console.error('Failed to sync profile:', err);
+    }
   };
 
   return {

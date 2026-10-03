@@ -1,4 +1,4 @@
-﻿package unit_test
+package unit_test
 
 import (
 	"context"
@@ -339,4 +339,36 @@ func TestUserUsecase_CRUD(t *testing.T) {
 		assert.Error(t, err)
 	})
 }
+
+func TestAuthUsecase_GetProfile(t *testing.T) {
+	mockRepo := NewMockUserRepository()
+	authUsecase := auth.NewAuthUsecase(mockRepo)
+
+	t.Run("Existing User returns profile with role and permissions", func(t *testing.T) {
+		userID := uuid.New()
+		mockRepo.users[userID] = &domain.User{
+			BaseEntity: domain.BaseEntity{ID: userID},
+			Username:   "owner_test",
+			Email:      "owner@cafe.com",
+			FullName:   "Owner Test",
+			IsActive:   true,
+		}
+		mockRepo.roles[userID] = "Owner"
+		mockRepo.permissions[userID] = []domain.Permission{
+			{Module: "dashboard", Action: "view"},
+		}
+
+		res, err := authUsecase.GetProfile(context.Background(), userID)
+		assert.NoError(t, err)
+		assert.Equal(t, "owner_test", res.User.Username)
+		assert.Equal(t, "Owner", res.Role)
+		assert.Len(t, res.Permissions, 1)
+	})
+
+	t.Run("Non-existent User returns error", func(t *testing.T) {
+		_, err := authUsecase.GetProfile(context.Background(), uuid.New())
+		assert.Error(t, err)
+	})
+}
+
 

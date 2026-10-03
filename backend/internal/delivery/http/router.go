@@ -44,6 +44,9 @@ func SetupRouter(
 			r.With(appMiddleware.AuthRateLimit).Post("/login", authHandler.Login)
 			r.With(appMiddleware.AuthRateLimit).Post("/refresh", authHandler.RefreshToken)
 			r.Post("/logout", authHandler.Logout)
+			r.Post("/forgot-password", authHandler.ForgotPassword)
+			r.Post("/reset-password", authHandler.ResetPassword)
+			r.With(appMiddleware.JWTAuth).Get("/profile", authHandler.GetProfile)
 		})
 
 		// Dashboard Stats
@@ -57,10 +60,51 @@ func SetupRouter(
 			r.Put("/tables/{id}/status", opHandler.UpdateTableStatus)
 			r.Get("/orders", opHandler.GetPOSOrders)
 			r.Get("/orders/active", opHandler.GetPOSOrdersActive)
+			r.Get("/orders/{id}", opHandler.GetPOSOrderByID)
+			r.Put("/orders/{id}/status", opHandler.UpdatePOSOrderStatus)
+			r.Post("/orders/{id}/cancel", opHandler.CancelPOSOrder)
+			r.Post("/orders/{id}/void", opHandler.VoidPOSOrder)
 			r.Post("/orders", opHandler.CreatePOSOrder)
 			r.Post("/orders/{id}/pay", opHandler.PayOrder)
 			r.Get("/takeaways", opHandler.GetTakeawayOrders)
 			r.Get("/transactions", opHandler.GetPOSTransactions)
+		})
+
+		// Orders Service Aliases (Compatible with order.service.ts)
+		r.Route("/orders", func(r chi.Router) {
+			r.Get("/", opHandler.GetPOSOrders)
+			r.Post("/", opHandler.CreatePOSOrder)
+			r.Get("/active", opHandler.GetPOSOrdersActive)
+			r.Get("/kitchen-queue", opHandler.GetKDSTickets)
+			r.Get("/{id}", opHandler.GetPOSOrderByID)
+			r.Put("/{id}/status", opHandler.UpdatePOSOrderStatus)
+			r.Post("/{id}/cancel", opHandler.CancelPOSOrder)
+			r.Post("/{id}/void", opHandler.VoidPOSOrder)
+			r.Post("/{id}/pay", opHandler.PayOrder)
+		})
+
+		// Roles & Permissions Service Aliases (Compatible with role.service.ts)
+		r.Route("/roles", func(r chi.Router) {
+			r.Use(appMiddleware.JWTAuth)
+			r.Get("/", masterHandler.ListRoles)
+			r.Post("/", masterHandler.CreateRole)
+			r.Put("/{id}", masterHandler.UpdateRole)
+			r.Delete("/{id}", masterHandler.DeleteRole)
+			r.Get("/{id}/permissions", masterHandler.GetRolePermissions)
+			r.Put("/{id}/permissions", masterHandler.UpdateRolePermissions)
+			r.Post("/{id}/permissions", masterHandler.UpdateRolePermissions)
+		})
+		r.With(appMiddleware.JWTAuth).Get("/permissions", masterHandler.ListAllPermissions)
+
+		// Users Service Aliases (Compatible with user.service.ts)
+		r.Route("/users", func(r chi.Router) {
+			r.Use(appMiddleware.JWTAuth)
+			r.Get("/", masterHandler.ListUsers)
+			r.Post("/", masterHandler.CreateUser)
+			r.Get("/{id}", masterHandler.GetUserByID)
+			r.Put("/{id}", masterHandler.UpdateUser)
+			r.Delete("/{id}", masterHandler.DeleteUser)
+			r.Post("/{id}/role", masterHandler.AssignUserRole)
 		})
 
 		// Kitchen Display System
@@ -167,8 +211,10 @@ func SetupRouter(
 			// Users
 			r.Get("/users", masterHandler.ListUsers)
 			r.Post("/users", masterHandler.CreateUser)
+			r.Get("/users/{id}", masterHandler.GetUserByID)
 			r.Put("/users/{id}", masterHandler.UpdateUser)
 			r.Delete("/users/{id}", masterHandler.DeleteUser)
+			r.Post("/users/{id}/role", masterHandler.AssignUserRole)
 
 			// Roles & Permissions
 			r.Get("/roles", masterHandler.ListRoles)
@@ -177,6 +223,8 @@ func SetupRouter(
 			r.Delete("/roles/{id}", masterHandler.DeleteRole)
 			r.Get("/roles/{id}/permissions", masterHandler.GetRolePermissions)
 			r.Put("/roles/{id}/permissions", masterHandler.UpdateRolePermissions)
+			r.Post("/roles/{id}/permissions", masterHandler.UpdateRolePermissions)
+			r.Get("/permissions", masterHandler.ListAllPermissions)
 
 			// Menu Categories
 			r.Get("/categories", masterHandler.ListCategories)

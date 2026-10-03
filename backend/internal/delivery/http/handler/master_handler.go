@@ -290,6 +290,66 @@ func (h *MasterHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"message": "User berhasil dinonaktifkan/dihapus"})
 }
 
+func (h *MasterHandler) GetUserByID(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	query := `
+		SELECT u.id, u.username, u.email, u.full_name, COALESCE(u.phone, ''), u.is_active, 
+		       COALESCE(r.id::text, ''), COALESCE(r.name, 'No Role'),
+		       COALESCE(b.id::text, ''), COALESCE(b.name, 'All Branches'),
+		       COALESCE(e.id::text, ''), COALESCE(e.nik, ''), COALESCE(concat(e.first_name, ' ', e.last_name), ''),
+		       COALESCE(p.title, '')
+		FROM users u
+		LEFT JOIN roles r ON u.role_id = r.id
+		LEFT JOIN branches b ON u.branch_id = b.id
+		LEFT JOIN employees e ON e.user_id = u.id AND e.deleted_at IS NULL
+		LEFT JOIN positions p ON e.position_id = p.id
+		WHERE u.id = $1 AND u.deleted_at IS NULL`
+
+	var uid, username, email, fullName, phone, roleID, roleName, branchID, branchName string
+	var empID, empNik, empName, empPos string
+	var isActive bool
+
+	err := h.db.QueryRow(r.Context(), query, id).Scan(
+		&uid, &username, &email, &fullName, &phone, &isActive,
+		&roleID, &roleName, &branchID, &branchName,
+		&empID, &empNik, &empName, &empPos,
+	)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "User not found")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"data": map[string]interface{}{
+			"id": uid, "username": username, "email": email, "full_name": fullName,
+			"phone": phone, "is_active": isActive, "role_id": roleID, "role_name": roleName,
+			"branch_id": branchID, "branch_name": branchName,
+			"employee_id": empID, "employee_nik": empNik,
+			"employee_name": empName, "employee_position": empPos,
+		},
+	})
+}
+
+func (h *MasterHandler) AssignUserRole(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	var body struct {
+		RoleID string `json:"role_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.RoleID == "" {
+		writeError(w, http.StatusBadRequest, "Role ID is required")
+		return
+	}
+
+	_, err := h.db.Exec(r.Context(), "UPDATE users SET role_id = $1, updated_at = NOW() WHERE id = $2 AND deleted_at IS NULL", body.RoleID, id)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{"message": "Role assigned successfully"})
+}
+
+
 // -----------------------------------------------------------------------------
 // 3. PERAN & MATRIKS HAK AKSES (ROLES & PERMISSIONS)
 // -----------------------------------------------------------------------------
@@ -403,6 +463,34 @@ func (h *MasterHandler) UpdateRolePermissions(w http.ResponseWriter, r *http.Req
 	_ = tx.Commit(r.Context())
 	writeJSON(w, http.StatusOK, map[string]string{"message": "Role permissions updated successfully"})
 }
+
+func (h *MasterHandler) ListAllPermissions(w http.ResponseWriter, r *http.Request) {
+	rows, err := h.db.Query(r.Context(), `SELECT id, module, action, COALESCE(description,'') FROM permissions ORDER BY module, action`)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	defer rows.Close()
+
+	type PermItem struct {
+		ID          string `json:"id"`
+		Module      string `json:"module"`
+		Action      string `json:"action"`
+		Description string `json:"description"`
+	}
+	var list []PermItem
+	for rows.Next() {
+		var p PermItem
+		if err := rows.Scan(&p.ID, &p.Module, &p.Action, &p.Description); err == nil {
+			list = append(list, p)
+		}
+	}
+	if list == nil {
+		list = []PermItem{}
+	}
+	writeJSON(w, http.StatusOK, map[string]interface{}{"data": list})
+}
+
 
 func (h *MasterHandler) CreateRole(w http.ResponseWriter, r *http.Request) {
 	var body struct {

@@ -1,4 +1,4 @@
-﻿package unit_test
+package unit_test
 
 import (
 	"bytes"
@@ -47,6 +47,18 @@ func (m *MockAuthUsecase) ForgotPassword(ctx context.Context, email string) erro
 func (m *MockAuthUsecase) ResetPassword(ctx context.Context, token, newPassword string) error {
 	return nil
 }
+
+func (m *MockAuthUsecase) GetProfile(ctx context.Context, userID uuid.UUID) (domain.LoginResponse, error) {
+	return domain.LoginResponse{
+		User: domain.User{
+			BaseEntity: domain.BaseEntity{ID: userID},
+			Email:      "admin@cafe.com",
+			Username:   "admin",
+		},
+		Role: "Super Admin",
+	}, nil
+}
+
 
 func TestAuthHandler_Login(t *testing.T) {
 	mockUsecase := &MockAuthUsecase{}
@@ -197,3 +209,46 @@ func TestAuthHandler_Logout(t *testing.T) {
 	assert.NotNil(t, refreshCookie)
 	assert.Equal(t, -1, refreshCookie.MaxAge)
 }
+
+func TestAuthHandler_ForgotPassword(t *testing.T) {
+	h := handler.NewAuthHandler(&MockAuthUsecase{})
+
+	t.Run("Valid Email", func(t *testing.T) {
+		body := bytes.NewReader([]byte(`{"email":"admin@cafe.com"}`))
+		req := httptest.NewRequest("POST", "/api/v1/auth/forgot-password", body)
+		rec := httptest.NewRecorder()
+		h.ForgotPassword(rec, req)
+		assert.Equal(t, http.StatusOK, rec.Code)
+		assert.Contains(t, rec.Body.String(), "Instruksi reset password")
+	})
+
+	t.Run("Empty Email", func(t *testing.T) {
+		body := bytes.NewReader([]byte(`{"email":""}`))
+		req := httptest.NewRequest("POST", "/api/v1/auth/forgot-password", body)
+		rec := httptest.NewRecorder()
+		h.ForgotPassword(rec, req)
+		assert.Equal(t, http.StatusBadRequest, rec.Code)
+	})
+}
+
+func TestAuthHandler_ResetPassword(t *testing.T) {
+	h := handler.NewAuthHandler(&MockAuthUsecase{})
+
+	t.Run("Valid Request", func(t *testing.T) {
+		body := bytes.NewReader([]byte(`{"token":"valid-token","new_password":"NewSecret123!"}`))
+		req := httptest.NewRequest("POST", "/api/v1/auth/reset-password", body)
+		rec := httptest.NewRecorder()
+		h.ResetPassword(rec, req)
+		assert.Equal(t, http.StatusOK, rec.Code)
+		assert.Contains(t, rec.Body.String(), "Password reset successful")
+	})
+
+	t.Run("Missing Parameters", func(t *testing.T) {
+		body := bytes.NewReader([]byte(`{"token":""}`))
+		req := httptest.NewRequest("POST", "/api/v1/auth/reset-password", body)
+		rec := httptest.NewRecorder()
+		h.ResetPassword(rec, req)
+		assert.Equal(t, http.StatusBadRequest, rec.Code)
+	})
+}
+

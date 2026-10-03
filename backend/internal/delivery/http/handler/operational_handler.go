@@ -398,6 +398,136 @@ func (h *OperationalHandler) GetPOSOrdersActive(w http.ResponseWriter, r *http.R
 	writeJSON(w, http.StatusOK, map[string]interface{}{"data": orders})
 }
 
+// GetPOSOrderByID returns a single order with its items
+func (h *OperationalHandler) GetPOSOrderByID(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	query := `
+		SELECT 
+			o.id, o.order_number, COALESCE(o.queue_number, '-') as queue_number,
+			COALESCE(o.customer_name, 'Guest') as customer_name,
+			o.order_type, o.status, o.subtotal, o.tax_amount, o.total_amount,
+			COALESCE(t.table_number, 'Takeaway') as table_number,
+			COALESCE(z.name, '') as zone_name,
+			o.created_at,
+			COALESCE(
+				json_agg(
+					json_build_object(
+						'id', oi.id,
+						'product_id', oi.product_id,
+						'name', p.name,
+						'quantity', oi.quantity,
+						'unit_price', oi.unit_price,
+						'total_price', oi.total_price,
+						'kitchen_status', oi.kitchen_status
+					)
+				) FILTER (WHERE oi.id IS NOT NULL), '[]'
+			) as items
+		FROM orders o
+		LEFT JOIN cafe_tables t ON o.table_id = t.id
+		LEFT JOIN table_zones z ON t.zone_id = z.id
+		LEFT JOIN order_items oi ON o.id = oi.order_id
+		LEFT JOIN products p ON oi.product_id = p.id
+		WHERE o.id = $1 AND o.deleted_at IS NULL
+		GROUP BY o.id, t.table_number, z.name`
+
+	var ordID, orderNum, queueNum, customer, orderType, status, tableNum, zoneName string
+	var subtotal, tax, total float64
+	var createdAt time.Time
+	var itemsJSON string
+
+	err := h.db.QueryRow(r.Context(), query, id).Scan(
+		&ordID, &orderNum, &queueNum, &customer, &orderType, &status,
+		&subtotal, &tax, &total, &tableNum, &zoneName, &createdAt, &itemsJSON,
+	)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "Order not found")
+		return
+	}
+
+	var items []map[string]interface{}
+	_ = json.Unmarshal([]byte(itemsJSON), &items)
+	if items == nil {
+		items = []map[string]interface{}{}
+	}
+
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"data": map[string]interface{}{
+			"id":           ordID,
+			"order_number": orderNum,
+			"queue_number": queueNum,
+			"customer":     customer,
+			"order_type":   orderType,
+			"status":       status,
+			"subtotal":     subtotal,
+			"tax":          tax,
+			"total":        total,
+			"table_number": tableNum,
+			"zone_name":    zoneName,
+			"created_at":   createdAt.Format(time.RFC3339),
+			"items":        items,
+		},
+	})
+}
+
+// UpdatePOSOrderStatus updates the status of an existing order
+func (h *OperationalHandler) UpdatePOSOrderStatus(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	var body struct {
+		Status string `json:"status"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Status == "" {
+		writeError(w, http.StatusBadRequest, "Status is required")
+		return
+	}
+
+	_, err := h.db.Exec(r.Context(), "UPDATE orders SET status = $1, updated_at = NOW() WHERE id = $2 AND deleted_at IS NULL", body.Status, id)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{"message": "Order status updated successfully"})
+}
+
+// CancelPOSOrder marks an order as cancelled and frees the associated table
+func (h *OperationalHandler) CancelPOSOrder(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	var tableID *string
+	_ = h.db.QueryRow(r.Context(), "SELECT table_id::text FROM orders WHERE id = $1", id).Scan(&tableID)
+
+	_, err := h.db.Exec(r.Context(), "UPDATE orders SET status = 'cancelled', updated_at = NOW() WHERE id = $1 AND deleted_at IS NULL", id)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	if tableID != nil && *tableID != "" {
+		_, _ = h.db.Exec(r.Context(), "UPDATE cafe_tables SET status = 'available', updated_at = NOW() WHERE id = $1", *tableID)
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{"message": "Order cancelled successfully"})
+}
+
+// VoidPOSOrder marks an order as void and frees the associated table
+func (h *OperationalHandler) VoidPOSOrder(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	var tableID *string
+	_ = h.db.QueryRow(r.Context(), "SELECT table_id::text FROM orders WHERE id = $1", id).Scan(&tableID)
+
+	_, err := h.db.Exec(r.Context(), "UPDATE orders SET status = 'void', updated_at = NOW() WHERE id = $1 AND deleted_at IS NULL", id)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	if tableID != nil && *tableID != "" {
+		_, _ = h.db.Exec(r.Context(), "UPDATE cafe_tables SET status = 'available', updated_at = NOW() WHERE id = $1", *tableID)
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{"message": "Order voided successfully"})
+}
+
+
 // GetTableOrderDetail returns active order and items for a specific table
 func (h *OperationalHandler) GetTableOrderDetail(w http.ResponseWriter, r *http.Request) {
 	tableParam := chi.URLParam(r, "id")

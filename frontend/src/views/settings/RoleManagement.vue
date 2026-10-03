@@ -689,33 +689,66 @@ const matrix = reactive<Record<string, { view: boolean, create: boolean, edit: b
   master: { view: true, create: true, edit: true, delete: true, approve: true }
 })
 
-const selectRole = (role: RoleItem) => {
+const currentRolePermissions = ref<any[]>([])
+const loadingPermissions = ref(false)
+
+const selectRole = async (role: RoleItem) => {
   selectedRole.value = role
-  if (role.name === 'Super Admin') {
+  if (!role?.id) return
+
+  loadingPermissions.value = true
+  try {
+    const res = await axios.get(`/api/v1/master/roles/${role.id}/permissions`)
+    const perms = Array.isArray(res.data) ? res.data : (res.data?.data || [])
+    currentRolePermissions.value = perms
+
+    // Reset matrix
     Object.keys(matrix).forEach(k => {
-      matrix[k].view = true
-      matrix[k].create = true
-      matrix[k].edit = true
-      matrix[k].delete = true
-      matrix[k].approve = true
-    })
-  } else if (role.name === 'Kasir') {
-    Object.keys(matrix).forEach(k => {
-      matrix[k].view = k === 'pos' || k === 'kitchen'
-      matrix[k].create = k === 'pos'
+      matrix[k].view = false
+      matrix[k].create = false
       matrix[k].edit = false
       matrix[k].delete = false
       matrix[k].approve = false
     })
+
+    // Populate matrix from database
+    perms.forEach((p: any) => {
+      const mod = p.module?.toLowerCase()
+      const act = p.action?.toLowerCase()
+      if (matrix[mod] && act in matrix[mod]) {
+        (matrix[mod] as any)[act] = Boolean(p.assigned)
+      }
+    })
+  } catch (err) {
+    console.error('Failed to load role permissions from backend:', err)
+  } finally {
+    loadingPermissions.value = false
   }
 }
 
-const savePermissions = () => {
+const savePermissions = async () => {
+  if (!selectedRole.value?.id) return
   saving.value = true
-  setTimeout(() => {
+  try {
+    const selectedIDs: string[] = []
+    currentRolePermissions.value.forEach((p: any) => {
+      const mod = p.module?.toLowerCase()
+      const act = p.action?.toLowerCase()
+      if (matrix[mod] && (matrix[mod] as any)[act]) {
+        selectedIDs.push(p.id)
+      }
+    })
+
+    await axios.put(`/api/v1/master/roles/${selectedRole.value.id}/permissions`, {
+      permission_ids: selectedIDs
+    })
+    notifyStore.success(`Matriks hak akses untuk peran '${selectedRole.value.name}' berhasil disimpan ke database!`, 'Izin Disimpan')
+  } catch (err: any) {
+    console.error('Failed to save role permissions:', err)
+    notifyStore.error(err.response?.data?.error || 'Gagal menyimpan hak akses', 'Kesalahan Simpan')
+  } finally {
     saving.value = false
-    notifyStore.success(`Matriks hak akses untuk peran '${selectedRole.value.name}' berhasil disimpan ke sistem!`, 'Izin Disimpan')
-  }, 400)
+  }
 }
 
 // -----------------------------------------------------------------------------
@@ -788,7 +821,8 @@ const fetchRoles = async () => {
         desc: r.description,
         icon: getRoleIcon(r.name)
       }))
-      selectedRole.value = roles.value.find((r: any) => r.name.toLowerCase().includes('manager')) || roles.value[0]
+      const initialRole = roles.value.find((r: any) => r.name.toLowerCase().includes('manager')) || roles.value[0]
+      await selectRole(initialRole)
     }
   } catch (err) {
     console.error('Failed to load master roles:', err)

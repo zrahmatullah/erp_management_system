@@ -124,3 +124,55 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 
 	response.Success(w, "Logout successful", nil)
 }
+
+func (h *AuthHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Email string `json:"email"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Email == "" {
+		response.Error(w, http.StatusBadRequest, "Email is required")
+		return
+	}
+
+	if err := h.authUsecase.ForgotPassword(r.Context(), req.Email); err != nil {
+		response.Error(w, http.StatusNotFound, "User not found")
+		return
+	}
+
+	response.Success(w, "Instruksi reset password telah dikirim ke email Anda", nil)
+}
+
+func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Token       string `json:"token"`
+		NewPassword string `json:"new_password"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Token == "" || req.NewPassword == "" {
+		response.Error(w, http.StatusBadRequest, "Token and new_password are required")
+		return
+	}
+
+	if err := h.authUsecase.ResetPassword(r.Context(), req.Token, req.NewPassword); err != nil {
+		response.Error(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	response.Success(w, "Password reset successful, silakan login kembali", nil)
+}
+
+func (h *AuthHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
+	claims, err := middleware.GetUserFromContext(r.Context())
+	if err != nil {
+		response.Error(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	res, err := h.authUsecase.GetProfile(r.Context(), claims.UserID)
+	if err != nil {
+		response.Error(w, http.StatusNotFound, "User profile not found")
+		return
+	}
+
+	response.Success(w, "Profile retrieved successfully", res)
+}
+
