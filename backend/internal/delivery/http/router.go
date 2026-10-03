@@ -17,6 +17,7 @@ func SetupRouter(
 	opHandler *handler.OperationalHandler,
 	p2pHandler *handler.P2PHandler,
 	hrisHandler *handler.HRISHandler,
+	reportHandler *handler.ReportHandler,
 ) *chi.Mux {
 	r := chi.NewRouter()
 
@@ -197,6 +198,19 @@ func SetupRouter(
 			// Bank Reconciliation
 			r.Get("/reconciliation", opHandler.GetBankReconciliation)
 			r.Post("/reconciliation/match", opHandler.MatchBankReconciliation)
+		})
+
+		// Reports & Analytics Routes
+		r.Route("/reports", func(r chi.Router) {
+			r.Get("/sales", reportHandler.GetSalesReport)
+			r.Get("/financial", reportHandler.GetFinancialReport)
+			r.Get("/inventory", reportHandler.GetInventoryReport)
+			r.Get("/hr", reportHandler.GetHRReport)
+			r.Post("/custom", reportHandler.GenerateCustomReport)
+			r.Get("/schedules", reportHandler.GetReportSchedules)
+			r.Post("/schedules", reportHandler.CreateReportSchedule)
+			r.Delete("/schedules/{id}", reportHandler.DeleteReportSchedule)
+			r.Get("/templates", reportHandler.GetCustomReportTemplates)
 		})
 
 		// Master Data Routes (Super Admin CRUD - OWASP A01 Protected)
