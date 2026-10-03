@@ -1,20 +1,25 @@
 <template>
   <aside 
     class="sidebar-container flex flex-col h-screen select-none shrink-0 transition-all duration-300 relative z-30 border-r"
-    :class="isCollapsed ? 'w-20' : 'w-64'"
+    :class="isCollapsed ? 'w-16' : 'w-64'"
     style="background-color: var(--bg-sidebar); border-color: var(--border-color); color: var(--text-secondary);"
   >
     <!-- Navigation Menu with Custom Sleek Scrollbar -->
-    <div class="flex-1 overflow-y-auto px-3 pt-5 pb-3 space-y-4 sidebar-scroll">
-      <div v-for="section in filteredSections" :key="section.title" class="space-y-1">
+    <div class="flex-1 overflow-y-auto px-2.5 py-4 space-y-4 sidebar-scroll">
+      <div v-for="(section, sIdx) in filteredSections" :key="section.title" class="space-y-1">
         <!-- Category Section Header -->
         <div 
           v-if="!isCollapsed" 
-          class="px-3 pt-1 pb-1 text-[11px] font-semibold tracking-wide uppercase"
+          class="px-2.5 pt-1 pb-1 text-[11px] font-semibold tracking-wider uppercase select-none"
           style="color: var(--text-muted);"
         >
           {{ section.title }}
         </div>
+        <div 
+          v-else-if="sIdx > 0" 
+          class="my-2 mx-auto w-6 border-t" 
+          style="border-color: var(--border-color);"
+        ></div>
 
         <!-- Section Menu Items -->
         <div class="space-y-1">
@@ -23,12 +28,13 @@
             <router-link
               v-if="!item.children"
               :to="item.path!"
-              class="group flex items-center rounded-xl text-[13px] font-medium transition-all duration-150 relative"
+              class="group flex items-center gap-3 rounded-xl text-[13px] font-medium transition-all duration-150 relative"
               :class="[
-                isCollapsed ? 'justify-center w-11 h-11 mx-auto' : 'gap-3 px-3 py-2.5',
-                isRouteActive(item.path!) ? 'sidebar-item-active font-bold shadow-xs' : 'sidebar-item-inactive'
+                isRouteActive(item.path!) ? 'sidebar-item-active font-semibold shadow-xs' : 'sidebar-item-inactive',
+                isCollapsed ? 'justify-center p-2.5' : 'px-3 py-2'
               ]"
               :title="isCollapsed ? item.label : undefined"
+              :aria-label="item.label"
             >
               <component 
                 :is="item.icon" 
@@ -42,13 +48,14 @@
             <div v-else class="space-y-1">
               <button
                 type="button"
-                @click="isCollapsed ? (item.children && item.children.length > 0 && router.push(item.children[0].path)) : toggleGroup(item.label)"
+                @click="isCollapsed ? (isCollapsed = false) : toggleGroup(item.label)"
                 class="w-full group flex items-center rounded-xl text-[13px] font-medium transition-all duration-150 cursor-pointer"
                 :class="[
-                  isCollapsed ? 'justify-center w-11 h-11 mx-auto' : 'justify-between px-3 py-2.5',
-                  isGroupActive(item) ? 'sidebar-item-active font-bold' : 'sidebar-item-inactive'
+                  isGroupActive(item) ? 'sidebar-item-active font-semibold' : 'sidebar-item-inactive',
+                  isCollapsed ? 'justify-center p-2.5' : 'justify-between px-3 py-2'
                 ]"
                 :title="isCollapsed ? item.label : undefined"
+                :aria-label="item.label"
               >
                 <div class="flex items-center gap-3 min-w-0" :class="isCollapsed ? 'justify-center' : ''">
                   <component 
@@ -68,15 +75,15 @@
               <!-- Submenu Items (Indented with Guideline) -->
               <div 
                 v-if="!isCollapsed && (openGroups[item.label] || isGroupActive(item))" 
-                class="pl-4 pr-1 space-y-1 border-l ml-5 py-1 transition-all"
+                class="pl-3.5 pr-1 space-y-0.5 border-l ml-5 py-1 transition-all"
                 style="border-color: var(--border-color);"
               >
                 <router-link
                   v-for="sub in item.children"
                   :key="sub.path"
                   :to="sub.path"
-                  class="flex items-center justify-between px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
-                  :class="isRouteActive(sub.path) ? 'sidebar-subitem-active font-bold' : 'sidebar-subitem-inactive'"
+                  class="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all"
+                  :class="isRouteActive(sub.path) ? 'sidebar-subitem-active font-semibold' : 'sidebar-subitem-inactive'"
                 >
                   <span class="truncate">{{ sub.label }}</span>
                   <span v-if="sub.badge" class="px-1.5 py-0.5 rounded text-[10px] bg-blue-100/80 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 font-bold shrink-0">
@@ -92,19 +99,20 @@
 
     <!-- Bottom Actions Section (Collapse + Theme Switcher) -->
     <div 
-      class="p-3 border-t space-y-2 shrink-0"
+      class="p-2.5 border-t space-y-2 shrink-0"
       style="background-color: var(--bg-sidebar); border-color: var(--border-color);"
     >
       <!-- Collapse Menu Toggle -->
       <button
         type="button"
-        @click="isCollapsed = !isCollapsed"
-        class="w-full flex items-center rounded-xl text-xs font-semibold transition-all cursor-pointer sidebar-collapse-btn"
-        :class="isCollapsed ? 'justify-center w-11 h-10 mx-auto' : 'gap-3 px-3 py-2'"
+        @click="toggleSidebar"
+        class="w-full flex items-center rounded-xl transition-all cursor-pointer sidebar-collapse-btn"
+        :class="isCollapsed ? 'justify-center p-2.5' : 'gap-3 px-3 py-2 text-xs font-semibold'"
         :title="isCollapsed ? 'Perluas Sidebar' : 'Ciutkan Sidebar'"
+        :aria-label="isCollapsed ? 'Perluas Sidebar' : 'Ciutkan Sidebar'"
       >
-        <Columns2 class="w-4 h-4 shrink-0 text-[var(--text-muted)]" />
-        <span v-if="!isCollapsed" class="truncate">Collapse menu</span>
+        <component :is="isCollapsed ? PanelLeftOpen : PanelLeftClose" class="w-4 h-4 shrink-0 text-[var(--text-muted)]" />
+        <span v-if="!isCollapsed" class="truncate">Ciutkan menu</span>
       </button>
 
       <!-- Theme Switcher Segmented Control (Light / Dark / System) -->
@@ -166,7 +174,7 @@
           type="button"
           :aria-label="`Tema saat ini: ${appStore.themeMode}. Klik untuk ganti tema.`"
           @click="cycleTheme"
-          class="w-11 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer border focus-visible:ring-2 focus-visible:ring-blue-500"
+          class="w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer border focus-visible:ring-2 focus-visible:ring-blue-500"
           style="background-color: var(--bg-content); border-color: var(--border-color); color: var(--text-primary);"
           :title="collapsedTooltip"
         >
@@ -181,7 +189,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import {
   LayoutDashboard,
   UtensilsCrossed,
@@ -191,7 +199,8 @@ import {
   FileBarChart,
   Settings,
   ChevronDown,
-  Columns2,
+  PanelLeftClose,
+  PanelLeftOpen,
   Sun,
   Moon,
   Monitor
@@ -217,20 +226,22 @@ interface MenuSection {
 }
 
 const route = useRoute()
-const router = useRouter()
 const authStore = useAuthStore()
 const appStore = useAppStore()
 
-const isCollapsed = ref(false)
+const isCollapsed = computed({
+  get: () => appStore.sidebarCollapsed,
+  set: (val: boolean) => {
+    appStore.sidebarCollapsed = val
+  }
+})
+
+const toggleSidebar = () => {
+  appStore.toggleSidebar()
+}
 
 const cycleTheme = () => {
-  if (appStore.themeMode === 'light') {
-    appStore.setTheme('dark')
-  } else if (appStore.themeMode === 'dark') {
-    appStore.setTheme('system')
-  } else {
-    appStore.setTheme('light')
-  }
+  appStore.cycleTheme()
 }
 
 const collapsedTooltip = computed(() => {
@@ -339,7 +350,7 @@ const menuSections: MenuSection[] = [
         icon: Settings,
         children: [
           { label: 'Profil Perusahaan', path: '/settings/company' },
-          { label: '⭐ Data Master CRUD', path: '/settings/master', badge: 'Super Admin' },
+          { label: 'Data Master CRUD', path: '/settings/master', badge: 'Super Admin' },
           { label: 'Peran & Matriks Izin', path: '/settings/roles' }
         ]
       }
@@ -469,7 +480,7 @@ const filteredSections = computed(() => {
 /* Ultra-sleek, modern scrollbar */
 .sidebar-scroll {
   scrollbar-width: thin;
-  scrollbar-color: rgba(203, 213, 225, 0.5) transparent;
+  scrollbar-color: rgba(203, 213, 225, 0.4) transparent;
 }
 
 .sidebar-scroll::-webkit-scrollbar {
@@ -481,12 +492,12 @@ const filteredSections = computed(() => {
 }
 
 .sidebar-scroll::-webkit-scrollbar-thumb {
-  background: rgba(203, 213, 225, 0.4);
+  background: rgba(203, 213, 225, 0.3);
   border-radius: 9999px;
   transition: background-color 0.2s ease;
 }
 
 .sidebar-scroll:hover::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.7);
+  background: rgba(148, 163, 184, 0.6);
 }
 </style>
