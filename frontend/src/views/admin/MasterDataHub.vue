@@ -311,17 +311,20 @@ const loadDropdownMasters = async () => {
   }
 }
 
-watch(() => formData.value.employee_id, (newEmpId) => {
-  if (activeTab.value === 'users' && newEmpId) {
-    const emp = rawEmployees.value.find((e: any) => e.id === newEmpId)
-    if (emp) {
-      if (!formData.value.full_name) formData.value.full_name = emp.full_name
-      if (!formData.value.email) formData.value.email = emp.email
-      if (!formData.value.phone && emp.phone) formData.value.phone = emp.phone
-      if (!formData.value.branch_id && emp.branch_id) formData.value.branch_id = emp.branch_id
-      if (!formData.value.username && emp.email) formData.value.username = emp.email.split('@')[0]
-    }
+const autofillUserFromEmployee = (emp: any) => {
+  formData.value.full_name = formData.value.full_name || emp.full_name
+  formData.value.email = formData.value.email || emp.email
+  formData.value.phone = formData.value.phone || emp.phone || ''
+  formData.value.branch_id = formData.value.branch_id || emp.branch_id || ''
+  if (!formData.value.username && emp.email) {
+    formData.value.username = emp.email.split('@')[0]
   }
+}
+
+watch(() => formData.value.employee_id, (newEmpId) => {
+  if (activeTab.value !== 'users' || !newEmpId) return
+  const emp = rawEmployees.value.find((e: any) => e.id === newEmpId)
+  if (emp) autofillUserFromEmployee(emp)
 })
 
 const activeTabLabel = computed(() => {

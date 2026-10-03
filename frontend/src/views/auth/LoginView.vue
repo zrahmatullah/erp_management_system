@@ -282,7 +282,7 @@
             <div 
               class="rounded-xl px-3.5 py-2.5 flex items-center gap-3 border transition-all"
               :class="emailError ? 'border-rose-500 ring-1 ring-rose-500/20' : 'focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20'"
-              style="background-color: var(--input-bg); border-color: emailError ? '#ef4444' : var(--input-border);"
+              :style="{ backgroundColor: 'var(--input-bg)', borderColor: emailError ? '#ef4444' : 'var(--input-border)' }"
             >
               <Mail class="w-4 h-4 shrink-0" :class="emailError ? 'text-rose-500' : 'text-slate-400 dark:text-slate-500'" />
               <input
@@ -311,7 +311,7 @@
             <div 
               class="rounded-xl px-3.5 py-2.5 flex items-center gap-3 border transition-all"
               :class="passwordError ? 'border-rose-500 ring-1 ring-rose-500/20' : 'focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20'"
-              style="background-color: var(--input-bg); border-color: passwordError ? '#ef4444' : var(--input-border);"
+              :style="{ backgroundColor: 'var(--input-bg)', borderColor: passwordError ? '#ef4444' : 'var(--input-border)' }"
             >
               <Lock class="w-4 h-4 shrink-0" :class="passwordError ? 'text-rose-500' : 'text-slate-400 dark:text-slate-500'" />
               <input

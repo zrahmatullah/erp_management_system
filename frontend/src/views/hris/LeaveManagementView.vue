@@ -419,36 +419,35 @@ onMounted(() => {
   fetchEmployees()
 })
 
+const matchesLeaveTab = (l: any): boolean => {
+  if (activeTab.value === 'Cuti Tim') {
+    return filterStatus.value ? l.status === filterStatus.value : l.status === 'Menunggu'
+  }
+  if (activeTab.value === 'Cuti Saya') {
+    const isMine = (l.userId && l.userId === authStore.user?.id) ||
+      (currentEmployee.value && l.employeeId === currentEmployee.value.id) ||
+      (Boolean(l.nik) && l.nik === currentEmployee.value?.nik)
+    if (!isMine) return false
+    return !filterStatus.value || l.status === filterStatus.value
+  }
+  return !filterStatus.value || l.status === filterStatus.value
+}
+
+const matchesLeaveSearch = (l: any, query: string): boolean => {
+  if (!query) return true
+  const q = query.toLowerCase()
+  return (l.name?.toLowerCase().includes(q) ||
+          l.nik?.toLowerCase().includes(q) ||
+          l.reason?.toLowerCase().includes(q)) ?? false
+}
+
 const filteredLeaves = computed(() => {
+  const query = search.value.trim()
+  const targetType = filterType.value
   return leaves.value.filter(l => {
-    // 1. Tab-based filtering
-    if (activeTab.value === 'Cuti Tim') {
-      // Prioritize pending approvals; or if filterStatus is set, follow it
-      if (filterStatus.value) {
-        if (l.status !== filterStatus.value) return false
-      } else {
-        if (l.status !== 'Menunggu') return false
-      }
-    } else if (activeTab.value === 'Cuti Saya') {
-      const isMine = (l.userId && l.userId === authStore.user?.id) ||
-                     (currentEmployee.value && l.employeeId === currentEmployee.value.id) ||
-                     (l.nik && currentEmployee.value?.nik && l.nik === currentEmployee.value.nik)
-      if (!isMine) return false
-      if (filterStatus.value && l.status !== filterStatus.value) return false
-    } else if (activeTab.value === 'Semua Cuti') {
-      if (filterStatus.value && l.status !== filterStatus.value) return false
-    }
-
-    // 2. Search filtering
-    const matchSearch = !search.value ||
-      (l.name && l.name.toLowerCase().includes(search.value.toLowerCase())) ||
-      (l.nik && l.nik.toLowerCase().includes(search.value.toLowerCase())) ||
-      (l.reason && l.reason.toLowerCase().includes(search.value.toLowerCase()))
-
-    // 3. Type filtering
-    const matchType = !filterType.value || l.type === filterType.value
-
-    return matchSearch && matchType
+    if (!matchesLeaveTab(l)) return false
+    if (targetType && l.type !== targetType) return false
+    return matchesLeaveSearch(l, query)
   })
 })
 
