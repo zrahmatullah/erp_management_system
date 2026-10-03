@@ -4,23 +4,8 @@
     :class="isCollapsed ? 'w-20' : 'w-64'"
     style="background-color: var(--bg-sidebar); border-color: var(--border-color); color: var(--text-secondary);"
   >
-    <!-- Brand Header -->
-    <div class="h-16 flex items-center px-4.5 gap-3 border-b shrink-0" style="border-color: var(--border-color);">
-      <!-- Circular Logo matching Gridlines UI -->
-      <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-600 via-blue-500 to-indigo-500 flex items-center justify-center text-white shadow-md shadow-blue-500/25 shrink-0">
-        <Coffee class="w-4.5 h-4.5" />
-      </div>
-      <div v-if="!isCollapsed" class="min-w-0 transition-opacity duration-200">
-        <h1 class="font-black text-[15px] tracking-tight leading-none flex items-center gap-1.5" style="color: var(--text-primary);">
-          Cafe ERP
-          <span class="text-[9px] font-bold uppercase tracking-wider bg-blue-50 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400 border border-blue-200/60 dark:border-blue-800/60 px-1.5 py-0.5 rounded-full">Pro</span>
-        </h1>
-        <p class="text-[11px] font-medium truncate mt-1" style="color: var(--text-muted);">Management System</p>
-      </div>
-    </div>
-
     <!-- Navigation Menu with Custom Sleek Scrollbar -->
-    <div class="flex-1 overflow-y-auto px-3 py-3 space-y-4 sidebar-scroll">
+    <div class="flex-1 overflow-y-auto px-3 pt-5 pb-3 space-y-4 sidebar-scroll">
       <div v-for="section in filteredSections" :key="section.title" class="space-y-1">
         <!-- Category Section Header -->
         <div 
@@ -38,8 +23,11 @@
             <router-link
               v-if="!item.children"
               :to="item.path!"
-              class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-150 relative"
-              :class="isRouteActive(item.path!) ? 'sidebar-item-active font-bold shadow-xs' : 'sidebar-item-inactive'"
+              class="group flex items-center rounded-xl text-[13px] font-medium transition-all duration-150 relative"
+              :class="[
+                isCollapsed ? 'justify-center w-11 h-11 mx-auto' : 'gap-3 px-3 py-2.5',
+                isRouteActive(item.path!) ? 'sidebar-item-active font-bold shadow-xs' : 'sidebar-item-inactive'
+              ]"
               :title="isCollapsed ? item.label : undefined"
             >
               <component 
@@ -54,12 +42,15 @@
             <div v-else class="space-y-1">
               <button
                 type="button"
-                @click="toggleGroup(item.label)"
-                class="w-full group flex items-center justify-between px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-150 cursor-pointer"
-                :class="isGroupActive(item) ? 'sidebar-item-active font-bold' : 'sidebar-item-inactive'"
+                @click="isCollapsed ? (item.children && item.children.length > 0 && router.push(item.children[0].path)) : toggleGroup(item.label)"
+                class="w-full group flex items-center rounded-xl text-[13px] font-medium transition-all duration-150 cursor-pointer"
+                :class="[
+                  isCollapsed ? 'justify-center w-11 h-11 mx-auto' : 'justify-between px-3 py-2.5',
+                  isGroupActive(item) ? 'sidebar-item-active font-bold' : 'sidebar-item-inactive'
+                ]"
                 :title="isCollapsed ? item.label : undefined"
               >
-                <div class="flex items-center gap-3 min-w-0">
+                <div class="flex items-center gap-3 min-w-0" :class="isCollapsed ? 'justify-center' : ''">
                   <component 
                     :is="item.icon" 
                     class="w-4.5 h-4.5 shrink-0 transition-colors" 
@@ -99,16 +90,17 @@
       </div>
     </div>
 
-    <!-- Bottom Actions Section (Collapse + Theme Switcher + User Profile) -->
+    <!-- Bottom Actions Section (Collapse + Theme Switcher) -->
     <div 
-      class="p-3 border-t space-y-2.5 shrink-0"
+      class="p-3 border-t space-y-2 shrink-0"
       style="background-color: var(--bg-sidebar); border-color: var(--border-color);"
     >
       <!-- Collapse Menu Toggle -->
       <button
         type="button"
         @click="isCollapsed = !isCollapsed"
-        class="w-full flex items-center gap-3 px-3 py-2 text-xs font-semibold rounded-xl transition-all cursor-pointer sidebar-collapse-btn"
+        class="w-full flex items-center rounded-xl text-xs font-semibold transition-all cursor-pointer sidebar-collapse-btn"
+        :class="isCollapsed ? 'justify-center w-11 h-10 mx-auto' : 'gap-3 px-3 py-2'"
         :title="isCollapsed ? 'Perluas Sidebar' : 'Ciutkan Sidebar'"
       >
         <Columns2 class="w-4 h-4 shrink-0 text-[var(--text-muted)]" />
@@ -172,40 +164,15 @@
       <div v-else class="flex justify-center">
         <button
           type="button"
-          role="button"
           :aria-label="`Tema saat ini: ${appStore.themeMode}. Klik untuk ganti tema.`"
           @click="cycleTheme"
-          class="w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer border focus-visible:ring-2 focus-visible:ring-blue-500"
+          class="w-11 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer border focus-visible:ring-2 focus-visible:ring-blue-500"
           style="background-color: var(--bg-content); border-color: var(--border-color); color: var(--text-primary);"
           :title="collapsedTooltip"
         >
           <Sun v-if="appStore.themeMode === 'light'" class="w-4.5 h-4.5 text-amber-500" />
           <Moon v-else-if="appStore.themeMode === 'dark'" class="w-4.5 h-4.5 text-blue-400" />
           <Monitor v-else class="w-4.5 h-4.5 text-blue-500" />
-        </button>
-      </div>
-
-      <!-- User Card & Logout -->
-      <div class="pt-2 border-t flex items-center justify-between gap-2 px-1" style="border-color: var(--border-color);">
-        <div class="flex items-center gap-2.5 min-w-0">
-          <div class="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 flex items-center justify-center text-xs font-black shrink-0 shadow-2xs">
-            {{ avatarInitials }}
-          </div>
-          <div v-if="!isCollapsed" class="min-w-0">
-            <div class="text-xs font-bold truncate leading-tight" style="color: var(--text-primary);">{{ userName }}</div>
-            <div class="text-[10px] font-medium truncate flex items-center gap-1 mt-0.5" style="color: var(--text-muted);">
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-              {{ userRoleBadge }}
-            </div>
-          </div>
-        </div>
-        <button 
-          @click="handleLogout" 
-          title="Keluar dari Sistem" 
-          class="p-1.5 rounded-lg hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer shrink-0"
-          style="color: var(--text-muted);"
-        >
-          <LogOut class="w-4 h-4" />
         </button>
       </div>
     </div>
@@ -223,9 +190,7 @@ import {
   DollarSign,
   FileBarChart,
   Settings,
-  Coffee,
   ChevronDown,
-  LogOut,
   Columns2,
   Sun,
   Moon,
@@ -272,29 +237,6 @@ const collapsedTooltip = computed(() => {
   if (appStore.themeMode === 'light') return 'Mode Terang (Matahari) - Klik untuk beralih ke Mode Gelap'
   if (appStore.themeMode === 'dark') return 'Mode Gelap (Bulan) - Klik untuk beralih ke Mode Sistem'
   return `Mode Sistem Auto (${appStore.resolvedTheme === 'dark' ? 'Gelap' : 'Terang'}) - Klik untuk beralih ke Mode Terang`
-})
-
-const currentTheme = computed<'light' | 'dark'>({
-  get: () => appStore.theme,
-  set: (val) => appStore.setTheme(val)
-})
-
-const userName = computed(() => {
-  return authStore.fullName || authStore.user?.firstName || 'Pengguna'
-})
-
-const userRoleBadge = computed(() => {
-  return authStore.currentRole || 'Staff'
-})
-
-const avatarInitials = computed(() => {
-  const name = userName.value.trim()
-  if (!name) return 'U'
-  const parts = name.split(' ')
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[1][0]).toUpperCase()
-  }
-  return name.slice(0, 2).toUpperCase()
 })
 
 const openGroups = ref<Record<string, boolean>>({
@@ -465,11 +407,6 @@ const filteredSections = computed(() => {
     }
   }).filter(section => section.items.length > 0)
 })
-
-const handleLogout = () => {
-  authStore.logout()
-  router.push('/login')
-}
 </script>
 
 <style scoped>
