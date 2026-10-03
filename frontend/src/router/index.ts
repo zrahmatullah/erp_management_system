@@ -105,7 +105,7 @@ const routes: Array<RouteRecordRaw> = [
       {
         path: 'reports',
         name: 'Reports',
-        component: () => import('@/views/reports/SalesReport.vue')
+        component: () => import('@/views/reports/ReportsView.vue')
       },
       // Super Admin Settings & Master Hub
       {
