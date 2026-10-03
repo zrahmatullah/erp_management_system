@@ -57,7 +57,22 @@ try {
         sonar-scanner "-Dsonar.host.url=http://localhost:9000" "-Dsonar.token=$token"
     }
     Write-Host "`n==============================================================================" -ForegroundColor Cyan
-    Write-Host "Frontend Analysis Completed Successfully!" -ForegroundColor Green
+    Write-Host "Frontend Analysis Uploaded Successfully!" -ForegroundColor Green
+    
+    # Wait briefly for SonarQube Compute Engine processing and fetch Quality Gate Status
+    Start-Sleep -Seconds 5
+    try {
+        $headers = @{ Authorization = "Bearer $token" }
+        $qg = Invoke-RestMethod -Uri "http://localhost:9000/api/qualitygates/project_status?projectKey=cafe-erp-frontend" -Headers $headers -ErrorAction SilentlyContinue
+        if ($qg.projectStatus.status -eq "OK") {
+            Write-Host "QUALITY GATE EVALUATION: [ PASSED / OK ]" -ForegroundColor Green
+        } else {
+            Write-Host "QUALITY GATE EVALUATION: [ $($qg.projectStatus.status) ]" -ForegroundColor Yellow
+        }
+    } catch {
+        Write-Host "Could not query quality gate evaluation." -ForegroundColor DarkGray
+    }
+
     Write-Host "Review Frontend Dashboard at: http://localhost:9000/dashboard?id=cafe-erp-frontend" -ForegroundColor Green
     Write-Host "Review Backend Dashboard at:  http://localhost:9000/dashboard?id=cafe-erp-backend" -ForegroundColor Green
     Write-Host "==============================================================================" -ForegroundColor Cyan
