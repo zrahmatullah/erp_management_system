@@ -440,6 +440,7 @@ const menuSections: MenuSection[] = [
           { label: 'Denah Meja', path: '/pos/tables' },
           { label: 'Kitchen KDS', path: '/pos/kds' },
           { label: 'Riwayat Transaksi', path: '/pos/transactions' },
+          { label: 'Shift & Kasir Balancing', path: '/pos/shifts' },
           { label: 'Katalog Menu & Produk', path: '/menu/products' }
         ]
       }

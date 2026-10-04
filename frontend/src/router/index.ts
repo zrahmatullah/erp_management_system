@@ -43,6 +43,11 @@ const routes: Array<RouteRecordRaw> = [
         name: 'POSTransactions',
         component: () => import('@/views/pos/TransactionHistoryView.vue')
       },
+      {
+        path: 'pos/shifts',
+        name: 'CashierShifts',
+        component: () => import('@/views/pos/CashierShiftView.vue')
+      },
       // Inventory & Supply Chain
       {
         path: 'inventory',

@@ -105,6 +105,7 @@ func main() {
 		"000008_finance_expanded_modules.sql",
 		"000009_report_schedules_and_templates.sql",
 		"000010_seed_role_dummy_users.sql",
+		"000011_cashier_shifts_and_cash_balancing.sql",
 	}
 
 	for _, fileName := range migrationFiles {

@@ -822,7 +822,8 @@ func (h *OperationalHandler) PayOrder(w http.ResponseWriter, r *http.Request) {
 
 	var tableID *string
 	var totalAmount float64
-	err = tx.QueryRow(r.Context(), "SELECT table_id, total_amount FROM orders WHERE id = $1", id).Scan(&tableID, &totalAmount)
+	var orderBranchID string
+	err = tx.QueryRow(r.Context(), "SELECT table_id, total_amount, branch_id FROM orders WHERE id = $1", id).Scan(&tableID, &totalAmount, &orderBranchID)
 	if err != nil {
 		writeError(w, http.StatusNotFound, "Order not found")
 		return
@@ -833,15 +834,32 @@ func (h *OperationalHandler) PayOrder(w http.ResponseWriter, r *http.Request) {
 		changeDue = 0
 	}
 
+	// Link payment to active cashier shift if open for this branch
+	var activeShiftID *string
+	_ = tx.QueryRow(r.Context(), `
+		SELECT id FROM cashier_shifts 
+		WHERE branch_id = $1 AND status = 'open' 
+		ORDER BY opened_at DESC LIMIT 1`, orderBranchID).Scan(&activeShiftID)
+
 	// Insert payment
 	payID := uuid.New().String()
 	_, err = tx.Exec(r.Context(), `
-		INSERT INTO payments (id, order_id, payment_method, amount_paid, change_due, status)
-		VALUES ($1, $2, $3, $4, $5, 'completed')`,
-		payID, id, body.PaymentMethod, body.AmountPaid, changeDue)
+		INSERT INTO payments (id, order_id, payment_method, amount_paid, change_due, status, shift_id)
+		VALUES ($1, $2, $3, $4, $5, 'completed', $6)`,
+		payID, id, body.PaymentMethod, body.AmountPaid, changeDue, activeShiftID)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
+	}
+
+	// Update live shift sales totals
+	if activeShiftID != nil {
+		if strings.EqualFold(body.PaymentMethod, "cash") {
+			netCash := body.AmountPaid - changeDue
+			_, _ = tx.Exec(r.Context(), "UPDATE cashier_shifts SET total_cash_sales = total_cash_sales + $1, updated_at = NOW() WHERE id = $2", netCash, *activeShiftID)
+		} else {
+			_, _ = tx.Exec(r.Context(), "UPDATE cashier_shifts SET total_non_cash_sales = total_non_cash_sales + $1, updated_at = NOW() WHERE id = $2", body.AmountPaid, *activeShiftID)
+		}
 	}
 
 	// Update order status to completed

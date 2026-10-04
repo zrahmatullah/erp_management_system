@@ -18,6 +18,7 @@ func SetupRouter(
 	p2pHandler *handler.P2PHandler,
 	hrisHandler *handler.HRISHandler,
 	reportHandler *handler.ReportHandler,
+	posShiftHandler *handler.POSShiftHandler,
 ) *chi.Mux {
 	r := chi.NewRouter()
 
@@ -69,6 +70,16 @@ func SetupRouter(
 			r.Post("/orders/{id}/pay", opHandler.PayOrder)
 			r.Get("/takeaways", opHandler.GetTakeawayOrders)
 			r.Get("/transactions", opHandler.GetPOSTransactions)
+
+			// Cashier Shifts & Blind Cash Balancing (F-01)
+			r.Route("/shifts", func(r chi.Router) {
+				r.Get("/current", posShiftHandler.GetCurrentShift)
+				r.Post("/open", posShiftHandler.OpenShift)
+				r.Post("/{id}/cash-movement", posShiftHandler.RecordCashMovement)
+				r.Post("/{id}/close", posShiftHandler.CloseShift)
+				r.Get("/{id}/summary", posShiftHandler.GetShiftSummary)
+				r.Get("/", posShiftHandler.ListShifts)
+			})
 		})
 
 		// Orders Service Aliases (Compatible with order.service.ts)
@@ -215,6 +226,7 @@ func SetupRouter(
 			r.Post("/schedules", reportHandler.CreateReportSchedule)
 			r.Delete("/schedules/{id}", reportHandler.DeleteReportSchedule)
 			r.Get("/templates", reportHandler.GetCustomReportTemplates)
+			r.Get("/shifts/audit", posShiftHandler.ListShifts)
 		})
 
 		// Master Data Routes (Super Admin CRUD - OWASP A01 Protected)
