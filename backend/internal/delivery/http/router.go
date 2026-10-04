@@ -118,13 +118,13 @@ func SetupRouter(
 		// Inventory & Procure-to-Pay (P2P) Operations
 		r.Route("/inventory", func(r chi.Router) {
 			r.Get("/stocks", opHandler.GetInventoryStocks)
-			r.Get("/stock-movements", opHandler.GetStockMovements)
+			r.With(appMiddleware.HeavyLimitMiddleware).Get("/stock-movements", opHandler.GetStockMovements)
 			r.Get("/purchase-orders", opHandler.GetPurchaseOrders)
 			r.Post("/purchase-orders", opHandler.CreatePurchaseOrder)
 			r.Get("/purchase-orders/{id}", opHandler.GetPurchaseOrderDetail)
 			r.Put("/purchase-orders/{id}/status", opHandler.UpdatePurchaseOrderStatus)
-			r.Get("/opnames", opHandler.GetStockOpnames)
-			r.Post("/opnames", opHandler.CreateStockOpname)
+			r.With(appMiddleware.HeavyLimitMiddleware).Get("/opnames", opHandler.GetStockOpnames)
+			r.With(appMiddleware.HeavyLimitMiddleware).Post("/opnames", opHandler.CreateStockOpname)
 
 			// P2P Full Cycle
 			r.Get("/pr", p2pHandler.GetPurchaseRequisitions)
@@ -144,6 +144,9 @@ func SetupRouter(
 		// HRIS Operations (Protected with JWTAuth)
 		r.Route("/hris", func(r chi.Router) {
 			r.Use(appMiddleware.JWTAuth)
+
+			// Employee Self-Service Portal
+			r.Get("/my-portal", hrisHandler.GetMyEmployeePortal)
 
 			// Employees
 			r.Get("/employees", hrisHandler.GetEmployees)
@@ -166,10 +169,10 @@ func SetupRouter(
 			r.Get("/schedules", hrisHandler.GetShiftSchedules)
 			r.Post("/schedules", hrisHandler.SetShiftSchedule)
 
-			// Payroll
+			// Payroll (Resource Intensive: Protected with HeavyLimitMiddleware)
 			r.Get("/payrolls", hrisHandler.GetPayrolls)
-			r.Post("/payrolls/run", hrisHandler.RunPayroll)
-			r.Post("/payrolls/batch-approve", hrisHandler.BatchApprovePayroll)
+			r.With(appMiddleware.HeavyLimitMiddleware).Post("/payrolls/run", hrisHandler.RunPayroll)
+			r.With(appMiddleware.HeavyLimitMiddleware).Post("/payrolls/batch-approve", hrisHandler.BatchApprovePayroll)
 		})
 
 		// Finance Operations
@@ -197,11 +200,12 @@ func SetupRouter(
 
 			// Bank Reconciliation
 			r.Get("/reconciliation", opHandler.GetBankReconciliation)
-			r.Post("/reconciliation/match", opHandler.MatchBankReconciliation)
+			r.With(appMiddleware.HeavyLimitMiddleware).Post("/reconciliation/match", opHandler.MatchBankReconciliation)
 		})
 
-		// Reports & Analytics Routes
+		// Reports & Analytics Routes (Protected with HeavyLimitMiddleware)
 		r.Route("/reports", func(r chi.Router) {
+			r.Use(appMiddleware.HeavyLimitMiddleware)
 			r.Get("/sales", reportHandler.GetSalesReport)
 			r.Get("/financial", reportHandler.GetFinancialReport)
 			r.Get("/inventory", reportHandler.GetInventoryReport)

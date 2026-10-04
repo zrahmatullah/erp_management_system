@@ -1,0 +1,94 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: cafe_erp_db
+    restart: always
+    environment:
+      POSTGRES_DB: cafe_erp
+      POSTGRES_USER: cafe_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-samp3321}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./backend/migrations:/docker-entrypoint-initdb.d
+    ports:
+      - "127.0.0.1:5432:5432"
+
+  # Core Backend Worker 1: Realtime POS, KDS & Auth
+  backend-core-1:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cafe_erp_core_1
+    restart: always
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: cafe_erp
+      DB_USERNAME: cafe_user
+      DB_PASSWORD: ${DB_PASSWORD:-samp3321}
+      JWT_SECRET: ${JWT_SECRET:-default_secret_key_cafe_erp_32_chars}
+      PORT: "8081"
+    depends_on:
+      - postgres
+    expose:
+      - "8081"
+
+  # Core Backend Worker 2: High Availability for Ordering
+  backend-core-2:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cafe_erp_core_2
+    restart: always
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: cafe_erp
+      DB_USERNAME: cafe_user
+      DB_PASSWORD: ${DB_PASSWORD:-samp3321}
+      JWT_SECRET: ${JWT_SECRET:-default_secret_key_cafe_erp_32_chars}
+      PORT: "8082"
+    depends_on:
+      - postgres
+    expose:
+      - "8082"
+
+  # Heavy Backend Worker: Isolated for Reports, Payroll & Opnames
+  backend-heavy:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cafe_erp_heavy
+    restart: always
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: cafe_erp
+      DB_USERNAME: cafe_user
+      DB_PASSWORD: ${DB_PASSWORD:-samp3321}
+      JWT_SECRET: ${JWT_SECRET:-default_secret_key_cafe_erp_32_chars}
+      PORT: "8083"
+      HEAVY_MAX_CONCURRENCY: "8"
+    depends_on:
+      - postgres
+    expose:
+      - "8083"
+
+  # Layer-7 Smart Load Balancer (Nginx)
+  loadbalancer:
+    image: nginx:alpine
+    container_name: cafe_erp_lb
+    restart: always
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./deploy/loadbalancer/nginx.docker.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - backend-core-1
+      - backend-core-2
+      - backend-heavy
+
+volumes:
+  pgdata:

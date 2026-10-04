@@ -180,6 +180,7 @@
           </div>
 
           <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <!-- Super Admin -->
             <button
               type="button"
               @click="quickLogin('admin@cafe-erp.com', 'Admin@123', 'Super Admin')"
@@ -188,52 +189,115 @@
               title="Masuk sebagai Super Administrator"
             >
               <div class="w-6 h-6 rounded-lg bg-blue-100 dark:bg-blue-900/60 text-blue-600 dark:text-blue-300 flex items-center justify-center text-xs font-black mb-1 group-hover:scale-105 transition-transform">
-                SA
+                👑
               </div>
               <span class="text-[11px] font-bold truncate max-w-full" style="color: var(--text-primary);">Super Admin</span>
               <span class="text-[9.5px] truncate max-w-full" style="color: var(--text-muted);">Semua Akses</span>
             </button>
 
+            <!-- Barista -->
             <button
               type="button"
-              @click="quickLogin('kasir@cafe-erp.com', 'Password@123', 'Kasir POS')"
+              @click="quickLogin('barista@cafe-erp.com', 'Admin@123', 'Barista')"
+              class="btn-press p-2 rounded-xl border flex flex-col items-center justify-center text-center transition-all cursor-pointer group"
+              style="background-color: var(--bg-content); border-color: var(--border-color);"
+              title="Masuk sebagai Barista (Karyawan)"
+            >
+              <div class="w-6 h-6 rounded-lg bg-amber-100 dark:bg-amber-900/60 text-amber-600 dark:text-amber-300 flex items-center justify-center text-xs font-black mb-1 group-hover:scale-105 transition-transform">
+                ☕
+              </div>
+              <span class="text-[11px] font-bold truncate max-w-full" style="color: var(--text-primary);">Barista</span>
+              <span class="text-[9.5px] truncate max-w-full" style="color: var(--text-muted);">Portal Absensi</span>
+            </button>
+
+            <!-- Kasir -->
+            <button
+              type="button"
+              @click="quickLogin('kasir@cafe-erp.com', 'Admin@123', 'Kasir')"
               class="btn-press p-2 rounded-xl border flex flex-col items-center justify-center text-center transition-all cursor-pointer group"
               style="background-color: var(--bg-content); border-color: var(--border-color);"
               title="Masuk sebagai Kasir POS"
             >
               <div class="w-6 h-6 rounded-lg bg-emerald-100 dark:bg-emerald-900/60 text-emerald-600 dark:text-emerald-300 flex items-center justify-center text-xs font-black mb-1 group-hover:scale-105 transition-transform">
-                KS
+                🏷️
               </div>
               <span class="text-[11px] font-bold truncate max-w-full" style="color: var(--text-primary);">Kasir POS</span>
-              <span class="text-[9.5px] truncate max-w-full" style="color: var(--text-muted);">Ke Halaman POS</span>
+              <span class="text-[9.5px] truncate max-w-full" style="color: var(--text-muted);">POS & Absen</span>
             </button>
 
+            <!-- Inventory / Gudang -->
             <button
               type="button"
-              @click="quickLogin('manager@cafe-erp.com', 'Password@123', 'Store Manager')"
+              @click="quickLogin('inventory@cafe-erp.com', 'Admin@123', 'Warehouse')"
+              class="btn-press p-2 rounded-xl border flex flex-col items-center justify-center text-center transition-all cursor-pointer group"
+              style="background-color: var(--bg-content); border-color: var(--border-color);"
+              title="Masuk sebagai Staf Inventory / Gudang"
+            >
+              <div class="w-6 h-6 rounded-lg bg-cyan-100 dark:bg-cyan-900/60 text-cyan-600 dark:text-cyan-300 flex items-center justify-center text-xs font-black mb-1 group-hover:scale-105 transition-transform">
+                📦
+              </div>
+              <span class="text-[11px] font-bold truncate max-w-full" style="color: var(--text-primary);">Inventory</span>
+              <span class="text-[9.5px] truncate max-w-full" style="color: var(--text-muted);">Gudang & Stok</span>
+            </button>
+
+            <!-- Finance / Akuntan -->
+            <button
+              type="button"
+              @click="quickLogin('finance@cafe-erp.com', 'Admin@123', 'Akuntan')"
+              class="btn-press p-2 rounded-xl border flex flex-col items-center justify-center text-center transition-all cursor-pointer group"
+              style="background-color: var(--bg-content); border-color: var(--border-color);"
+              title="Masuk sebagai Staf Finance & Akuntansi"
+            >
+              <div class="w-6 h-6 rounded-lg bg-purple-100 dark:bg-purple-900/60 text-purple-600 dark:text-purple-300 flex items-center justify-center text-xs font-black mb-1 group-hover:scale-105 transition-transform">
+                💰
+              </div>
+              <span class="text-[11px] font-bold truncate max-w-full" style="color: var(--text-primary);">Finance</span>
+              <span class="text-[9.5px] truncate max-w-full" style="color: var(--text-muted);">Jurnal & Kas</span>
+            </button>
+
+            <!-- HRIS Admin -->
+            <button
+              type="button"
+              @click="quickLogin('hris@cafe-erp.com', 'Admin@123', 'HR Admin')"
+              class="btn-press p-2 rounded-xl border flex flex-col items-center justify-center text-center transition-all cursor-pointer group"
+              style="background-color: var(--bg-content); border-color: var(--border-color);"
+              title="Masuk sebagai HR Admin"
+            >
+              <div class="w-6 h-6 rounded-lg bg-rose-100 dark:bg-rose-900/60 text-rose-600 dark:text-rose-300 flex items-center justify-center text-xs font-black mb-1 group-hover:scale-105 transition-transform">
+                👥
+              </div>
+              <span class="text-[11px] font-bold truncate max-w-full" style="color: var(--text-primary);">HRIS Admin</span>
+              <span class="text-[9.5px] truncate max-w-full" style="color: var(--text-muted);">SDM & Payroll</span>
+            </button>
+
+            <!-- Manager -->
+            <button
+              type="button"
+              @click="quickLogin('manager@cafe-erp.com', 'Admin@123', 'Manager')"
               class="btn-press p-2 rounded-xl border flex flex-col items-center justify-center text-center transition-all cursor-pointer group"
               style="background-color: var(--bg-content); border-color: var(--border-color);"
               title="Masuk sebagai Store Manager"
             >
-              <div class="w-6 h-6 rounded-lg bg-amber-100 dark:bg-amber-900/60 text-amber-600 dark:text-amber-300 flex items-center justify-center text-xs font-black mb-1 group-hover:scale-105 transition-transform">
-                MN
+              <div class="w-6 h-6 rounded-lg bg-indigo-100 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-300 flex items-center justify-center text-xs font-black mb-1 group-hover:scale-105 transition-transform">
+                🏢
               </div>
               <span class="text-[11px] font-bold truncate max-w-full" style="color: var(--text-primary);">Manager</span>
-              <span class="text-[9.5px] truncate max-w-full" style="color: var(--text-muted);">Stok & Laporan</span>
+              <span class="text-[9.5px] truncate max-w-full" style="color: var(--text-muted);">Supervisor</span>
             </button>
 
+            <!-- Owner -->
             <button
               type="button"
-              @click="quickLogin('finance@cafe-erp.com', 'Password@123', 'Finance Staff')"
+              @click="quickLogin('owner@cafe-erp.com', 'Admin@123', 'Owner')"
               class="btn-press p-2 rounded-xl border flex flex-col items-center justify-center text-center transition-all cursor-pointer group"
               style="background-color: var(--bg-content); border-color: var(--border-color);"
-              title="Masuk sebagai Staf Keuangan"
+              title="Masuk sebagai Owner Cafe"
             >
-              <div class="w-6 h-6 rounded-lg bg-purple-100 dark:bg-purple-900/60 text-purple-600 dark:text-purple-300 flex items-center justify-center text-xs font-black mb-1 group-hover:scale-105 transition-transform">
-                FN
+              <div class="w-6 h-6 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 flex items-center justify-center text-xs font-black mb-1 group-hover:scale-105 transition-transform">
+                👔
               </div>
-              <span class="text-[11px] font-bold truncate max-w-full" style="color: var(--text-primary);">Finance</span>
-              <span class="text-[9.5px] truncate max-w-full" style="color: var(--text-muted);">Jurnal & Kas</span>
+              <span class="text-[11px] font-bold truncate max-w-full" style="color: var(--text-primary);">Owner</span>
+              <span class="text-[9.5px] truncate max-w-full" style="color: var(--text-muted);">Executive KPI</span>
             </button>
           </div>
         </div>
@@ -599,17 +663,8 @@ const handleLogin = async () => {
 
       notifyStore.success(`Selamat datang kembali, ${userObj.firstName}!`, `Peran: ${userObj.roleId}`)
 
-      // Role-Based Smart Navigation
-      const roleLower = String(userObj.roleId).toLowerCase()
-      if (roleLower.includes('kasir') || roleLower.includes('cashier')) {
-        await router.push('/pos')
-      } else if (roleLower.includes('finance') || roleLower.includes('keuangan')) {
-        await router.push('/finance')
-      } else if (roleLower.includes('gudang') || roleLower.includes('inventory')) {
-        await router.push('/inventory')
-      } else {
-        await router.push('/dashboard')
-      }
+      // Direct all roles to their personalized Welcome Page / Dashboard
+      await router.push('/dashboard')
     } else {
       throw new Error('Respons otentikasi tidak valid dari server')
     }

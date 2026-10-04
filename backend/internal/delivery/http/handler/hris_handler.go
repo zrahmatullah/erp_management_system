@@ -458,8 +458,14 @@ func (h *HRISHandler) ClockIn(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if body.EmployeeID == "" {
-		// Fallback to first active employee
-		_ = h.db.QueryRow(ctx, "SELECT id FROM employees WHERE status = 'active' AND deleted_at IS NULL LIMIT 1").Scan(&body.EmployeeID)
+		claims, _ := middleware.GetUserFromContext(ctx)
+		if claims != nil {
+			_ = h.db.QueryRow(ctx, "SELECT id FROM employees WHERE (user_id = $1 OR email = $2) AND deleted_at IS NULL LIMIT 1", claims.UserID, claims.Email).Scan(&body.EmployeeID)
+		}
+		if body.EmployeeID == "" {
+			// Fallback to first active employee
+			_ = h.db.QueryRow(ctx, "SELECT id FROM employees WHERE status = 'active' AND deleted_at IS NULL LIMIT 1").Scan(&body.EmployeeID)
+		}
 	}
 
 	now := time.Now()
@@ -532,7 +538,13 @@ func (h *HRISHandler) ClockOut(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if body.EmployeeID == "" {
-		_ = h.db.QueryRow(ctx, "SELECT id FROM employees WHERE status = 'active' AND deleted_at IS NULL LIMIT 1").Scan(&body.EmployeeID)
+		claims, _ := middleware.GetUserFromContext(ctx)
+		if claims != nil {
+			_ = h.db.QueryRow(ctx, "SELECT id FROM employees WHERE (user_id = $1 OR email = $2) AND deleted_at IS NULL LIMIT 1", claims.UserID, claims.Email).Scan(&body.EmployeeID)
+		}
+		if body.EmployeeID == "" {
+			_ = h.db.QueryRow(ctx, "SELECT id FROM employees WHERE status = 'active' AND deleted_at IS NULL LIMIT 1").Scan(&body.EmployeeID)
+		}
 	}
 
 	now := time.Now()
@@ -655,6 +667,13 @@ func (h *HRISHandler) CreateLeave(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		writeError(w, http.StatusBadRequest, "Invalid leave payload")
 		return
+	}
+
+	if body.EmployeeID == "" {
+		claims, _ := middleware.GetUserFromContext(ctx)
+		if claims != nil {
+			_ = h.db.QueryRow(ctx, "SELECT id FROM employees WHERE (user_id = $1 OR email = $2) AND deleted_at IS NULL LIMIT 1", claims.UserID, claims.Email).Scan(&body.EmployeeID)
+		}
 	}
 
 	if body.EmployeeID == "" || body.StartDate == "" || body.EndDate == "" {
@@ -1309,3 +1328,292 @@ func (h *HRISHandler) BatchApprovePayroll(w http.ResponseWriter, r *http.Request
 func formatRupiah(val float64) string {
 	return fmt.Sprintf("%.0f", val)
 }
+
+// GetMyEmployeePortal returns comprehensive employee self-service data for the authenticated user
+func (h *HRISHandler) GetMyEmployeePortal(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	claims, err := middleware.GetUserFromContext(ctx)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "Unauthorized: user session not found")
+		return
+	}
+
+	var emp struct {
+		ID             string
+		NIK            string
+		FirstName      string
+		LastName       string
+		Email          string
+		Phone          string
+		Department     string
+		Position       string
+		JobTitle       string
+		BasicSalary    float64
+		Status         string
+		JoinDate       time.Time
+		RemainingLeave int
+		AvatarURL      string
+	}
+
+	// Try finding employee by user_id or email
+	err = h.db.QueryRow(ctx, `
+		SELECT 
+			e.id, e.nik, e.first_name, e.last_name, 
+			COALESCE(e.email, ''), COALESCE(e.phone, ''),
+			COALESCE(d.name, 'Operasional') as department,
+			COALESCE(p.title, 'Staff') as position,
+			COALESCE(e.job_title, p.title, 'Staff') as job_title,
+			COALESCE(e.basic_salary, 0),
+			COALESCE(e.status, 'active'),
+			COALESCE(e.join_date, CURRENT_DATE),
+			COALESCE(e.remaining_leave, 12),
+			COALESCE(u.avatar_url, '')
+		FROM employees e
+		LEFT JOIN users u ON e.user_id = u.id
+		LEFT JOIN departments d ON e.department_id = d.id
+		LEFT JOIN positions p ON e.position_id = p.id
+		WHERE (e.user_id = $1 OR e.email = $2) AND e.deleted_at IS NULL
+		LIMIT 1`, claims.UserID, claims.Email).Scan(
+		&emp.ID, &emp.NIK, &emp.FirstName, &emp.LastName,
+		&emp.Email, &emp.Phone, &emp.Department, &emp.Position,
+		&emp.JobTitle, &emp.BasicSalary, &emp.Status, &emp.JoinDate,
+		&emp.RemainingLeave, &emp.AvatarURL,
+	)
+
+	// Fallback to first employee if current user isn't directly mapped (e.g. demoing from Super Admin)
+	if err != nil {
+		_ = h.db.QueryRow(ctx, `
+			SELECT 
+				e.id, e.nik, e.first_name, e.last_name, 
+				COALESCE(e.email, ''), COALESCE(e.phone, ''),
+				COALESCE(d.name, 'Operasional') as department,
+				COALESCE(p.title, 'Staff') as position,
+				COALESCE(e.job_title, p.title, 'Staff') as job_title,
+				COALESCE(e.basic_salary, 0),
+				COALESCE(e.status, 'active'),
+				COALESCE(e.join_date, CURRENT_DATE),
+				COALESCE(e.remaining_leave, 12),
+				COALESCE(u.avatar_url, '')
+			FROM employees e
+			LEFT JOIN users u ON e.user_id = u.id
+			LEFT JOIN departments d ON e.department_id = d.id
+			LEFT JOIN positions p ON e.position_id = p.id
+			WHERE e.deleted_at IS NULL
+			ORDER BY e.created_at ASC
+			LIMIT 1`).Scan(
+			&emp.ID, &emp.NIK, &emp.FirstName, &emp.LastName,
+			&emp.Email, &emp.Phone, &emp.Department, &emp.Position,
+			&emp.JobTitle, &emp.BasicSalary, &emp.Status, &emp.JoinDate,
+			&emp.RemainingLeave, &emp.AvatarURL,
+		)
+	}
+
+	today := time.Now().Format("2006-01-02")
+	var todayAtt map[string]interface{}
+	var attID, attStatus, attNotes string
+	var clockIn, clockOut *time.Time
+	var lateMins, otMins int
+
+	errAtt := h.db.QueryRow(ctx, `
+		SELECT id, clock_in, clock_out, status, COALESCE(late_minutes, 0), COALESCE(overtime_minutes, 0), COALESCE(notes, '')
+		FROM attendances
+		WHERE employee_id = $1 AND clock_in::date = $2
+		ORDER BY clock_in DESC LIMIT 1`, emp.ID, today).Scan(&attID, &clockIn, &clockOut, &attStatus, &lateMins, &otMins, &attNotes)
+
+	if errAtt == nil {
+		cinStr := ""
+		if clockIn != nil {
+			cinStr = clockIn.Format("15:04:05")
+		}
+		coutStr := ""
+		if clockOut != nil {
+			coutStr = clockOut.Format("15:04:05")
+		}
+		todayAtt = map[string]interface{}{
+			"id":               attID,
+			"has_clocked_in":   true,
+			"has_clocked_out":  clockOut != nil,
+			"clock_in":         cinStr,
+			"clock_out":        coutStr,
+			"status":           attStatus,
+			"late_minutes":     lateMins,
+			"overtime_minutes": otMins,
+			"notes":            attNotes,
+		}
+	} else {
+		todayAtt = map[string]interface{}{
+			"has_clocked_in":  false,
+			"has_clocked_out": false,
+			"clock_in":        nil,
+			"clock_out":       nil,
+			"status":          "absent",
+		}
+	}
+
+	// Leaves summary
+	var pendingLeaves, approvedLeaves int
+	_ = h.db.QueryRow(ctx, "SELECT COUNT(*) FROM leaves WHERE employee_id = $1 AND status = 'pending' AND deleted_at IS NULL", emp.ID).Scan(&pendingLeaves)
+	_ = h.db.QueryRow(ctx, "SELECT COUNT(*) FROM leaves WHERE employee_id = $1 AND status = 'approved' AND deleted_at IS NULL", emp.ID).Scan(&approvedLeaves)
+
+	leaveRows, _ := h.db.Query(ctx, `
+		SELECT id, leave_type, start_date, end_date, total_days, reason, status, created_at
+		FROM leaves
+		WHERE employee_id = $1 AND deleted_at IS NULL
+		ORDER BY created_at DESC LIMIT 5`, emp.ID)
+	var recentLeaves []map[string]interface{}
+	if leaveRows != nil {
+		defer leaveRows.Close()
+		for leaveRows.Next() {
+			var lid, ltype, lreason, lstatus string
+			var lstart, lend, lcreated time.Time
+			var ldays int
+			if err := leaveRows.Scan(&lid, &ltype, &lstart, &lend, &ldays, &lreason, &lstatus, &lcreated); err == nil {
+				recentLeaves = append(recentLeaves, map[string]interface{}{
+					"id":         lid,
+					"leave_type": ltype,
+					"start_date": lstart.Format("2006-01-02"),
+					"end_date":   lend.Format("2006-01-02"),
+					"total_days": ldays,
+					"reason":     lreason,
+					"status":     lstatus,
+					"created_at": lcreated.Format("2006-01-02 15:04"),
+				})
+			}
+		}
+	}
+	if recentLeaves == nil {
+		recentLeaves = []map[string]interface{}{}
+	}
+
+	// Latest payroll record
+	var payrollMap map[string]interface{}
+	var pid string
+	var pstart, pend time.Time
+	var pbasic, pallow, pot, pgross, ptotDed, pnet float64
+	var pisPaid bool
+	var ppaidAt *time.Time
+
+	errPay := h.db.QueryRow(ctx, `
+		SELECT id, period_start, period_end, basic_salary, allowances, overtime_pay, gross_salary,
+		       COALESCE(bpjs_deduction, 0) + COALESCE(tax_deduction, 0) + COALESCE(other_deductions, 0),
+		       net_salary, is_paid, paid_at
+		FROM payroll_records
+		WHERE employee_id = $1 AND deleted_at IS NULL
+		ORDER BY period_end DESC LIMIT 1`, emp.ID).Scan(&pid, &pstart, &pend, &pbasic, &pallow, &pot, &pgross, &ptotDed, &pnet, &pisPaid, &ppaidAt)
+
+	if errPay == nil {
+		paidAtStr := ""
+		if ppaidAt != nil {
+			paidAtStr = ppaidAt.Format("2006-01-02 15:04")
+		}
+		payrollMap = map[string]interface{}{
+			"id":               pid,
+			"period_start":     pstart.Format("2006-01-02"),
+			"period_end":       pend.Format("2006-01-02"),
+			"period_label":     pstart.Format("02 Jan") + " - " + pend.Format("02 Jan 2006"),
+			"basic_salary":     pbasic,
+			"allowances":       pallow,
+			"overtime_pay":     pot,
+			"gross_salary":     pgross,
+			"total_deductions": ptotDed,
+			"net_salary":       pnet,
+			"is_paid":          pisPaid,
+			"paid_at":          paidAtStr,
+		}
+	} else {
+		// Calculate default estimate
+		estAllow := 500000.0
+		estDed := 200000.0
+		estNet := emp.BasicSalary + estAllow - estDed
+		payrollMap = map[string]interface{}{
+			"period_label":     "Bulan Berjalan",
+			"basic_salary":     emp.BasicSalary,
+			"allowances":       estAllow,
+			"overtime_pay":     0.0,
+			"gross_salary":     emp.BasicSalary + estAllow,
+			"total_deductions": estDed,
+			"net_salary":       estNet,
+			"is_paid":          false,
+			"paid_at":          "",
+		}
+	}
+
+	// Weekly shift schedule
+	schedRows, _ := h.db.Query(ctx, `
+		SELECT es.id, es.date, COALESCE(ws.name, 'Libur'),
+		       COALESCE(ws.start_time::text, '00:00:00'),
+		       COALESCE(ws.end_time::text, '00:00:00'),
+		       COALESCE(ws.color, '#94a3b8'),
+		       COALESCE(es.notes, '')
+		FROM employee_schedules es
+		LEFT JOIN work_shifts ws ON es.shift_id = ws.id
+		WHERE es.employee_id = $1 AND es.date BETWEEN date_trunc('week', CURRENT_DATE) AND date_trunc('week', CURRENT_DATE) + INTERVAL '6 days'
+		ORDER BY es.date ASC`, emp.ID)
+
+	var weeklySchedule []map[string]interface{}
+	if schedRows != nil {
+		defer schedRows.Close()
+		for schedRows.Next() {
+			var sid, sname, stime, etime, scolor, snotes string
+			var sdate time.Time
+			if err := schedRows.Scan(&sid, &sdate, &sname, &stime, &etime, &scolor, &snotes); err == nil {
+				startTimeFormatted := ""
+				if len(stime) >= 5 {
+					startTimeFormatted = stime[:5]
+				}
+				endTimeFormatted := ""
+				if len(etime) >= 5 {
+					endTimeFormatted = etime[:5]
+				}
+				weeklySchedule = append(weeklySchedule, map[string]interface{}{
+					"id":         sid,
+					"date":       sdate.Format("2006-01-02"),
+					"day_name":   sdate.Format("Monday"),
+					"shift_name": sname,
+					"start_time": startTimeFormatted,
+					"end_time":   endTimeFormatted,
+					"color":      scolor,
+					"notes":      snotes,
+					"is_today":   sdate.Format("2006-01-02") == today,
+				})
+			}
+		}
+	}
+	if weeklySchedule == nil {
+		weeklySchedule = []map[string]interface{}{}
+	}
+
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"success": true,
+		"data": map[string]interface{}{
+			"employee": map[string]interface{}{
+				"id":              emp.ID,
+				"nik":             emp.NIK,
+				"first_name":      emp.FirstName,
+				"last_name":       emp.LastName,
+				"full_name":       fmt.Sprintf("%s %s", emp.FirstName, emp.LastName),
+				"email":           emp.Email,
+				"phone":           emp.Phone,
+				"department":      emp.Department,
+				"position":        emp.Position,
+				"job_title":       emp.JobTitle,
+				"basic_salary":    emp.BasicSalary,
+				"status":          emp.Status,
+				"join_date":       emp.JoinDate.Format("2006-01-02"),
+				"remaining_leave": emp.RemainingLeave,
+				"avatar_url":      emp.AvatarURL,
+			},
+			"today_attendance": todayAtt,
+			"leave_summary": map[string]interface{}{
+				"total_quota":     12,
+				"remaining_leave": emp.RemainingLeave,
+				"pending_count":   pendingLeaves,
+				"approved_count":  approvedLeaves,
+				"history":         recentLeaves,
+			},
+			"latest_payroll":  payrollMap,
+			"weekly_schedule": weeklySchedule,
+		},
+	})
+}
+
