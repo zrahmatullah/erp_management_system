@@ -576,3 +576,37 @@ button:active:not(:disabled),
   }
 }
 
+/* ==========================================================================
+   8. ZERO-SCROLL LOGIN PAGE LOCK
+   Completely removes horizontal and vertical scrollbars on login screen
+   ========================================================================== */
+html.login-page,
+body.login-page,
+body.login-page #app {
+  overflow: hidden !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  scrollbar-width: none !important; /* Firefox */
+  -ms-overflow-style: none !important; /* IE/Edge */
+}
+
+html.login-page::-webkit-scrollbar,
+body.login-page::-webkit-scrollbar,
+body.login-page #app::-webkit-scrollbar,
+body.login-page *::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+html.login-page *,
+body.login-page * {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+
