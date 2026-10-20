@@ -42,6 +42,9 @@
 
       <div class="h-6 w-px mx-1" style="background-color: var(--border-color);"></div>
 
+      <!-- UI Version Switcher (Instant V1 / V2 switch) -->
+      <UiVersionSwitcherPill />
+
       <!-- User Profile Dropdown -->
       <n-dropdown :options="userOptions" @select="handleUserMenu">
         <div class="topbar-user-pill flex items-center gap-2.5 cursor-pointer py-1 px-2 rounded-lg transition-colors">
@@ -84,6 +87,7 @@
 import { h, ref, computed } from 'vue'
 import { NDropdown } from 'naive-ui'
 import Breadcrumb from './Breadcrumb.vue'
+import UiVersionSwitcherPill from '@/components/v2/common/UiVersionSwitcherPill.vue'
 import { useAuthStore } from '@/stores/auth.store'
 import { useAppStore } from '@/stores/app.store'
 import { useNotificationStore } from '@/stores/notification.store'

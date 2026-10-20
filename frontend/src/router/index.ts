@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
 import AppLayout from '@/components/layout/AppLayout.vue'
+import { createVersionedRoute } from '@/utils/versionedRoute'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -20,13 +21,19 @@ const routes: Array<RouteRecordRaw> = [
       {
         path: 'dashboard',
         name: 'Dashboard',
-        component: () => import('@/views/dashboard/DashboardView.vue')
+        component: createVersionedRoute(
+          () => import('@/views/dashboard/DashboardView.vue'),
+          () => import('@/views/v2/dashboard/DashboardViewV2.vue')
+        )
       },
       // POS & Restaurant Service
       {
         path: 'pos',
         name: 'POS',
-        component: () => import('@/views/pos/POSView.vue')
+        component: createVersionedRoute(
+          () => import('@/views/pos/POSView.vue'),
+          () => import('@/views/v2/pos/POSViewV2.vue')
+        )
       },
       {
         path: 'pos/tables',
@@ -36,7 +43,10 @@ const routes: Array<RouteRecordRaw> = [
       {
         path: 'pos/kds',
         name: 'KitchenDisplay',
-        component: () => import('@/views/pos/KitchenDisplayView.vue')
+        component: createVersionedRoute(
+          () => import('@/views/pos/KitchenDisplayView.vue'),
+          () => import('@/views/v2/pos/KitchenDisplayViewV2.vue')
+        )
       },
       {
         path: 'pos/transactions',
@@ -52,7 +62,10 @@ const routes: Array<RouteRecordRaw> = [
       {
         path: 'inventory',
         name: 'InventoryStock',
-        component: () => import('@/views/inventory/StockList.vue')
+        component: createVersionedRoute(
+          () => import('@/views/inventory/StockList.vue'),
+          () => import('@/views/v2/inventory/StockListV2.vue')
+        )
       },
       {
         path: 'inventory/stock-card',
@@ -73,7 +86,10 @@ const routes: Array<RouteRecordRaw> = [
       {
         path: 'hris',
         name: 'EmployeeList',
-        component: () => import('@/views/hris/EmployeeList.vue')
+        component: createVersionedRoute(
+          () => import('@/views/hris/EmployeeList.vue'),
+          () => import('@/views/v2/hris/EmployeeListV2.vue')
+        )
       },
       {
         path: 'hris/attendance',
@@ -99,7 +115,10 @@ const routes: Array<RouteRecordRaw> = [
       {
         path: 'finance',
         name: 'FinanceOverview',
-        component: () => import('@/views/finance/FinanceOverview.vue')
+        component: createVersionedRoute(
+          () => import('@/views/finance/FinanceOverview.vue'),
+          () => import('@/views/v2/finance/FinanceOverviewV2.vue')
+        )
       },
       {
         path: 'finance/journal',
@@ -110,7 +129,10 @@ const routes: Array<RouteRecordRaw> = [
       {
         path: 'reports',
         name: 'Reports',
-        component: () => import('@/views/reports/ReportsView.vue')
+        component: createVersionedRoute(
+          () => import('@/views/reports/ReportsView.vue'),
+          () => import('@/views/v2/reports/ReportsViewV2.vue')
+        )
       },
       // Super Admin Settings & Master Hub
       {
