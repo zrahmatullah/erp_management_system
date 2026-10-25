@@ -71,3 +71,8 @@ logs/
 frontend/.scannerwork/
 backend/coverage.out
 backend/coverage/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
