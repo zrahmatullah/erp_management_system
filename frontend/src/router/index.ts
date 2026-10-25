@@ -6,7 +6,10 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/login',
     name: 'Login',
-    component: () => import('@/views/auth/LoginView.vue'),
+    component: createVersionedRoute(
+      () => import('@/views/auth/LoginView.vue'),
+      () => import('@/views/v2/auth/LoginViewV2.vue')
+    ),
     meta: { requiresAuth: false }
   },
   {
