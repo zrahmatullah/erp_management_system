@@ -100,6 +100,10 @@ func (u *AuthUsecaseImpl) RefreshToken(ctx context.Context, token string) (domai
 		return domain.LoginResponse{}, err
 	}
 
+	if !user.IsActive {
+		return domain.LoginResponse{}, errors.New("account is disabled")
+	}
+
 	roleName, roleID, permissions, _ := u.userRepo.GetUserRoleAndPermissions(ctx, user.ID)
 	if roleID != nil {
 		user.RoleID = roleID
@@ -107,6 +111,9 @@ func (u *AuthUsecaseImpl) RefreshToken(ctx context.Context, token string) (domai
 	}
 	if roleName == "" {
 		roleName = "Super Admin"
+	}
+	if user.RoleName == "" {
+		user.RoleName = roleName
 	}
 
 	var permStrings []string
@@ -162,6 +169,10 @@ func (u *AuthUsecaseImpl) GetProfile(ctx context.Context, userID uuid.UUID) (dom
 		return domain.LoginResponse{}, err
 	}
 
+	if !user.IsActive {
+		return domain.LoginResponse{}, errors.New("account is disabled")
+	}
+
 	roleName, roleID, permissions, _ := u.userRepo.GetUserRoleAndPermissions(ctx, user.ID)
 	if roleID != nil {
 		user.RoleID = roleID
@@ -169,6 +180,9 @@ func (u *AuthUsecaseImpl) GetProfile(ctx context.Context, userID uuid.UUID) (dom
 	}
 	if roleName == "" {
 		roleName = "Super Admin"
+	}
+	if user.RoleName == "" {
+		user.RoleName = roleName
 	}
 
 	return domain.LoginResponse{

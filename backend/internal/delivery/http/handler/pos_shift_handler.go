@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -10,9 +11,11 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"cafe-erp-system/backend/internal/delivery/http/middleware"
+	"cafe-erp-system/backend/pkg/logger"
 	"cafe-erp-system/backend/pkg/response"
 )
 
@@ -58,7 +61,7 @@ func (h *POSShiftHandler) GetCurrentShift(w http.ResponseWriter, r *http.Request
 	}
 
 	query := `
-		SELECT s.id, s.branch_id, b.name as branch_name, s.cashier_id, u.name as cashier_name,
+		SELECT s.id, s.branch_id, b.name as branch_name, s.cashier_id, u.full_name as cashier_name,
 		       s.shift_name, s.opening_cash_float, s.actual_cash_counted, s.expected_cash_total,
 		       s.cash_difference, s.total_cash_sales, s.total_non_cash_sales, s.total_cash_drops,
 		       s.total_refunds, s.status, s.opened_at, s.notes
@@ -119,6 +122,9 @@ func (h *POSShiftHandler) GetCurrentShift(w http.ResponseWriter, r *http.Request
 	)
 
 	if err != nil {
+		if !errors.Is(err, pgx.ErrNoRows) {
+			logger.Log.Warn().Err(err).Msg("GetCurrentShift query warning")
+		}
 		response.Success(w, "Tidak ada shift aktif", nil)
 		return
 	}
@@ -126,7 +132,7 @@ func (h *POSShiftHandler) GetCurrentShift(w http.ResponseWriter, r *http.Request
 	shift.ExpectedCurrentCash = shift.OpeningCashFloat + shift.TotalCashSales - shift.TotalCashDrops - shift.TotalRefunds
 
 	rows, err := h.db.Query(ctx, `
-		SELECT m.id, m.movement_type, m.amount, m.reason, m.created_at, u.name as authorized_by_name
+		SELECT m.id, m.movement_type, m.amount, m.reason, m.created_at, COALESCE(u.full_name, 'System') as authorized_by_name
 		FROM cashier_shift_movements m
 		LEFT JOIN users u ON m.authorized_by = u.id
 		WHERE m.shift_id = $1
@@ -404,8 +410,8 @@ func (h *POSShiftHandler) GetShiftSummary(w http.ResponseWriter, r *http.Request
 	shiftID := chi.URLParam(r, "id")
 
 	query := `
-		SELECT s.id, s.branch_id, b.name as branch_name, s.cashier_id, u.name as cashier_name,
-		       s.supervisor_id, su.name as supervisor_name, s.shift_name,
+		SELECT s.id, s.branch_id, b.name as branch_name, s.cashier_id, u.full_name as cashier_name,
+		       s.supervisor_id, su.full_name as supervisor_name, s.shift_name,
 		       s.opening_cash_float, s.actual_cash_counted, s.expected_cash_total, s.cash_difference,
 		       s.total_cash_sales, s.total_non_cash_sales, s.total_cash_drops, s.total_refunds,
 		       s.status, s.opened_at, s.closed_at, s.notes
@@ -473,7 +479,7 @@ func (h *POSShiftHandler) GetShiftSummary(w http.ResponseWriter, r *http.Request
 	}
 
 	movRows, err := h.db.Query(ctx, `
-		SELECT m.id, m.movement_type, m.amount, m.reason, m.created_at, u.name as authorized_by_name
+		SELECT m.id, m.movement_type, m.amount, m.reason, m.created_at, COALESCE(u.full_name, 'System') as authorized_by_name
 		FROM cashier_shift_movements m
 		LEFT JOIN users u ON m.authorized_by = u.id
 		WHERE m.shift_id = $1
@@ -545,7 +551,7 @@ func (h *POSShiftHandler) ListShifts(w http.ResponseWriter, r *http.Request) {
 	_ = h.db.QueryRow(ctx, "SELECT COUNT(*) "+baseQuery, args...).Scan(&total)
 
 	selectQuery := fmt.Sprintf(`
-		SELECT s.id, s.branch_id, b.name as branch_name, s.cashier_id, u.name as cashier_name,
+		SELECT s.id, s.branch_id, b.name as branch_name, s.cashier_id, u.full_name as cashier_name,
 		       s.shift_name, s.opening_cash_float, s.actual_cash_counted, s.expected_cash_total,
 		       s.cash_difference, s.total_cash_sales, s.total_non_cash_sales, s.total_cash_drops,
 		       s.status, s.opened_at, s.closed_at

@@ -248,6 +248,21 @@ func TestAuthUsecase_RefreshToken(t *testing.T) {
 		_, err := usecase.RefreshToken(context.Background(), orphanRefresh)
 		assert.Error(t, err)
 	})
+
+	t.Run("Disabled User Fails Refresh", func(t *testing.T) {
+		disabledUser := &domain.User{
+			BaseEntity: domain.BaseEntity{ID: uuid.New()},
+			Username:   "disabled_user",
+			Email:      "disabled@cafe.com",
+			IsActive:   false,
+		}
+		_ = repo.Create(context.Background(), disabledUser)
+		_, disabledRefresh, _ := middleware.GenerateTokenPair(disabledUser.ID, disabledUser.Email, "Cashier", nil, nil)
+
+		_, err := usecase.RefreshToken(context.Background(), disabledRefresh)
+		assert.Error(t, err)
+		assert.Equal(t, "account is disabled", err.Error())
+	})
 }
 
 func TestAuthUsecase_ForgotPassword_And_Reset(t *testing.T) {
