@@ -10,8 +10,7 @@
         <button
           type="button"
           @click="refreshCurrentTab"
-          class="p-2.5 rounded-xl border transition-colors cursor-pointer text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
-          style="border-color: var(--border-color); background-color: var(--bg-primary);"
+          class="h-9 w-9 rounded-xl border flex items-center justify-center transition-all duration-150 cursor-pointer text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 border-slate-200/80 dark:border-slate-700/80 shadow-xs hover:border-blue-300 dark:hover:border-blue-600"
           title="Perbarui Data"
         >
           <RefreshCw class="w-4 h-4" :class="{ 'animate-spin': loading }" />
@@ -21,9 +20,9 @@
           v-if="activeTab === 'journal' || activeTab === 'overview'"
           type="button"
           @click="showNewJournalModal = true"
-          class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+          class="h-9 px-3.5 rounded-xl text-xs font-bold bg-[#4361EE] hover:bg-[#3752DE] text-white transition-all shadow-xs flex items-center gap-1.5 cursor-pointer shadow-blue-500/20 hover:shadow-md"
         >
-          <Plus class="w-3.5 h-3.5" />
+          <Plus class="w-4 h-4" />
           <span>Buat Jurnal Baru</span>
         </button>
 
@@ -31,9 +30,9 @@
           v-else-if="activeTab === 'coa'"
           type="button"
           @click="showNewAccountModal = true"
-          class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+          class="h-9 px-3.5 rounded-xl text-xs font-bold bg-[#4361EE] hover:bg-[#3752DE] text-white transition-all shadow-xs flex items-center gap-1.5 cursor-pointer shadow-blue-500/20 hover:shadow-md"
         >
-          <Plus class="w-3.5 h-3.5" />
+          <Plus class="w-4 h-4" />
           <span>Tambah Akun COA</span>
         </button>
 
@@ -41,9 +40,9 @@
           v-else-if="activeTab === 'expenses'"
           type="button"
           @click="showNewExpenseModal = true"
-          class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+          class="h-9 px-3.5 rounded-xl text-xs font-bold bg-[#4361EE] hover:bg-[#3752DE] text-white transition-all shadow-xs flex items-center gap-1.5 cursor-pointer shadow-blue-500/20 hover:shadow-md"
         >
-          <Plus class="w-3.5 h-3.5" />
+          <Plus class="w-4 h-4" />
           <span>Catat Pengeluaran</span>
         </button>
 
@@ -51,9 +50,9 @@
           v-else-if="activeTab === 'budget'"
           type="button"
           @click="showNewBudgetModal = true"
-          class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+          class="h-9 px-3.5 rounded-xl text-xs font-bold bg-[#4361EE] hover:bg-[#3752DE] text-white transition-all shadow-xs flex items-center gap-1.5 cursor-pointer shadow-blue-500/20 hover:shadow-md"
         >
-          <Plus class="w-3.5 h-3.5" />
+          <Plus class="w-4 h-4" />
           <span>Atur Anggaran</span>
         </button>
       </template>

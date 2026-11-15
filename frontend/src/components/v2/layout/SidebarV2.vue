@@ -4,7 +4,7 @@
     :class="appStore.sidebarCollapsed ? 'w-18' : 'w-64'"
     style="background-color: var(--bg-sidebar); border-color: var(--border-color); color: var(--text-secondary);"
   >
-    <!-- Brand / Workspace Header -->
+    <!-- Brand / Workspace Header (h-16 matching Topbar height) -->
     <div 
       class="h-16 flex items-center border-b shrink-0 transition-all duration-200"
       :class="appStore.sidebarCollapsed ? 'justify-center px-2' : 'justify-between px-4'"
@@ -12,32 +12,40 @@
     >
       <button 
         type="button"
-        class="flex items-center gap-3 min-w-0 text-left cursor-pointer bg-transparent border-0 p-0"
+        class="flex items-center gap-3 min-w-0 text-left cursor-pointer bg-transparent border-0 p-0 group"
         :class="appStore.sidebarCollapsed ? 'justify-center w-full' : ''"
         @click="appStore.sidebarCollapsed && appStore.toggleSidebar()"
         :title="appStore.sidebarCollapsed ? 'Klik untuk memperluas sidebar (Ctrl+B)' : undefined"
         aria-label="Cafe ERP Workspace"
       >
-        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-sm shadow-blue-500/20 shrink-0">
-          <Coffee class="w-5 h-5" />
+        <!-- Modern App Glyph Box -->
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#3B54DE] to-[#5572FA] flex items-center justify-center text-white shadow-md shadow-blue-500/20 shrink-0 group-hover:scale-105 transition-transform">
+          <Coffee class="w-4.5 h-4.5" />
         </div>
+
         <div v-if="!appStore.sidebarCollapsed" class="min-w-0 transition-opacity duration-200">
-          <div class="font-bold text-sm tracking-tight truncate leading-tight" style="color: var(--text-primary);">
-            Cafe ERP <span class="text-[10px] font-mono px-1 py-0.2 ml-1 rounded bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300">V2</span>
+          <div class="font-black text-sm tracking-tight truncate leading-tight flex items-center gap-1.5" style="color: var(--text-primary);">
+            <span>Cafe ERP</span>
+            <span class="text-[9px] font-mono font-extrabold px-1.5 py-0.2 rounded bg-blue-100 dark:bg-blue-900/60 text-[#4361EE] dark:text-blue-300 uppercase tracking-wider">
+              V2 PRO
+            </span>
           </div>
-          <div class="text-[11px] font-medium flex items-center gap-1.5 mt-0.5 truncate text-slate-400">
-            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
+          <div class="text-[11px] font-medium flex items-center gap-1.5 mt-0.5 truncate text-slate-400 dark:text-slate-500">
+            <span class="relative flex h-1.5 w-1.5 shrink-0">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+            </span>
             <span class="truncate">Senopati Central</span>
           </div>
         </div>
       </button>
 
-      <!-- Collapse Toggle Button -->
+      <!-- Collapse Toggle Button (Styled cleanly) -->
       <button
         v-if="!appStore.sidebarCollapsed"
         type="button"
         @click="appStore.toggleSidebar"
-        class="w-7 h-7 rounded-lg flex items-center justify-center transition-colors cursor-pointer text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+        class="w-8 h-8 rounded-xl border border-slate-200/70 dark:border-slate-800 bg-white hover:bg-slate-50 dark:bg-slate-800/80 dark:hover:bg-slate-700/80 flex items-center justify-center transition-all cursor-pointer text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 shadow-2xs hover:border-blue-300 dark:hover:border-blue-600"
         title="Ciutkan Sidebar (Ctrl+B)"
         aria-label="Ciutkan Sidebar"
       >
@@ -45,40 +53,39 @@
       </button>
     </div>
 
-    <!-- Quick Search Filter Bar (Expanded) -->
+    <!-- Quick Search Filter Bar (Expanded) with unified h-9 height -->
     <div v-if="!appStore.sidebarCollapsed" class="px-3.5 pt-3 pb-1 shrink-0">
-      <div class="relative flex items-center">
-        <span class="absolute left-2.5 flex items-center pointer-events-none text-slate-400">
+      <div class="h-9 relative flex items-center">
+        <span class="absolute left-2.5 flex items-center pointer-events-none text-slate-400 dark:text-slate-500">
           <Search class="w-3.5 h-3.5" />
         </span>
         <input
           v-model="searchQuery"
           type="text"
-          placeholder="Filter menu..."
+          placeholder="Cari modul atau menu..."
           aria-label="Filter menu"
-          class="w-full pl-8 pr-8 py-1.5 text-xs rounded-xl border outline-none transition-all focus:ring-1 focus:ring-blue-500"
-          style="background-color: var(--input-bg); border-color: var(--input-border); color: var(--input-text);"
+          class="h-9 w-full pl-8 pr-7 text-xs rounded-xl border outline-none transition-all duration-150 border-slate-200/70 dark:border-slate-800 bg-white dark:bg-slate-800/70 text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-[#4361EE] focus:ring-2 focus:ring-blue-500/15 shadow-2xs"
         />
         <button
           v-if="searchQuery"
           type="button"
           @click="searchQuery = ''"
-          class="absolute right-2 p-0.5 rounded text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+          class="absolute right-2 p-1 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
         >
-          <X class="w-3.5 h-3.5" />
+          <X class="w-3 h-3" />
         </button>
       </div>
     </div>
 
-    <!-- Navigation Menu Items -->
+    <!-- Navigation Menu Items (Refined modern scrollable list) -->
     <div class="flex-1 overflow-y-auto px-3 py-3 space-y-4 sidebar-v2-scroll">
       <!-- Empty Search Result -->
       <div v-if="filteredSections.length === 0" class="py-8 px-2 text-center">
-        <p class="text-xs text-slate-400">Menu tidak ditemukan</p>
+        <p class="text-xs text-slate-400">Modul tidak ditemukan</p>
         <button
           type="button"
           @click="searchQuery = ''"
-          class="text-xs text-blue-600 dark:text-blue-400 hover:underline mt-1 cursor-pointer font-medium"
+          class="text-xs text-[#4361EE] dark:text-blue-400 hover:underline mt-1 cursor-pointer font-semibold"
         >
           Reset Filter
         </button>
@@ -89,9 +96,9 @@
         <!-- Section Header -->
         <div 
           v-if="!appStore.sidebarCollapsed" 
-          class="px-2 pt-2 pb-1 text-[10px] font-bold tracking-wider uppercase text-slate-400 select-none"
+          class="px-2.5 pt-2 pb-1 text-[10px] font-extrabold tracking-wider uppercase text-slate-400 dark:text-slate-500 select-none flex items-center justify-between"
         >
-          {{ section.title }}
+          <span>{{ section.title }}</span>
         </div>
         <div 
           v-else-if="sIdx > 0" 
@@ -99,30 +106,38 @@
         ></div>
 
         <!-- Section Items -->
-        <div class="space-y-0.5">
+        <div class="space-y-1">
           <template v-for="item in section.items" :key="item.path || item.label">
             <!-- Non-expandable Menu Item -->
             <router-link
               v-if="!item.children"
               :to="item.path!"
-              class="group flex items-center rounded-xl text-xs font-medium transition-all duration-150 relative cursor-pointer"
+              class="group flex items-center rounded-xl text-xs font-semibold transition-all duration-150 relative cursor-pointer border"
               :class="[
                 isRouteActive(item.path!) 
-                  ? 'bg-blue-50/90 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 font-semibold shadow-xs' 
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 dark:text-slate-400 dark:hover:text-slate-100 dark:hover:bg-slate-800/60',
+                  ? 'bg-blue-50/90 text-[#4361EE] dark:bg-blue-950/50 dark:text-blue-300 font-bold shadow-xs border-blue-100 dark:border-blue-900/60' 
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70 dark:text-slate-400 dark:hover:text-slate-100 dark:hover:bg-slate-800/60 border-transparent',
                 appStore.sidebarCollapsed ? 'justify-center p-2.5 mx-auto w-10 h-10' : 'gap-3 px-3 py-2'
               ]"
               :title="appStore.sidebarCollapsed ? item.label : undefined"
             >
+              <!-- Active Indicator Bar on Left Edge -->
+              <span 
+                v-if="isRouteActive(item.path!) && !appStore.sidebarCollapsed" 
+                class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r-full bg-[#4361EE] dark:bg-blue-400 shadow-sm shadow-blue-500/50"
+              ></span>
+
               <component 
                 :is="item.icon" 
-                class="w-4.5 h-4.5 shrink-0 transition-colors" 
-                :class="isRouteActive(item.path!) ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200'"
+                class="w-4.5 h-4.5 shrink-0 transition-all duration-150" 
+                :class="isRouteActive(item.path!) 
+                  ? 'text-[#4361EE] dark:text-blue-400 scale-105' 
+                  : 'text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200'"
               />
               <span v-if="!appStore.sidebarCollapsed" class="truncate">{{ item.label }}</span>
               <span 
                 v-if="!appStore.sidebarCollapsed && item.badge" 
-                class="ml-auto text-[10px] font-semibold px-1.5 py-0.2 rounded-full"
+                class="ml-auto text-[10px] font-bold px-1.5 py-0.2 rounded-full uppercase tracking-wider"
                 :class="item.badgeClass || 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'"
               >
                 {{ item.badge }}
@@ -134,11 +149,11 @@
               <button
                 type="button"
                 @click="toggleSubmenu(item.label)"
-                class="w-full group flex items-center rounded-xl text-xs font-medium transition-all duration-150 relative cursor-pointer text-left"
+                class="w-full group flex items-center rounded-xl text-xs font-semibold transition-all duration-150 relative cursor-pointer text-left border"
                 :class="[
                   isSubmenuActive(item) 
-                    ? 'text-blue-700 dark:text-blue-300 font-semibold' 
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 dark:text-slate-400 dark:hover:text-slate-100 dark:hover:bg-slate-800/60',
+                    ? 'text-[#4361EE] dark:text-blue-300 font-bold border-transparent' 
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70 dark:text-slate-400 dark:hover:text-slate-100 dark:hover:bg-slate-800/60 border-transparent',
                   appStore.sidebarCollapsed ? 'justify-center p-2.5 mx-auto w-10 h-10' : 'gap-3 px-3 py-2 justify-between'
                 ]"
                 :title="appStore.sidebarCollapsed ? item.label : undefined"
@@ -146,7 +161,8 @@
                 <div class="flex items-center gap-3 min-w-0">
                   <component 
                     :is="item.icon" 
-                    class="w-4.5 h-4.5 shrink-0 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200" 
+                    class="w-4.5 h-4.5 shrink-0 transition-colors" 
+                    :class="isSubmenuActive(item) ? 'text-[#4361EE] dark:text-blue-400' : 'text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200'"
                   />
                   <span v-if="!appStore.sidebarCollapsed" class="truncate">{{ item.label }}</span>
                 </div>
@@ -160,7 +176,7 @@
               <!-- Submenu Children (when Expanded) -->
               <div 
                 v-if="!appStore.sidebarCollapsed && expandedSubmenus.has(item.label)" 
-                class="pl-7 pr-1 space-y-0.5 border-l border-slate-200/80 dark:border-slate-800 ml-4 py-1"
+                class="pl-7 pr-1 space-y-1 border-l border-slate-200/80 dark:border-slate-800 ml-4 py-1"
               >
                 <router-link
                   v-for="sub in item.children"
@@ -168,10 +184,10 @@
                   :to="sub.path"
                   class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-colors"
                   :class="isRouteActive(sub.path)
-                    ? 'text-blue-600 dark:text-blue-400 font-semibold bg-blue-50/60 dark:bg-blue-950/30'
+                    ? 'text-[#4361EE] dark:text-blue-400 font-bold bg-blue-50/70 dark:bg-blue-950/40'
                     : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-100/60 dark:hover:bg-slate-800/40'"
                 >
-                  <span class="w-1 h-1 rounded-full" :class="isRouteActive(sub.path) ? 'bg-blue-600 dark:bg-blue-400' : 'bg-slate-300 dark:bg-slate-700'"></span>
+                  <span class="w-1.5 h-1.5 rounded-full" :class="isRouteActive(sub.path) ? 'bg-[#4361EE] dark:bg-blue-400' : 'bg-slate-300 dark:bg-slate-700'"></span>
                   <span class="truncate">{{ sub.label }}</span>
                 </router-link>
               </div>
@@ -181,25 +197,28 @@
       </div>
     </div>
 
-    <!-- Bottom Actions: Branch Status & Theme Quick Toggle -->
+    <!-- Bottom Actions: Executive Branch Status & Node Info -->
     <div 
       class="p-3 border-t space-y-2 shrink-0 transition-all"
       style="border-color: var(--border-color); background-color: var(--bg-sidebar);"
     >
-      <!-- Outlet Status Card -->
+      <!-- Modern Executive Outlet Status Card -->
       <div 
         v-if="!appStore.sidebarCollapsed"
-        class="px-2.5 py-1.5 rounded-xl border flex items-center justify-between text-xs"
+        class="px-3 py-2.5 rounded-2xl border flex items-center justify-between text-xs shadow-xs"
         style="border-color: var(--border-color); background-color: var(--bg-content);"
       >
-        <div class="flex items-center gap-2 min-w-0">
+        <div class="flex items-center gap-2.5 min-w-0">
           <span class="relative flex h-2 w-2 shrink-0">
             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
             <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
           </span>
-          <span class="text-[11px] font-medium truncate text-slate-600 dark:text-slate-300">Senopati Branch</span>
+          <div class="min-w-0">
+            <div class="text-xs font-bold truncate text-slate-800 dark:text-slate-200">Senopati Branch</div>
+            <div class="text-[10px] text-slate-400 dark:text-slate-500 truncate">Latensi 28ms • Node #01</div>
+          </div>
         </div>
-        <span class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded uppercase">
+        <span class="text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/80 dark:border-emerald-800/80 px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0">
           Online
         </span>
       </div>
@@ -209,7 +228,7 @@
         <button
           type="button"
           @click="appStore.toggleSidebar"
-          class="w-9 h-9 rounded-xl flex items-center justify-center transition-colors cursor-pointer border text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 border-slate-200 dark:border-slate-800"
+          class="w-9 h-9 rounded-xl flex items-center justify-center transition-all cursor-pointer border text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-800/90 shadow-2xs hover:border-blue-300 dark:hover:border-blue-600"
           title="Perluas Sidebar (Ctrl+B)"
         >
           <PanelLeftOpen class="w-4 h-4" />
@@ -284,7 +303,7 @@ const navSections: NavSection[] = [
   {
     title: 'Operasional POS',
     items: [
-      { label: 'Point of Sale (POS)', path: '/pos', icon: ShoppingCart, badge: 'Live', badgeClass: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' },
+      { label: 'Point of Sale (POS)', path: '/pos', icon: ShoppingCart, badge: 'Live', badgeClass: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200/70 dark:border-emerald-800/70' },
       { label: 'Manajemen Meja', path: '/pos/tables', icon: Layers },
       { label: 'Kitchen Display (KDS)', path: '/pos/kds', icon: MonitorDot },
       { label: 'Riwayat Transaksi', path: '/pos/transactions', icon: History },
@@ -384,18 +403,22 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+/* Ultra-slim, modern unobtrusive scrollbar for modern executive layout */
+.sidebar-v2-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.2) transparent;
+}
 .sidebar-v2-scroll::-webkit-scrollbar {
-  width: 4px;
+  width: 3.5px;
 }
 .sidebar-v2-scroll::-webkit-scrollbar-track {
   background: transparent;
 }
 .sidebar-v2-scroll::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.3);
-  border-radius: 4px;
+  background: rgba(148, 163, 184, 0.2);
+  border-radius: 9999px;
 }
-.sidebar-v2-scroll::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.5);
+.sidebar-v2-scroll:hover::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.4);
 }
 </style>
-

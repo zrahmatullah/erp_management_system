@@ -5,27 +5,28 @@
   >
     <!-- Left: Sidebar Toggle (Mobile / Desktop) & Modern Breadcrumb -->
     <div class="flex items-center gap-3">
+      <!-- Precision h-9 w-9 Sidebar Toggle Button -->
       <button
         type="button"
         @click="appStore.toggleSidebar"
-        class="w-9 h-9 rounded-xl flex items-center justify-center transition-all cursor-pointer border text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 bg-slate-100/80 hover:bg-slate-200/80 dark:bg-slate-800/80 dark:hover:bg-slate-700/80 border-slate-200/70 dark:border-slate-700/60"
-        :title="appStore.sidebarCollapsed ? 'Perluas Sidebar' : 'Ciutkan Sidebar'"
+        class="h-9 w-9 rounded-xl flex items-center justify-center transition-all duration-150 cursor-pointer border text-slate-600 dark:text-slate-300 hover:text-[#4361EE] dark:hover:text-blue-400 bg-white hover:bg-slate-50 dark:bg-slate-800/90 dark:hover:bg-slate-700/90 border-slate-200/80 dark:border-slate-700/80 shadow-xs hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-sm"
+        :title="appStore.sidebarCollapsed ? 'Perluas Sidebar (Ctrl+B)' : 'Ciutkan Sidebar (Ctrl+B)'"
         aria-label="Toggle Sidebar"
       >
-        <Menu v-if="appStore.sidebarCollapsed" class="w-4 h-4" />
-        <PanelLeftClose v-else class="w-4 h-4" />
+        <Menu v-if="appStore.sidebarCollapsed" class="w-4 h-4 shrink-0" />
+        <PanelLeftClose v-else class="w-4 h-4 shrink-0" />
       </button>
 
-      <div class="h-5 w-px bg-slate-200 dark:bg-slate-800 mx-1 hidden sm:block"></div>
+      <div class="h-5 w-px bg-slate-200 dark:bg-slate-700/80 mx-0.5 hidden sm:block"></div>
 
       <BreadcrumbV2 class="hidden md:flex" />
     </div>
 
     <!-- Right: Quick Search, UI Version Switcher, Theme Toggle, Notifications, Profile -->
-    <div class="flex items-center gap-2 sm:gap-3">
-      <!-- Minimalist Command Search Bar -->
-      <div class="relative hidden lg:block w-64 xl:w-72">
-        <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
+    <div class="flex items-center gap-2 sm:gap-2.5">
+      <!-- Minimalist Command Search Bar with unified h-9 height -->
+      <div class="relative hidden lg:flex items-center w-64 xl:w-72">
+        <span class="absolute left-3 flex items-center pointer-events-none text-slate-400 dark:text-slate-500">
           <Search class="w-3.5 h-3.5" />
         </span>
         <input
@@ -33,64 +34,62 @@
           @keydown.enter="handleSearch"
           type="text"
           placeholder="Cari transaksi, menu, stok..."
-          class="w-full pl-9 pr-14 py-1.5 text-xs rounded-xl border outline-none transition-all focus:ring-2 focus:ring-blue-500/20"
-          style="background-color: var(--input-bg); border-color: var(--input-border); color: var(--input-text);"
+          class="h-9 w-full pl-9 pr-11 text-xs rounded-xl border outline-none transition-all duration-150 border-slate-200/80 dark:border-slate-700/80 bg-white dark:bg-slate-800/90 text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-[#4361EE] focus:ring-2 focus:ring-blue-500/15 shadow-xs"
         />
-        <span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-mono px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700 text-slate-400 bg-slate-100 dark:bg-slate-800 pointer-events-none">
+        <span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-mono px-1.5 py-0.5 rounded-md border border-slate-200 dark:border-slate-700 text-slate-400 bg-slate-50 dark:bg-slate-800 pointer-events-none">
           ⌘K
         </span>
       </div>
 
-      <!-- UI Version Switcher Pill (Instant Rollback to V1 / Switch to V2) -->
+      <!-- UI Version Switcher Pill (Instant Rollback to V1 / Switch to V2) with unified h-9 height -->
       <UiVersionSwitcherPill />
 
-      <!-- Minimalist Theme Toggle (Light / Dark) -->
+      <!-- Minimalist Theme Toggle (Light / Dark) with precision h-9 w-9 -->
       <button
         type="button"
         @click="appStore.toggleTheme"
-        class="w-8.5 h-8.5 rounded-xl flex items-center justify-center transition-colors cursor-pointer border text-slate-600 dark:text-slate-300 hover:text-amber-500 dark:hover:text-blue-400 bg-slate-100/80 hover:bg-slate-200/80 dark:bg-slate-800/80 dark:hover:bg-slate-700/80 border-slate-200/70 dark:border-slate-700/60"
+        class="h-9 w-9 rounded-xl flex items-center justify-center transition-all duration-150 cursor-pointer border text-slate-600 dark:text-slate-300 hover:text-amber-500 dark:hover:text-amber-400 bg-white hover:bg-slate-50 dark:bg-slate-800/90 dark:hover:bg-slate-700/90 border-slate-200/80 dark:border-slate-700/80 shadow-xs hover:border-amber-300 dark:hover:border-amber-600 hover:shadow-sm"
         :title="appStore.resolvedTheme === 'dark' ? 'Ganti ke Mode Terang' : 'Ganti ke Mode Gelap'"
         aria-label="Toggle Theme"
       >
-        <Sun v-if="appStore.resolvedTheme === 'dark'" class="w-4 h-4 text-amber-400" />
-        <Moon v-else class="w-4 h-4 text-slate-600" />
+        <Sun v-if="appStore.resolvedTheme === 'dark'" class="w-4 h-4 text-amber-400 shrink-0" />
+        <Moon v-else class="w-4 h-4 text-slate-600 shrink-0" />
       </button>
 
-      <!-- Notification Bell with Ping -->
+      <!-- Notification Bell with Ping and precision h-9 w-9 -->
       <div class="relative">
         <button
           type="button"
           @click="toggleNotifications"
-          class="w-8.5 h-8.5 rounded-xl flex items-center justify-center transition-colors cursor-pointer border text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 bg-slate-100/80 hover:bg-slate-200/80 dark:bg-slate-800/80 dark:hover:bg-slate-700/80 border-slate-200/70 dark:border-slate-700/60"
+          class="h-9 w-9 rounded-xl flex items-center justify-center transition-all duration-150 cursor-pointer border text-slate-600 dark:text-slate-300 hover:text-[#4361EE] dark:hover:text-blue-400 bg-white hover:bg-slate-50 dark:bg-slate-800/90 dark:hover:bg-slate-700/90 border-slate-200/80 dark:border-slate-700/80 shadow-xs hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-sm"
           title="Notifikasi & Peringatan"
           aria-label="Lihat Notifikasi"
         >
-          <Bell class="w-4 h-4" />
+          <Bell class="w-4 h-4 shrink-0" />
         </button>
-        <span class="absolute top-1 right-1 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-900 pointer-events-none"></span>
+        <span class="absolute top-2 right-2 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-800 pointer-events-none"></span>
       </div>
 
-      <div class="h-6 w-px bg-slate-200 dark:bg-slate-800 mx-0.5"></div>
+      <div class="h-5 w-px bg-slate-200 dark:bg-slate-700/80 mx-0.5 hidden sm:block"></div>
 
-      <!-- User Profile Dropdown Pill -->
+      <!-- User Profile Dropdown Pill with precision h-9 height -->
       <n-dropdown :options="userMenuOptions" @select="handleUserMenu">
         <button
           type="button"
-          class="flex items-center gap-2.5 py-1 px-2 rounded-xl transition-all cursor-pointer border hover:shadow-xs group"
-          style="border-color: var(--border-color); background-color: var(--bg-primary);"
+          class="h-9 inline-flex items-center gap-2.5 px-2 rounded-xl transition-all duration-150 cursor-pointer border border-slate-200/80 dark:border-slate-700/80 bg-white hover:bg-slate-50 dark:bg-slate-800/90 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 hover:border-blue-300 dark:hover:border-blue-600 shadow-xs hover:shadow-sm group select-none"
         >
-          <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-bold flex items-center justify-center shadow-xs text-xs tracking-tight">
+          <div class="w-6.5 h-6.5 rounded-lg bg-gradient-to-tr from-[#3B54DE] to-[#5572FA] text-white font-bold flex items-center justify-center shadow-xs text-xs tracking-tight shrink-0">
             {{ userInitials }}
           </div>
           <div class="text-left hidden sm:block">
-            <div class="text-xs font-semibold leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" style="color: var(--text-primary);">
+            <div class="text-xs font-bold leading-tight group-hover:text-[#4361EE] dark:group-hover:text-blue-400 transition-colors truncate max-w-[130px]">
               {{ userDisplayName }}
             </div>
-            <div class="text-[10px] font-medium capitalize text-slate-400">
+            <div class="text-[10px] font-medium capitalize text-slate-400 dark:text-slate-500 leading-none truncate max-w-[130px] mt-0.5">
               {{ userRoleName }}
             </div>
           </div>
-          <ChevronDown class="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600 transition-transform" />
+          <ChevronDown class="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200 transition-transform shrink-0" />
         </button>
       </n-dropdown>
     </div>
@@ -133,8 +132,7 @@ import {
   User,
   Database,
   Settings,
-  LogOut,
-  Sparkles
+  LogOut
 } from 'lucide-vue-next'
 import BreadcrumbV2 from './BreadcrumbV2.vue'
 import UiVersionSwitcherPill from '@/components/v2/common/UiVersionSwitcherPill.vue'
@@ -222,4 +220,3 @@ const handleSearch = () => {
   opacity: 0;
 }
 </style>
-
