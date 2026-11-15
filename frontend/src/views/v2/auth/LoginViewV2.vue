@@ -1,12 +1,12 @@
 <template>
   <div class="relative min-h-screen w-full flex flex-col justify-between overflow-x-hidden bg-[#FAFBFC] dark:bg-[#0B111E] transition-colors duration-300 select-none">
     
-    <!-- Top-Right Ambient Gradient Glow (matching user reference image) -->
-    <div class="absolute -top-32 -right-32 w-[520px] h-[520px] bg-gradient-to-br from-violet-500/18 via-indigo-500/12 to-transparent rounded-full blur-[100px] pointer-events-none"></div>
-    <div class="absolute -bottom-40 -left-40 w-[450px] h-[450px] bg-gradient-to-tr from-blue-500/10 via-sky-400/8 to-transparent rounded-full blur-[90px] pointer-events-none"></div>
+    <!-- Top-Right Ambient Purple/Violet Gradient Glow (matching user reference image) -->
+    <div class="absolute -top-32 -right-32 w-[540px] h-[540px] bg-gradient-to-br from-purple-400/25 via-indigo-300/15 to-transparent rounded-full blur-[110px] pointer-events-none"></div>
+    <div class="absolute -bottom-40 -left-40 w-[460px] h-[460px] bg-gradient-to-tr from-blue-400/12 via-sky-300/8 to-transparent rounded-full blur-[100px] pointer-events-none"></div>
 
-    <!-- Top Floating Navigation / Utility Bar -->
-    <header class="w-full max-w-[1280px] mx-auto px-4 sm:px-6 pt-4 sm:pt-6 flex items-center justify-between z-20">
+    <!-- Top Floating Utility Bar (Non-intrusive, minimal) -->
+    <header class="w-full max-w-[1280px] mx-auto px-4 sm:px-8 pt-4 sm:pt-6 flex items-center justify-between z-20">
       <!-- Active Outlet Selector Pill -->
       <button 
         type="button"
@@ -14,8 +14,8 @@
         class="group inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-slate-200/80 dark:border-slate-800 shadow-xs hover:border-blue-400 dark:hover:border-blue-600 transition-all cursor-pointer text-xs font-semibold text-slate-700 dark:text-slate-200"
       >
         <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-        <Store class="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-        <span class="truncate max-w-[180px] sm:max-w-none">{{ activeStore.name }}</span>
+        <Store class="w-3.5 h-3.5 text-[#4361EE] dark:text-blue-400" />
+        <span class="truncate max-w-[170px] sm:max-w-none">{{ activeStore.name }}</span>
         <span class="text-[10px] text-slate-400 dark:text-slate-500">• {{ activeStore.latency }}</span>
         <ChevronDown class="w-3 h-3 text-slate-400 group-hover:translate-y-0.5 transition-transform" />
       </button>
@@ -28,7 +28,7 @@
           @click="toggleUiVersion"
           class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer shadow-xs border"
           :class="uiVersionStore.isV2 
-            ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800 hover:bg-blue-100' 
+            ? 'bg-blue-50 dark:bg-blue-950/60 text-[#4361EE] dark:text-blue-400 border-blue-200 dark:border-blue-800 hover:bg-blue-100' 
             : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700'"
           title="Beralih versi UI (V1 Classic vs V2 Modern)"
         >
@@ -41,14 +41,14 @@
         <button 
           type="button" 
           @click="toggleTheme" 
-          class="w-8 h-8 rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:text-blue-600 shadow-xs transition-transform active:scale-90 cursor-pointer"
+          class="w-8 h-8 rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:text-[#4361EE] shadow-xs transition-transform active:scale-90 cursor-pointer"
           :title="appStore.theme === 'dark' ? 'Mode Terang' : 'Mode Gelap'"
         >
           <Sun v-if="appStore.theme === 'dark'" class="w-4 h-4 text-amber-400" />
-          <Moon v-else class="w-4 h-4 text-blue-500" />
+          <Moon v-else class="w-4 h-4 text-[#4361EE]" />
         </button>
 
-        <!-- IT Support / Offline -->
+        <!-- IT Support -->
         <button
           type="button"
           @click="showForgotModal = true"
@@ -60,95 +60,61 @@
       </div>
     </header>
 
-    <!-- Main Container: 2-Column Split matching the uploaded reference image -->
+    <!-- Main Container: 2-Column Split matching the uploaded reference image 1:1 -->
     <main class="w-full max-w-[1240px] mx-auto px-4 sm:px-6 py-6 sm:py-8 flex-1 flex items-center justify-center z-10">
-      <div class="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 xl:gap-12 items-center">
+      <div class="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
         
         <!-- ========================================================
-             LEFT PANEL: Hero Card with Vibrant Blue Gradient & 3D Scene
+             LEFT PANEL: Hero Card with Vibrant Blue & 3D Character
+             100% faithful to the reference image
              ======================================================== -->
         <div class="lg:col-span-6 xl:col-span-6 order-2 lg:order-1">
           <div 
-            class="relative rounded-[32px] sm:rounded-[36px] bg-gradient-to-b from-[#4F6FF8] via-[#435FE9] to-[#364ED9] text-white p-7 sm:p-10 lg:p-12 shadow-2xl shadow-blue-500/20 overflow-hidden flex flex-col justify-between min-h-[520px] lg:min-h-[640px] border border-white/20"
+            class="relative rounded-[36px] sm:rounded-[42px] bg-gradient-to-b from-[#4F70FE] via-[#4361EE] to-[#3A53DC] text-white p-8 sm:p-11 lg:p-12 shadow-2xl shadow-blue-500/25 overflow-hidden flex flex-col justify-between min-h-[540px] lg:min-h-[640px] border border-white/20 select-none"
           >
-            <!-- Background Radial Glows & Rings inside Card -->
-            <div class="absolute -top-24 -right-24 w-80 h-80 rounded-full bg-white/10 blur-2xl pointer-events-none"></div>
-            <div class="absolute bottom-0 left-0 w-full h-48 bg-gradient-to-t from-[#273bb3]/40 to-transparent pointer-events-none"></div>
+            <!-- Background Radial Glows inside Card -->
+            <div class="absolute -top-20 -right-20 w-72 h-72 rounded-full bg-white/15 blur-2xl pointer-events-none"></div>
+            <div class="absolute -bottom-20 -left-20 w-80 h-80 rounded-full bg-blue-900/30 blur-2xl pointer-events-none"></div>
+
+            <!-- Ambient Floating Micro Dots -->
+            <div class="absolute top-1/4 right-8 w-2 h-2 rounded-full bg-white/40 animate-pulse pointer-events-none"></div>
+            <div class="absolute top-1/2 left-8 w-1.5 h-1.5 rounded-full bg-white/30 animate-pulse pointer-events-none" style="animation-delay: 1.2s;"></div>
             
-            <!-- Card Top Header / Slogan matching user image -->
+            <!-- Card Top Header / Slogan (Exact copy from the reference image) -->
             <div class="relative z-10">
-              <h1 class="text-3xl sm:text-[34px] lg:text-[38px] font-extrabold tracking-tight text-white leading-[1.18]">
+              <h1 class="text-3xl sm:text-[36px] lg:text-[40px] font-black tracking-tight text-white leading-[1.15]">
                 Simplify management with our dashboard
               </h1>
-              <p class="text-sm sm:text-base text-blue-100/90 font-medium leading-relaxed mt-3.5 max-w-md">
-                Simplify your cafe & resto management with our user friendly admin dashboard and real-time cloud operations.
+              <p class="text-sm sm:text-base text-blue-100/90 font-normal leading-relaxed mt-3.5 max-w-md">
+                Simplify your cafe & resto management with our user friendly admin dashboard
               </p>
-
-              <!-- Floating Micro Stats / Capabilities -->
-              <div class="flex flex-wrap items-center gap-2 mt-4 pt-1">
-                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-xs font-semibold text-white shadow-2xs">
-                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
-                  99.9% Uptime
-                </span>
-                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-xs font-semibold text-white shadow-2xs">
-                  <Coffee class="w-3.5 h-3.5 text-amber-300" />
-                  KDS & POS Realtime
-                </span>
-                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-xs font-semibold text-white shadow-2xs">
-                  <ShieldCheck class="w-3.5 h-3.5 text-sky-300" />
-                  OWASP ASVS Ready
-                </span>
-              </div>
             </div>
 
             <!-- ===================================================
-                 CENTER/BOTTOM: Exquisite 3D Barista & Desk Illustration
-                 Constructed with high-fidelity vector & smooth CSS animation
+                 CENTER/BOTTOM: 3D Clay Character & Desk Illustration
+                 Matching character with peace sign ✌️, red laptop,
+                 dark monitor with yellow note, and sleek animations!
                  =================================================== -->
-            <div class="relative z-10 mt-8 mb-2 flex items-center justify-center">
-              <div class="relative w-full max-w-[420px] aspect-[4/3] flex items-center justify-center illustration-container">
+            <div class="relative z-10 mt-6 mb-2 flex items-center justify-center">
+              <div class="relative w-full max-w-[430px] aspect-[4/3] flex items-center justify-center">
                 
-                <!-- Floating Floating Metric Badge 1 (Top Left) -->
-                <div class="absolute top-2 left-2 sm:-left-2 z-20 animate-float-badge bg-white/95 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl p-2.5 shadow-xl border border-white/40 flex items-center gap-2.5">
-                  <div class="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                    <TrendingUp class="w-4 h-4" />
-                  </div>
-                  <div>
-                    <div class="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Omset Hari Ini</div>
-                    <div class="text-xs font-extrabold text-slate-900 dark:text-white">+28.4% Naik 🚀</div>
-                  </div>
-                </div>
-
-                <!-- Floating Metric Badge 2 (Top Right) -->
-                <div class="absolute top-6 right-2 sm:-right-2 z-20 animate-float-badge-delayed bg-white/95 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl p-2.5 shadow-xl border border-white/40 flex items-center gap-2.5">
-                  <div class="w-8 h-8 rounded-xl bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
-                    <Receipt class="w-4 h-4" />
-                  </div>
-                  <div>
-                    <div class="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Order Selesai</div>
-                    <div class="text-xs font-extrabold text-slate-900 dark:text-white">542 Transaksi ☕</div>
-                  </div>
-                </div>
-
-                <!-- 3D Desk & Character SVG Illustration -->
                 <svg viewBox="0 0 500 400" class="w-full h-full drop-shadow-2xl overflow-visible select-none" xmlns="http://www.w3.org/2000/svg">
                   <defs>
-                    <!-- Linear and Radial Gradients for 3D Shading -->
-                    <linearGradient id="deskGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                      <stop offset="0%" stop-color="#1E2A4A" />
-                      <stop offset="100%" stop-color="#0F172A" />
+                    <!-- Shading Gradients for 3D Clay Appearance -->
+                    <linearGradient id="deskTopGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stop-color="#24304A" />
+                      <stop offset="100%" stop-color="#141C2E" />
                     </linearGradient>
-                    <linearGradient id="monitorGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stop-color="#1E293B" />
-                      <stop offset="100%" stop-color="#0F172A" />
+                    <linearGradient id="monitorBodyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stop-color="#2A374F" />
+                      <stop offset="100%" stop-color="#182030" />
                     </linearGradient>
-                    <linearGradient id="screenChartGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stop-color="#38BDF8" />
-                      <stop offset="50%" stop-color="#818CF8" />
-                      <stop offset="100%" stop-color="#C084FC" />
+                    <linearGradient id="laptopGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stop-color="#EF4444" />
+                      <stop offset="100%" stop-color="#B91C1C" />
                     </linearGradient>
                     <linearGradient id="faceGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                      <stop offset="0%" stop-color="#FFDFC4" />
+                      <stop offset="0%" stop-color="#FFE0C8" />
                       <stop offset="100%" stop-color="#F3C3A2" />
                     </linearGradient>
                     <linearGradient id="sweaterGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -156,143 +122,163 @@
                       <stop offset="100%" stop-color="#E2E8F0" />
                     </linearGradient>
                     <linearGradient id="pantsGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                      <stop offset="0%" stop-color="#2563EB" />
-                      <stop offset="100%" stop-color="#1D4ED8" />
+                      <stop offset="0%" stop-color="#2F66EE" />
+                      <stop offset="100%" stop-color="#1E4CB8" />
                     </linearGradient>
                     <linearGradient id="hatGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stop-color="#C28E61" />
-                      <stop offset="100%" stop-color="#9C6B43" />
+                      <stop offset="0%" stop-color="#C68953" />
+                      <stop offset="100%" stop-color="#9A6032" />
                     </linearGradient>
-                    <filter id="glowFilter" x="-20%" y="-20%" width="140%" height="140%">
-                      <feGaussianBlur stdDeviation="6" result="blur" />
-                      <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                    </filter>
+                    <linearGradient id="chartGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stop-color="#38BDF8" />
+                      <stop offset="50%" stop-color="#818CF8" />
+                      <stop offset="100%" stop-color="#C084FC" />
+                    </linearGradient>
                   </defs>
 
-                  <!-- Modern Workstation Desk Surface -->
+                  <!-- 1. Workstation Desk & Soft Ground Shadow -->
                   <g class="desk-group">
-                    <!-- Desk Shadow -->
-                    <ellipse cx="250" cy="365" rx="200" ry="20" fill="#0D1630" opacity="0.4" />
-                    <!-- Desk Legs -->
-                    <rect x="75" y="270" width="12" height="95" rx="6" fill="#1E293B" />
-                    <rect x="415" y="270" width="12" height="95" rx="6" fill="#1E293B" />
-                    <rect x="80" y="320" width="340" height="6" rx="3" fill="#334155" opacity="0.6" />
-                    <!-- Main Desk Top Plate -->
-                    <rect x="50" y="260" width="400" height="20" rx="10" fill="url(#deskGrad)" />
-                    <rect x="52" y="261" width="396" height="4" rx="2" fill="#38BDF8" opacity="0.3" />
+                    <!-- Ground Cast Shadow -->
+                    <ellipse cx="250" cy="370" rx="195" ry="18" fill="#0E172F" opacity="0.45" />
+                    
+                    <!-- Desk Legs (Minimalist cylindrical legs) -->
+                    <rect x="78" y="275" width="12" height="92" rx="6" fill="#1E2A44" />
+                    <rect x="410" y="275" width="12" height="92" rx="6" fill="#1E2A44" />
+                    <rect x="85" y="325" width="330" height="5" rx="2.5" fill="#2E3C59" opacity="0.5" />
+                    
+                    <!-- Main Desk Top Slab -->
+                    <rect x="52" y="262" width="396" height="20" rx="10" fill="url(#deskTopGrad)" />
+                    <!-- Subtle Desk Edge Bevel Highlight -->
+                    <rect x="54" y="263" width="392" height="3" rx="1.5" fill="#38BDF8" opacity="0.35" />
                   </g>
 
-                  <!-- Center 3D Character Sitting at the Desk (with gentle animated bobbing) -->
+                  <!-- 2. Animated Sitting 3D Character (Bobbing gently) -->
                   <g class="character-group animate-character-bob">
-                    <!-- Legs & Pants -->
-                    <rect x="215" y="285" width="28" height="65" rx="14" fill="url(#pantsGrad)" />
-                    <rect x="257" y="285" width="28" height="65" rx="14" fill="url(#pantsGrad)" />
-                    <!-- Shoes -->
-                    <rect x="210" y="340" width="34" height="18" rx="9" fill="#FFFFFF" />
-                    <rect x="256" y="340" width="34" height="18" rx="9" fill="#FFFFFF" />
+                    
+                    <!-- Legs & Blue Jeans -->
+                    <rect x="214" y="286" width="30" height="66" rx="15" fill="url(#pantsGrad)" />
+                    <rect x="256" y="286" width="30" height="66" rx="15" fill="url(#pantsGrad)" />
+                    <!-- Cute Clean Shoes -->
+                    <rect x="210" y="342" width="34" height="17" rx="8.5" fill="#FFFFFF" />
+                    <rect x="256" y="342" width="34" height="17" rx="8.5" fill="#FFFFFF" />
 
                     <!-- Torso / White Turtleneck Sweater -->
-                    <ellipse cx="250" cy="225" rx="46" ry="52" fill="url(#sweaterGrad)" />
-                    <rect x="238" y="165" width="24" height="20" rx="10" fill="#E2E8F0" />
+                    <ellipse cx="250" cy="226" rx="48" ry="54" fill="url(#sweaterGrad)" />
+                    <rect x="237" y="166" width="26" height="22" rx="11" fill="#E2E8F0" />
 
-                    <!-- Left Arm on Keyboard -->
-                    <path d="M 210 215 Q 185 240 180 262" stroke="#FFFFFF" stroke-width="22" stroke-linecap="round" fill="none" />
-                    <!-- Left Hand resting on desk -->
-                    <circle cx="180" cy="262" r="10" fill="url(#faceGrad)" />
+                    <!-- Left Arm resting casually on desk -->
+                    <path d="M 208 216 Q 184 242 178 264" stroke="#FFFFFF" stroke-width="22" stroke-linecap="round" fill="none" />
+                    <!-- Left Hand resting on desk surface -->
+                    <circle cx="178" cy="264" r="11" fill="url(#faceGrad)" />
 
-                    <!-- Right Arm Waving Peace Sign ✌️ (matches user reference image) -->
-                    <g class="animate-hand-wave">
-                      <path d="M 285 210 Q 320 180 340 140" stroke="#FFFFFF" stroke-width="22" stroke-linecap="round" fill="none" />
-                      <!-- Right Hand with Peace Sign ✌️ -->
-                      <circle cx="340" cy="138" r="13" fill="url(#faceGrad)" />
-                      <!-- Peace Fingers -->
-                      <rect x="333" y="108" width="6" height="24" rx="3" fill="url(#faceGrad)" transform="rotate(-15 333 108)" />
-                      <rect x="345" y="112" width="6" height="24" rx="3" fill="url(#faceGrad)" transform="rotate(12 345 112)" />
-                      <!-- Fun Sparkle lines around the peace hand -->
-                      <line x1="322" y1="95" x2="318" y2="85" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" />
-                      <line x1="344" y1="90" x2="344" y2="78" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" />
-                      <line x1="365" y1="98" x2="373" y2="90" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" />
+                    <!-- Right Arm Waving Peace Sign ✌️ (Animated wave & energy rays) -->
+                    <g class="peace-arm-group animate-hand-wave">
+                      <path d="M 288 212 Q 324 180 342 138" stroke="#FFFFFF" stroke-width="22" stroke-linecap="round" fill="none" />
+                      <!-- Right Hand Palm -->
+                      <circle cx="342" cy="136" r="14" fill="url(#faceGrad)" />
+                      <!-- Peace Sign Fingers (Index & Middle) -->
+                      <rect x="334" y="104" width="7" height="26" rx="3.5" fill="url(#faceGrad)" transform="rotate(-15 334 104)" />
+                      <rect x="347" y="108" width="7" height="26" rx="3.5" fill="url(#faceGrad)" transform="rotate(14 347 108)" />
+                      
+                      <!-- Radiant Motion Rays \ | / (Matching reference image exactly) -->
+                      <g class="animate-rays-pulse">
+                        <line x1="322" y1="92" x2="315" y2="80" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round" />
+                        <line x1="344" y1="86" x2="344" y2="72" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round" />
+                        <line x1="366" y1="94" x2="375" y2="84" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round" />
+                      </g>
                     </g>
 
-                    <!-- Head & Smiling Face -->
-                    <circle cx="250" cy="148" r="36" fill="url(#faceGrad)" />
-                    <!-- Hair -->
-                    <path d="M 216 138 C 220 115 280 115 284 138 C 275 142 265 132 250 132 C 235 132 225 142 216 138 Z" fill="#2D201A" />
-                    <!-- Eyes with friendly gaze -->
-                    <circle cx="238" cy="148" r="4.5" fill="#1E293B" />
-                    <circle cx="240" cy="146" r="1.5" fill="#FFFFFF" />
-                    <circle cx="262" cy="148" r="4.5" fill="#1E293B" />
-                    <circle cx="264" cy="146" r="1.5" fill="#FFFFFF" />
-                    <!-- Pink Cheeks -->
-                    <circle cx="230" cy="156" r="6" fill="#F472B6" opacity="0.45" />
-                    <circle cx="270" cy="156" r="6" fill="#F472B6" opacity="0.45" />
-                    <!-- Big Warm Smile -->
-                    <path d="M 242 160 Q 250 169 258 160" stroke="#831843" stroke-width="3" stroke-linecap="round" fill="none" />
+                    <!-- Character Head & Friendly Clay Face -->
+                    <circle cx="250" cy="148" r="38" fill="url(#faceGrad)" />
+                    <!-- Hair underneath Hat -->
+                    <path d="M 214 138 C 218 114 282 114 286 138 C 276 142 265 131 250 131 C 235 131 224 142 214 138 Z" fill="#221815" />
+                    <!-- Eyes with Specular Sparkle -->
+                    <circle cx="237" cy="148" r="4.5" fill="#1A2234" />
+                    <circle cx="239" cy="146" r="1.5" fill="#FFFFFF" />
+                    <circle cx="263" cy="148" r="4.5" fill="#1A2234" />
+                    <circle cx="265" cy="146" r="1.5" fill="#FFFFFF" />
+                    <!-- Rosy Pink Cheeks -->
+                    <circle cx="228" cy="157" r="7" fill="#F472B6" opacity="0.5" />
+                    <circle cx="272" cy="157" r="7" fill="#F472B6" opacity="0.5" />
+                    <!-- Big Happy Smile -->
+                    <path d="M 242 161 Q 250 171 258 161" stroke="#831843" stroke-width="3.2" stroke-linecap="round" fill="none" />
 
-                    <!-- Barista / Modern Hat / Beanie -->
-                    <ellipse cx="250" cy="120" rx="36" ry="12" fill="url(#hatGrad)" />
-                    <path d="M 218 120 C 222 92 278 92 282 120 Z" fill="url(#hatGrad)" />
-                    <circle cx="250" cy="92" r="5" fill="#E2E8F0" />
+                    <!-- Stylized Hat / Beanie with Brim (Clay 3D styling) -->
+                    <ellipse cx="250" cy="118" rx="38" ry="13" fill="url(#hatGrad)" />
+                    <path d="M 216 118 C 220 88 280 88 284 118 Z" fill="url(#hatGrad)" />
+                    <circle cx="250" cy="88" r="5" fill="#F1F5F9" />
                   </g>
 
-                  <!-- Main Ultrawide Monitor on Desk (Left Side) -->
-                  <g class="main-monitor">
+                  <!-- 3. Ultrawide Dark Monitor on Desk (Left Side) -->
+                  <g class="monitor-group">
                     <!-- Monitor Stand -->
-                    <rect x="145" y="240" width="10" height="24" fill="#64748B" rx="2" />
-                    <ellipse cx="150" cy="263" rx="24" ry="5" fill="#334155" />
-                    <!-- Monitor Frame -->
-                    <rect x="85" y="145" width="130" height="98" rx="10" fill="url(#monitorGrad)" stroke="#475569" stroke-width="2" />
-                    <!-- Screen Display Area -->
-                    <rect x="91" y="151" width="118" height="86" rx="6" fill="#0A0F1D" />
+                    <rect x="145" y="238" width="10" height="26" fill="#64748B" rx="2" />
+                    <ellipse cx="150" cy="264" rx="24" ry="5" fill="#334155" />
                     
-                    <!-- Dashboard UI on screen: Top Bar -->
-                    <rect x="96" y="157" width="30" height="4" rx="2" fill="#38BDF8" />
-                    <circle cx="198" cy="159" r="2" fill="#10B981" />
-                    <circle cx="192" cy="159" r="2" fill="#F59E0B" />
-                    <!-- Revenue Analytics Wave Graph on Screen -->
-                    <path d="M 98 205 Q 115 178 135 192 T 170 172 T 202 185" fill="none" stroke="url(#screenChartGrad)" stroke-width="3" stroke-linecap="round" />
-                    <!-- Bar Chart on Screen -->
-                    <rect x="100" y="215" width="8" height="14" rx="2" fill="#38BDF8" opacity="0.8" />
-                    <rect x="114" y="210" width="8" height="19" rx="2" fill="#818CF8" opacity="0.8" />
-                    <rect x="128" y="218" width="8" height="11" rx="2" fill="#38BDF8" opacity="0.8" />
-                    <rect x="142" y="206" width="8" height="23" rx="2" fill="#C084FC" opacity="0.8" />
-                    <!-- Sticky Note on Monitor Corner (matching reference image) -->
-                    <rect x="195" y="170" width="16" height="18" rx="2" fill="#FEF08A" transform="rotate(8 195 170)" />
+                    <!-- Monitor Frame -->
+                    <rect x="84" y="142" width="132" height="100" rx="10" fill="url(#monitorBodyGrad)" stroke="#475569" stroke-width="2" />
+                    <!-- Monitor Screen -->
+                    <rect x="90" y="148" width="120" height="88" rx="6" fill="#0A0F1D" />
+                    
+                    <!-- Dashboard UI on screen: Top Bar & Metric -->
+                    <rect x="96" y="155" width="32" height="4" rx="2" fill="#38BDF8" />
+                    <circle cx="198" cy="157" r="2.5" fill="#10B981" />
+                    <circle cx="191" cy="157" r="2.5" fill="#F59E0B" />
+                    
+                    <!-- Line Chart Wave -->
+                    <path d="M 98 202 Q 115 174 135 188 T 172 168 T 202 182" fill="none" stroke="url(#chartGrad)" stroke-width="3" stroke-linecap="round" />
+                    
+                    <!-- Mini Bar Charts -->
+                    <rect x="100" y="214" width="8" height="15" rx="2" fill="#38BDF8" opacity="0.8" />
+                    <rect x="114" y="208" width="8" height="21" rx="2" fill="#818CF8" opacity="0.8" />
+                    <rect x="128" y="216" width="8" height="13" rx="2" fill="#38BDF8" opacity="0.8" />
+                    <rect x="142" y="204" width="8" height="25" rx="2" fill="#C084FC" opacity="0.8" />
+                    
+                    <!-- Yellow Sticky Note on Monitor Corner (Matches Reference Image) -->
+                    <rect x="194" y="166" width="18" height="20" rx="2" fill="#FEF08A" transform="rotate(9 194 166)" />
+                    <line x1="197" y1="172" x2="207" y2="173" stroke="#CA8A04" stroke-width="1.2" stroke-linecap="round" transform="rotate(9 194 166)" />
+                    <line x1="197" y1="176" x2="205" y2="177" stroke="#CA8A04" stroke-width="1.2" stroke-linecap="round" transform="rotate(9 194 166)" />
                   </g>
 
-                  <!-- Secondary Screen: Laptop / Tablet (Right Side) -->
+                  <!-- 4. Coral/Red Open Laptop on Desk (Right Side, Matches Reference Image) -->
                   <g class="laptop-group">
-                    <rect x="305" y="200" width="75" height="52" rx="6" fill="#1E293B" stroke="#475569" stroke-width="1.5" transform="rotate(-6 305 200)" />
-                    <!-- Laptop Screen -->
-                    <rect x="310" y="205" width="65" height="42" rx="4" fill="#0F172A" transform="rotate(-6 305 200)" />
-                    <!-- Laptop Content -->
-                    <rect x="316" y="212" width="30" height="3" rx="1.5" fill="#38BDF8" opacity="0.9" transform="rotate(-6 305 200)" />
-                    <rect x="316" y="220" width="45" height="2.5" rx="1.2" fill="#64748B" transform="rotate(-6 305 200)" />
-                    <rect x="316" y="226" width="38" height="2.5" rx="1.2" fill="#64748B" transform="rotate(-6 305 200)" />
-                    <!-- Laptop Base on desk -->
-                    <polygon points="295,258 385,252 388,260 292,264" fill="#334155" />
+                    <!-- Laptop Screen Outer Lid (Red) -->
+                    <rect x="306" y="196" width="76" height="54" rx="6" fill="url(#laptopGrad)" stroke="#DC2626" stroke-width="1.5" transform="rotate(-6 306 196)" />
+                    <!-- Laptop Screen Inner Display -->
+                    <rect x="311" y="201" width="66" height="44" rx="4" fill="#0F172A" transform="rotate(-6 306 196)" />
+                    <!-- Laptop Display UI -->
+                    <rect x="318" y="208" width="32" height="3" rx="1.5" fill="#F87171" opacity="0.9" transform="rotate(-6 306 196)" />
+                    <rect x="318" y="216" width="48" height="2.5" rx="1.2" fill="#94A3B8" opacity="0.8" transform="rotate(-6 306 196)" />
+                    <rect x="318" y="222" width="40" height="2.5" rx="1.2" fill="#94A3B8" opacity="0.8" transform="rotate(-6 306 196)" />
+                    <!-- Laptop Keyboard Base Plate on Desk -->
+                    <polygon points="296,259 388,251 392,261 294,265" fill="#B91C1C" />
                   </g>
 
-                  <!-- Hot Coffee Mug with Steaming Vapor -->
+                  <!-- 5. Desk Accessories: Green Ball & Steaming Coffee Mug -->
+                  <!-- Cute Green Ball/Fruit on Desk (Left, matching reference) -->
+                  <circle cx="95" cy="260" r="7.5" fill="#10B981" />
+                  <ellipse cx="94" cy="258" rx="2" ry="1.5" fill="#A7F3D0" />
+
+                  <!-- Steaming Coffee Mug -->
                   <g class="coffee-cup-group">
-                    <rect x="62" y="244" width="16" height="18" rx="3" fill="#FFFFFF" />
+                    <rect x="62" y="246" width="15" height="17" rx="3" fill="#FFFFFF" />
                     <!-- Mug Handle -->
-                    <path d="M 62 248 C 55 248 55 258 62 258" stroke="#FFFFFF" stroke-width="2.5" fill="none" />
-                    <!-- Coffee Liquid inside -->
-                    <ellipse cx="70" cy="245" rx="7" ry="2" fill="#583115" />
-                    <!-- Rising Steam Waves (animated with CSS) -->
-                    <path class="animate-steam" d="M 67 240 Q 69 232 67 225" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.7" />
-                    <path class="animate-steam-delayed" d="M 73 240 Q 75 230 73 222" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.7" />
+                    <path d="M 62 250 C 56 250 56 258 62 258" stroke="#FFFFFF" stroke-width="2" fill="none" />
+                    <!-- Hot Coffee Inside -->
+                    <ellipse cx="69.5" cy="247" rx="6.5" ry="2" fill="#583115" />
+                    <!-- Animated Rising Steam -->
+                    <path class="animate-steam" d="M 67 242 Q 69 234 67 226" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.75" />
+                    <path class="animate-steam-delayed" d="M 72 242 Q 74 232 72 224" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.75" />
                   </g>
                 </svg>
 
               </div>
             </div>
 
-            <!-- Card Bottom Bar: Cloud Sync Info -->
-            <div class="relative z-10 pt-4 border-t border-white/15 flex items-center justify-between text-xs text-blue-100/90 font-medium">
+            <!-- Card Bottom Bar: Subtle System Status -->
+            <div class="relative z-10 pt-4 border-t border-white/15 flex items-center justify-between text-xs text-blue-100/80 font-medium">
               <div class="flex items-center gap-2">
-                <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                 <span>Active Branch: Senopati Flagship</span>
               </div>
               <span>KopiERP Enterprise v2.4</span>
@@ -302,163 +288,137 @@
         </div>
 
         <!-- ========================================================
-             RIGHT PANEL: Ultra Clean, Modern & Friendly Login Form
-             Matching the uploaded reference layout & styling 1:1
+             RIGHT PANEL: Clean, Modern & Friendly Login Form
+             100% matched to reference image layout & typography
              ======================================================== -->
         <div class="lg:col-span-6 xl:col-span-6 order-1 lg:order-2 flex flex-col justify-center">
-          <div class="w-full max-w-[430px] mx-auto py-2 sm:py-6">
+          <div class="w-full max-w-[420px] mx-auto py-2 sm:py-6">
             
-            <!-- Brand Logo with Modern Droplet Glyph matching Logoipsum -->
-            <div class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#3B54DE] to-[#5572FA] text-white flex items-center justify-center shadow-md shadow-blue-500/25">
-                <svg viewBox="0 0 24 24" class="w-6 h-6 fill-current" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 2C6.477 2 2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.891h-2.33v6.988C18.343 21.128 22 16.991 22 12c0-5.523-4.477-10-10-10z" class="hidden" />
-                  <!-- Modern Logoipsum Style Ring/Droplet Glyph -->
-                  <circle cx="12" cy="12" r="9" stroke="white" stroke-width="3" fill="none" opacity="0.9" />
-                  <circle cx="15" cy="9" r="3.5" fill="white" />
-                </svg>
-              </div>
-              <div class="flex items-center gap-1.5">
-                <span class="text-2xl font-black tracking-tight text-slate-900 dark:text-white">KopiERP</span>
-                <span class="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 tracking-wider">
-                  V2 PRO
-                </span>
-              </div>
+            <!-- Brand Logo: Centered with Iconic Droplet Ring matching Logoipsum -->
+            <div class="flex items-center justify-center gap-2.5">
+              <!-- Iconic Logoipsum Droplet SVG Glyph -->
+              <svg viewBox="0 0 32 32" class="w-8 h-8 text-[#4361EE] fill-current" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="16" cy="16" r="13" stroke="currentColor" stroke-width="4" fill="none" />
+                <circle cx="20" cy="12" r="4.5" fill="currentColor" />
+              </svg>
+              <span class="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
+                Logoipsum
+              </span>
             </div>
 
-            <!-- Page Title & Subtitle matching the reference screenshot -->
-            <div class="mt-6 mb-6">
-              <h2 class="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
+            <!-- Header Titles: Centered matching screenshot -->
+            <div class="mt-6 mb-7 text-center">
+              <h2 class="text-3xl sm:text-[34px] font-black text-slate-900 dark:text-white tracking-tight">
                 Welcome Back
               </h2>
-              <p class="text-sm sm:text-base text-slate-400 dark:text-slate-400 mt-1.5 font-medium">
+              <p class="text-sm text-slate-400 dark:text-slate-400 mt-1.5 font-normal">
                 Please Login to your account
               </p>
             </div>
 
-            <!-- Authentication Mode Segmented Switch (Email vs POS Cashier PIN) -->
-            <div class="bg-slate-100 dark:bg-slate-800/90 p-1 rounded-2xl flex items-center gap-1 mb-5 border border-slate-200/60 dark:border-slate-700/60 shadow-2xs">
-              <button 
-                type="button"
-                @click="switchMode('email')" 
-                class="flex-1 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer"
-                :class="authMode === 'email' 
-                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs' 
-                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'"
-              >
-                <Mail class="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                <span>Email & Password</span>
-              </button>
-              <button 
-                type="button"
-                @click="switchMode('pin')" 
-                class="flex-1 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer"
-                :class="authMode === 'pin' 
-                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs' 
-                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'"
-              >
-                <Monitor class="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                <span>PIN Kasir (Fast POS)</span>
-              </button>
-            </div>
-
-            <!-- Lockout or Error Alert Message with Shake Animation -->
+            <!-- Lockout or Error Alert with Smooth Shake -->
             <transition name="fade">
               <div 
                 v-if="isLockedOut" 
-                class="p-3 mb-4 rounded-2xl border flex items-center gap-2.5 bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-900 text-amber-800 dark:text-amber-300 text-xs font-semibold shadow-xs"
+                class="p-3.5 mb-4 rounded-2xl border flex items-center gap-2.5 bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-900 text-amber-800 dark:text-amber-300 text-xs font-semibold shadow-xs"
               >
                 <AlertTriangle class="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
                 <span class="flex-1">Terminal dikunci sementara. Silakan tunggu <strong>{{ lockoutSeconds }}s</strong>.</span>
               </div>
               <div 
                 v-else-if="errorMessage" 
-                class="p-3 mb-4 rounded-2xl border flex items-center gap-2.5 bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300 text-xs font-semibold shadow-xs shake-error"
+                class="p-3.5 mb-4 rounded-2xl border flex items-center gap-2.5 bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300 text-xs font-semibold shadow-xs shake-error"
               >
                 <AlertCircle class="w-4 h-4 text-rose-500 shrink-0" />
                 <span class="flex-1 leading-snug">{{ errorMessage }}</span>
               </div>
             </transition>
 
+            <!-- Mode Switcher Pill (Sleek, Minimal) -->
+            <div class="flex items-center justify-center mb-5">
+              <div class="inline-flex bg-slate-100 dark:bg-slate-800/80 p-1 rounded-xl text-xs font-semibold border border-slate-200/50 dark:border-slate-700/50">
+                <button
+                  type="button"
+                  @click="switchMode('email')"
+                  class="px-3.5 py-1.5 rounded-lg transition-all cursor-pointer"
+                  :class="authMode === 'email' 
+                    ? 'bg-white dark:bg-slate-900 text-[#4361EE] dark:text-blue-400 font-bold shadow-xs' 
+                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'"
+                >
+                  Email & Password
+                </button>
+                <button
+                  type="button"
+                  @click="switchMode('pin')"
+                  class="px-3.5 py-1.5 rounded-lg transition-all cursor-pointer"
+                  :class="authMode === 'pin' 
+                    ? 'bg-white dark:bg-slate-900 text-[#4361EE] dark:text-blue-400 font-bold shadow-xs' 
+                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'"
+                >
+                  PIN Kasir POS
+                </button>
+              </div>
+            </div>
+
             <!-- ==========================================
-                 VIEW A: Modern Email & Password Login Form
+                 VIEW A: Clean Email & Password Form
+                 Matching user reference image 1:1
                  ========================================== -->
             <form v-if="authMode === 'email'" @submit.prevent="handleEmailLogin" class="space-y-4" novalidate>
-              <!-- Email Input (Clean, Soft Rounded Container) -->
-              <div class="space-y-1">
-                <div 
-                  class="group relative rounded-2xl bg-[#F3F5F9] dark:bg-slate-800/80 border border-transparent focus-within:border-[#435FE9] focus-within:bg-white dark:focus-within:bg-slate-900 focus-within:ring-4 focus-within:ring-blue-500/10 transition-all duration-200 px-4 py-3.5 flex items-center gap-3"
-                >
-                  <Mail class="w-5 h-5 text-slate-400 group-focus-within:text-[#435FE9] transition-colors shrink-0" />
-                  <input
-                    id="user-email"
-                    v-model="email"
-                    type="email"
-                    autocomplete="email"
-                    required
-                    placeholder="Email"
-                    class="w-full bg-transparent text-sm sm:text-base font-medium outline-none border-none ring-0 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
-                  />
-                </div>
+              <!-- Email Input (Clean, Soft Rounded Pill) -->
+              <div class="relative">
+                <input
+                  id="user-email"
+                  v-model="email"
+                  type="email"
+                  autocomplete="email"
+                  required
+                  placeholder="Email"
+                  class="w-full bg-[#F4F6F9] dark:bg-slate-800/80 border border-transparent focus:border-[#4361EE] focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-blue-500/10 rounded-2xl px-4 py-3.5 text-sm sm:text-base font-medium outline-none text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-all duration-200"
+                />
               </div>
 
-              <!-- Password Input with Interactive Eye Toggle -->
-              <div class="space-y-1">
-                <div 
-                  class="group relative rounded-2xl bg-[#F3F5F9] dark:bg-slate-800/80 border border-transparent focus-within:border-[#435FE9] focus-within:bg-white dark:focus-within:bg-slate-900 focus-within:ring-4 focus-within:ring-blue-500/10 transition-all duration-200 px-4 py-3.5 flex items-center gap-3"
+              <!-- Password Input with Interactive Eye Toggle (Clean, Soft Rounded Pill) -->
+              <div class="relative flex items-center">
+                <input
+                  id="user-password"
+                  v-model="password"
+                  :type="showPassword ? 'text' : 'password'"
+                  autocomplete="current-password"
+                  required
+                  placeholder="Password"
+                  class="w-full bg-[#F4F6F9] dark:bg-slate-800/80 border border-transparent focus:border-[#4361EE] focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-blue-500/10 rounded-2xl px-4 py-3.5 pr-11 text-sm sm:text-base font-medium outline-none text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-all duration-200"
+                />
+                <button
+                  type="button"
+                  @click="showPassword = !showPassword"
+                  class="absolute right-3.5 p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors cursor-pointer"
+                  :title="showPassword ? 'Sembunyikan sandi' : 'Tampilkan sandi'"
                 >
-                  <Lock class="w-5 h-5 text-slate-400 group-focus-within:text-[#435FE9] transition-colors shrink-0" />
-                  <input
-                    id="user-password"
-                    v-model="password"
-                    :type="showPassword ? 'text' : 'password'"
-                    autocomplete="current-password"
-                    required
-                    placeholder="Password"
-                    class="w-full bg-transparent text-sm sm:text-base font-medium outline-none border-none ring-0 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
-                  />
-                  <button
-                    type="button"
-                    @click="showPassword = !showPassword"
-                    class="p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors cursor-pointer"
-                    :title="showPassword ? 'Sembunyikan sandi' : 'Tampilkan sandi'"
-                  >
-                    <EyeOff v-if="showPassword" class="w-5 h-5" />
-                    <Eye v-else class="w-5 h-5" />
-                  </button>
-                </div>
+                  <EyeOff v-if="showPassword" class="w-5 h-5" />
+                  <Eye v-else class="w-5 h-5" />
+                </button>
               </div>
 
-              <!-- Remember Me & Forgot Password Link -->
-              <div class="flex items-center justify-between text-xs sm:text-sm pt-1">
-                <label class="flex items-center gap-2 cursor-pointer text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200">
-                  <input 
-                    v-model="rememberMe" 
-                    type="checkbox" 
-                    class="w-4 h-4 rounded text-[#435FE9] border-slate-300 dark:border-slate-700 focus:ring-[#435FE9]" 
-                  />
-                  <span class="font-medium text-xs">Remember Me</span>
-                </label>
+              <!-- Forgot Password Link (Right-aligned, matching screenshot) -->
+              <div class="flex justify-end pt-0.5">
                 <button 
                   type="button" 
                   @click="showForgotModal = true" 
-                  class="font-semibold text-slate-400 hover:text-[#435FE9] transition-colors cursor-pointer text-xs"
+                  class="font-normal text-slate-400 hover:text-[#4361EE] transition-colors cursor-pointer text-xs"
                 >
                   Forgot Password
                 </button>
               </div>
 
-              <!-- Main Solid Blue CTA Login Button matching reference -->
+              <!-- Main Solid Blue CTA Button (Matching screenshot 1:1) -->
               <button 
                 type="submit" 
                 :disabled="loading || isLockedOut" 
-                class="btn-shimmer w-full bg-[#435FE9] hover:bg-[#3752DE] active:bg-[#2F47D0] text-white font-bold py-3.5 sm:py-4 px-6 rounded-2xl text-sm sm:text-base flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/40 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99] transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+                class="btn-shimmer w-full bg-[#4361EE] hover:bg-[#3752DE] active:bg-[#2F47D0] text-white font-bold py-3.5 sm:py-4 px-6 rounded-2xl text-sm sm:text-base flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/35 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99] transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed mt-2"
               >
                 <span v-if="loading" class="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full"></span>
-                <span v-else class="flex items-center gap-2">
-                  <span>Login</span>
-                  <ArrowRight class="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                </span>
+                <span v-else>Login</span>
               </button>
             </form>
 
@@ -477,7 +437,7 @@
                     :key="i" 
                     class="w-4 h-4 rounded-full transition-all duration-200"
                     :class="pin.length >= i 
-                      ? 'bg-[#435FE9] ring-4 ring-blue-100 dark:ring-blue-900/60 scale-125' 
+                      ? 'bg-[#4361EE] ring-4 ring-blue-100 dark:ring-blue-900/60 scale-125' 
                       : 'bg-slate-200 dark:bg-slate-700'"
                   ></div>
                 </div>
@@ -500,7 +460,7 @@
                   type="button" 
                   @click="handleFingerprint" 
                   title="Simulasi Otorisasi Sidik Jari Kasir (1-Klik Cepat)" 
-                  class="h-12 rounded-2xl bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/70 text-blue-600 dark:text-blue-400 flex items-center justify-center cursor-pointer transition active:scale-95 border border-blue-200 dark:border-blue-900 shadow-2xs"
+                  class="h-12 rounded-2xl bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/70 text-[#4361EE] dark:text-blue-400 flex items-center justify-center cursor-pointer transition active:scale-95 border border-blue-200 dark:border-blue-900 shadow-2xs"
                 >
                   <Fingerprint class="w-6 h-6" />
                 </button>
@@ -530,7 +490,7 @@
                 type="button" 
                 @click="submitPinLogin" 
                 :disabled="loading || isLockedOut" 
-                class="btn-shimmer w-full bg-[#435FE9] hover:bg-[#3752DE] text-white font-bold py-3 px-4 rounded-2xl text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md shadow-blue-500/25 transition cursor-pointer disabled:opacity-50 mt-1"
+                class="btn-shimmer w-full bg-[#4361EE] hover:bg-[#3752DE] text-white font-bold py-3 px-4 rounded-2xl text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md shadow-blue-500/25 transition cursor-pointer disabled:opacity-50 mt-1"
               >
                 <span v-if="loading" class="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span>
                 <Unlock v-else class="w-4 h-4" />
@@ -539,15 +499,12 @@
             </div>
 
             <!-- ========================================================
-                 QUICK 1-CLICK DEMO ACCOUNTS BAR (Testing & Reviewer Friendly)
+                 QUICK 1-CLICK DEMO ACCOUNTS BAR
+                 Clean, subtle chips below the login form
                  ======================================================== -->
-            <div class="mt-8 pt-5 border-t border-slate-200/80 dark:border-slate-800">
-              <div class="flex items-center justify-between text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2.5">
-                <span class="flex items-center gap-1.5">
-                  <Zap class="w-3.5 h-3.5 text-amber-500" />
-                  Quick Demo Accounts
-                </span>
-                <span class="text-blue-600 dark:text-blue-400 lowercase font-medium">1-klik isi akun</span>
+            <div class="mt-7 pt-4 border-t border-slate-200/70 dark:border-slate-800 text-center">
+              <div class="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2.5">
+                Quick Demo Accounts (1-Klik Isi)
               </div>
               <div class="grid grid-cols-3 gap-1.5">
                 <button
@@ -557,7 +514,7 @@
                   @click="selectDemoAccount(role.email, role.roleName)"
                   class="py-1.5 px-2 rounded-xl border flex items-center justify-center gap-1.5 text-xs font-semibold transition-all cursor-pointer hover:border-blue-400 dark:hover:border-blue-600"
                   :class="email === role.email && authMode === 'email'
-                    ? 'bg-blue-50 dark:bg-blue-950/60 border-blue-400 text-blue-600 dark:text-blue-400 font-bold shadow-2xs' 
+                    ? 'bg-blue-50 dark:bg-blue-950/60 border-blue-400 text-[#4361EE] dark:text-blue-400 font-bold shadow-2xs' 
                     : 'text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'"
                 >
                   <span class="text-xs">{{ role.icon }}</span>
@@ -571,7 +528,7 @@
               <button 
                 type="button" 
                 @click="showOfflineModal = true" 
-                class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex items-center gap-1 cursor-pointer"
+                class="hover:text-[#4361EE] dark:hover:text-blue-400 transition-colors flex items-center gap-1 cursor-pointer"
               >
                 <WifiOff class="w-3.5 h-3.5 text-slate-400" />
                 <span>Mode Darurat Offline (SQLite)</span>
@@ -591,11 +548,11 @@
       </div>
     </main>
 
-    <!-- Footer Copyright & Version -->
-    <footer class="w-full max-w-[1240px] mx-auto px-4 sm:px-6 py-4 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-400 dark:text-slate-500 gap-2 z-10">
-      <div>&copy; 2026 KopiERP Enterprise. All rights reserved.</div>
+    <!-- Footer Copyright & Info -->
+    <footer class="w-full max-w-[1240px] mx-auto px-4 sm:px-8 py-4 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-400 dark:text-slate-500 gap-2 z-10">
+      <div>&copy; 2026 Logoipsum / KopiERP Enterprise. All rights reserved.</div>
       <div class="flex items-center gap-3">
-        <button type="button" @click="toggleLang" class="hover:text-blue-600 dark:hover:text-blue-400 font-semibold cursor-pointer">
+        <button type="button" @click="toggleLang" class="hover:text-[#4361EE] dark:hover:text-blue-400 font-semibold cursor-pointer">
           {{ lang === 'id' ? 'ID / Bahasa' : 'EN / English' }}
         </button>
         <span>•</span>
@@ -622,7 +579,7 @@
           >
             <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <div class="flex items-center gap-2.5">
-                <div class="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                <div class="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-950 text-[#4361EE] dark:text-blue-400 flex items-center justify-center">
                   <Store class="w-4 h-4" />
                 </div>
                 <div>
@@ -642,14 +599,14 @@
                 @click="selectStore(store)"
                 class="w-full p-3 rounded-2xl border text-left flex items-center justify-between transition-all cursor-pointer"
                 :class="activeStore.name === store.name 
-                  ? 'border-blue-500 bg-blue-50/70 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400' 
+                  ? 'border-blue-500 bg-blue-50/70 dark:bg-blue-950/40 text-[#4361EE] dark:text-blue-400' 
                   : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/60'"
               >
                 <div>
                   <div class="text-xs font-bold text-slate-900 dark:text-white">{{ store.name }}</div>
                   <div class="text-[10px] text-slate-400 mt-0.5">Latensi {{ store.latency }} • Cluster {{ store.dbNode }}</div>
                 </div>
-                <span v-if="activeStore.name === store.name" class="text-xs font-extrabold text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-800 px-2 py-0.5 rounded-full shadow-2xs">Aktif</span>
+                <span v-if="activeStore.name === store.name" class="text-xs font-extrabold text-[#4361EE] dark:text-blue-400 bg-white dark:bg-slate-800 px-2 py-0.5 rounded-full shadow-2xs">Aktif</span>
               </button>
             </div>
           </div>
@@ -672,7 +629,7 @@
           >
             <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <div class="flex items-center gap-2.5">
-                <div class="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                <div class="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-950 text-[#4361EE] dark:text-blue-400 flex items-center justify-center">
                   <WifiOff class="w-4 h-4" />
                 </div>
                 <h3 class="font-bold text-sm text-slate-900 dark:text-white">Sinkronisasi Offline (SQLite)</h3>
@@ -699,7 +656,7 @@
               <button 
                 type="button" 
                 @click="showOfflineModal = false" 
-                class="px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#435FE9] hover:bg-[#3752DE] cursor-pointer"
+                class="px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#4361EE] hover:bg-[#3752DE] cursor-pointer"
               >
                 Tutup
               </button>
@@ -724,7 +681,7 @@
           >
             <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <div class="flex items-center gap-2.5">
-                <div class="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                <div class="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-950 text-[#4361EE] dark:text-blue-400 flex items-center justify-center">
                   <Headphones class="w-4 h-4" />
                 </div>
                 <h3 class="font-bold text-sm text-slate-900 dark:text-white">Bantuan IT & Otorisasi</h3>
@@ -739,7 +696,7 @@
               </p>
               <div class="p-3 rounded-2xl border bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-[11px]">
                 <div class="font-bold text-slate-900 dark:text-white mb-0.5">Hotline Dukungan POS Resto:</div>
-                <div class="text-[#435FE9] dark:text-blue-400 font-extrabold text-xs">+62 812-9988-7766 (Senopati HQ)</div>
+                <div class="text-[#4361EE] dark:text-blue-400 font-extrabold text-xs">+62 812-9988-7766 (Senopati HQ)</div>
                 <div class="text-slate-400 mt-1">Layanan teknis 24/7 untuk kasir, barista & manager cabang.</div>
               </div>
             </div>
@@ -747,7 +704,7 @@
               <button 
                 type="button" 
                 @click="showForgotModal = false" 
-                class="px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#435FE9] hover:bg-[#3752DE] cursor-pointer"
+                class="px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#4361EE] hover:bg-[#3752DE] cursor-pointer"
               >
                 Tutup
               </button>
@@ -764,29 +721,20 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import {
-  Coffee,
   Store,
-  Monitor,
-  Receipt,
-  TrendingUp,
   Fingerprint,
   Delete,
-  Lock,
   Unlock,
-  ShieldCheck,
   Headphones,
   WifiOff,
   ChevronDown,
-  Mail,
   Eye,
   EyeOff,
   Sun,
   Moon,
-  ArrowRight,
   AlertCircle,
   AlertTriangle,
   Sparkles,
-  Zap,
   CheckCircle2
 } from 'lucide-vue-next'
 import { useAuthStore } from '@/stores/auth.store'
@@ -1065,41 +1013,36 @@ onUnmounted(() => {
 
 <style scoped>
 /* Keyframes for Hero 3D Illustration & Micro-interactions */
-@keyframes floatBadge {
-  0%, 100% {
-    transform: translateY(0px) rotate(0deg);
-  }
-  50% {
-    transform: translateY(-8px) rotate(1deg);
-  }
-}
-
-@keyframes floatBadgeDelayed {
-  0%, 100% {
-    transform: translateY(0px) rotate(0deg);
-  }
-  50% {
-    transform: translateY(-9px) rotate(-1deg);
-  }
-}
-
 @keyframes characterBob {
   0%, 100% {
     transform: translateY(0px);
   }
   50% {
-    transform: translateY(-3px);
+    transform: translateY(-3.5px);
   }
 }
 
 @keyframes handWave {
   0%, 100% {
     transform: rotate(0deg);
-    transform-origin: 320px 170px;
+    transform-origin: 324px 175px;
   }
   50% {
-    transform: rotate(4deg);
-    transform-origin: 320px 170px;
+    transform: rotate(5deg);
+    transform-origin: 324px 175px;
+  }
+}
+
+@keyframes raysPulse {
+  0%, 100% {
+    opacity: 0.9;
+    transform: scale(1);
+    transform-origin: 344px 85px;
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(0.85);
+    transform-origin: 344px 85px;
   }
 }
 
@@ -1109,11 +1052,11 @@ onUnmounted(() => {
     opacity: 0.8;
   }
   50% {
-    transform: translateY(-6px) scaleX(1.3);
+    transform: translateY(-5px) scaleX(1.3);
     opacity: 0.4;
   }
   100% {
-    transform: translateY(-12px) scaleX(1.6);
+    transform: translateY(-11px) scaleX(1.6);
     opacity: 0;
   }
 }
@@ -1124,20 +1067,16 @@ onUnmounted(() => {
   40%, 80% { transform: translateX(5px); }
 }
 
-.animate-float-badge {
-  animation: floatBadge 4.5s ease-in-out infinite;
-}
-
-.animate-float-badge-delayed {
-  animation: floatBadgeDelayed 5s ease-in-out infinite 0.7s;
-}
-
 .animate-character-bob {
-  animation: characterBob 4s ease-in-out infinite;
+  animation: characterBob 3.8s ease-in-out infinite;
 }
 
 .animate-hand-wave {
   animation: handWave 2.2s ease-in-out infinite;
+}
+
+.animate-rays-pulse {
+  animation: raysPulse 1.8s ease-in-out infinite;
 }
 
 .animate-steam {
@@ -1168,15 +1107,15 @@ onUnmounted(() => {
   background: linear-gradient(
     60deg,
     transparent,
-    rgba(255, 255, 255, 0.25),
+    rgba(255, 255, 255, 0.28),
     transparent
   );
   transform: rotate(25deg);
-  transition: all 0.6s ease;
+  transition: all 0.65s ease;
 }
 
 .btn-shimmer:hover::after {
-  left: 120%;
+  left: 125%;
 }
 
 .fade-enter-active,
